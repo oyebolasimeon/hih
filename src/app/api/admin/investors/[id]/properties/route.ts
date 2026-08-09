@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { assertAdmin } from "@/lib/api-auth";
 import { Investor } from "@/models/Investor";
 import { Property } from "@/models/Property";
@@ -9,31 +8,26 @@ import {
   sanitizeAuditValue,
   writeAudit,
 } from "@/lib/audit";
-
-const createSchema = z.object({
-  name: z.string().trim().min(2),
-  address: z.string().trim().min(2),
-  status: z.enum(["active", "inactive", "sold"]).default("active"),
-  purchasePrice: z.number().min(0).default(0),
-  currentValue: z.number().min(0).default(0),
-});
+import {
+  formPropertyPayload,
+  investorPropertyCreateSchema,
+  serializeProperty,
+} from "@/lib/property-fields";
 
 function propertySnapshot(property: {
   name: string;
+  nickname?: string;
   address: string;
+  propertyType?: string;
+  zone?: string;
+  tags?: string[];
   imageUrls: string[];
   status: string;
   purchasePrice: number;
   currentValue: number;
+  monthlyRent?: number;
 }) {
-  return sanitizeAuditValue({
-    name: property.name,
-    address: property.address,
-    imageUrls: property.imageUrls,
-    status: property.status,
-    purchasePrice: property.purchasePrice,
-    currentValue: property.currentValue,
-  });
+  return sanitizeAuditValue(serializeProperty({ _id: "", ...property }));
 }
 
 export async function POST(
@@ -53,13 +47,7 @@ export async function POST(
 
   if (contentType.includes("multipart/form-data")) {
     const form = await request.formData();
-    const parsed = createSchema.safeParse({
-      name: form.get("name"),
-      address: form.get("address"),
-      status: form.get("status") || "active",
-      purchasePrice: Number(form.get("purchasePrice") || 0),
-      currentValue: Number(form.get("currentValue") || 0),
-    });
+    const parsed = investorPropertyCreateSchema.safeParse(formPropertyPayload(form));
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid property data." }, { status: 400 });
     }
@@ -100,21 +88,14 @@ export async function POST(
       request,
     });
 
-    return NextResponse.json({
-      property: {
-        id: String(property._id),
-        name: property.name,
-        address: property.address,
-        imageUrls: property.imageUrls,
-        status: property.status,
-        purchasePrice: property.purchasePrice,
-        currentValue: property.currentValue,
-      },
-    });
+    return NextResponse.json({ property: serializeProperty(property) });
   }
 
   const body = await request.json();
-  const parsed = createSchema.safeParse(body);
+  const parsed = investorPropertyCreateSchema.safeParse({
+    ...body,
+    tags: Array.isArray(body.tags) ? body.tags : [],
+  });
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid property data." }, { status: 400 });
   }
@@ -145,15 +126,5 @@ export async function POST(
     request,
   });
 
-  return NextResponse.json({
-    property: {
-      id: String(property._id),
-      name: property.name,
-      address: property.address,
-      imageUrls: property.imageUrls,
-      status: property.status,
-      purchasePrice: property.purchasePrice,
-      currentValue: property.currentValue,
-    },
-  });
+  return NextResponse.json({ property: serializeProperty(property) });
 }

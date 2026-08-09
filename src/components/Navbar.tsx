@@ -78,7 +78,7 @@ export default function Navbar() {
                 onClick={openLoginModal}
                 className="px-5 py-2.5 border border-white/40 text-white text-sm font-medium rounded-md hover:border-brand hover:bg-brand hover:text-foreground transition-colors duration-200"
               >
-                Investor Login
+                Sign in
               </button>
               <Link
                 href="#contact"
@@ -134,7 +134,7 @@ export default function Navbar() {
                   onClick={openLoginModal}
                   className="block w-full text-center px-5 py-3 border border-border text-foreground font-medium rounded-md"
                 >
-                  Investor Login
+                  Sign in
                 </button>
                 <Link
                   href="#contact"

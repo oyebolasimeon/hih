@@ -11,6 +11,7 @@ export interface IBooking {
   endDate: Date;
   guestName?: string;
   revenue: number;
+  nightlyRate: number;
   channel: BookingChannel;
   status: BookingStatus;
   createdAt: Date;
@@ -35,6 +36,7 @@ const BookingSchema = new Schema<IBooking>(
     endDate: { type: Date, required: true },
     guestName: { type: String, trim: true },
     revenue: { type: Number, default: 0 },
+    nightlyRate: { type: Number, default: 0 },
     channel: {
       type: String,
       enum: ["direct", "airbnb", "booking.com", "other"],

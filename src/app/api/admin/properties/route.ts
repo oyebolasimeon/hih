@@ -127,7 +127,7 @@ const createSchema = z
   .object({
     name: z.string().trim().min(2),
     address: z.string().trim().min(2),
-    status: z.enum(["active", "inactive", "sold"]).default("active"),
+    status: z.enum(["active", "pending", "inactive", "sold"]).default("active"),
     purchasePrice: z.number().min(0).default(0),
     currentValue: z.number().min(0).default(0),
     notes: z.string().trim().max(2000).optional(),

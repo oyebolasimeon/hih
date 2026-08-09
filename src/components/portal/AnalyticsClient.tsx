@@ -10,6 +10,8 @@ type AnalyticsRow = {
   revenue: number;
   commission: number;
   occupancyRate: number;
+  avgNightlyRate: number;
+  revenuePAL: number;
   channelBreakdown: Record<string, number>;
 };
 

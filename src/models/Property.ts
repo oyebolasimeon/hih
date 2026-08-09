@@ -1,6 +1,6 @@
 import mongoose, { Schema, models, model } from "mongoose";
 
-export type PropertyStatus = "active" | "inactive" | "sold";
+export type PropertyStatus = "active" | "pending" | "inactive" | "sold";
 export type PropertyOwnerType = "investor" | "company";
 /** How an investor-held property was acquired from Nova (investors never self-list) */
 export type AcquisitionType = "nova_outright" | "nova_investment";
@@ -14,11 +14,19 @@ export interface IProperty {
   /** For investor-owned rows: assigned outright by Nova, or via investment */
   acquisitionType?: AcquisitionType | null;
   name: string;
+  /** Display-only short name in portal cards */
+  nickname: string;
   address: string;
+  /** e.g. apartment, house, studio */
+  propertyType: string;
+  zone: string;
+  tags: string[];
   imageUrls: string[];
   status: PropertyStatus;
   purchasePrice: number;
   currentValue: number;
+  /** Curated monthly rent used for day/week/month dashboard scaling */
+  monthlyRent: number;
   notes?: string;
   /** Public description for investment listings */
   description?: string;
@@ -56,15 +64,20 @@ const PropertySchema = new Schema<IProperty>(
       default: null,
     },
     name: { type: String, required: true, trim: true },
+    nickname: { type: String, default: "", trim: true },
     address: { type: String, required: true, trim: true },
+    propertyType: { type: String, default: "", trim: true },
+    zone: { type: String, default: "", trim: true },
+    tags: { type: [String], default: [] },
     imageUrls: { type: [String], default: [] },
     status: {
       type: String,
-      enum: ["active", "inactive", "sold"],
+      enum: ["active", "pending", "inactive", "sold"],
       default: "active",
     },
     purchasePrice: { type: Number, default: 0 },
     currentValue: { type: Number, default: 0 },
+    monthlyRent: { type: Number, default: 0 },
     notes: { type: String, default: "", trim: true },
     description: { type: String, default: "", trim: true },
     listedForInvestment: { type: Boolean, default: false, index: true },

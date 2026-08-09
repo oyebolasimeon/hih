@@ -16,6 +16,7 @@ const schema = z.object({
   endDate: z.string().datetime().or(z.string().min(8)),
   guestName: z.string().optional(),
   revenue: z.number().min(0).default(0),
+  nightlyRate: z.number().min(0).default(0),
   channel: z.enum(["direct", "airbnb", "booking.com", "other"]).default("direct"),
   status: z.enum(["confirmed", "pending", "cancelled"]).default("confirmed"),
 });
@@ -54,6 +55,7 @@ export async function POST(
     endDate: new Date(parsed.data.endDate),
     guestName: parsed.data.guestName,
     revenue: parsed.data.revenue,
+    nightlyRate: parsed.data.nightlyRate,
     channel: parsed.data.channel,
     status: parsed.data.status,
   });
@@ -76,6 +78,7 @@ export async function POST(
           endDate: booking.endDate,
           guestName: booking.guestName,
           revenue: booking.revenue,
+          nightlyRate: booking.nightlyRate,
           channel: booking.channel,
           status: booking.status,
         }),
@@ -92,6 +95,7 @@ export async function POST(
       endDate: booking.endDate,
       guestName: booking.guestName,
       revenue: booking.revenue,
+      nightlyRate: booking.nightlyRate,
       channel: booking.channel,
       status: booking.status,
     },

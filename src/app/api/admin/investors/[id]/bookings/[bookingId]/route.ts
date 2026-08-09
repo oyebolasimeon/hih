@@ -16,6 +16,7 @@ const schema = z.object({
   endDate: z.string().optional(),
   guestName: z.string().optional(),
   revenue: z.number().min(0).optional(),
+  nightlyRate: z.number().min(0).optional(),
   channel: z.enum(["direct", "airbnb", "booking.com", "other"]).optional(),
   status: z.enum(["confirmed", "pending", "cancelled"]).optional(),
 });
@@ -26,6 +27,7 @@ const BOOKING_FIELDS = [
   "endDate",
   "guestName",
   "revenue",
+  "nightlyRate",
   "channel",
   "status",
 ];
@@ -86,6 +88,7 @@ export async function PATCH(
       endDate: booking.endDate,
       guestName: booking.guestName,
       revenue: booking.revenue,
+      nightlyRate: booking.nightlyRate || 0,
       channel: booking.channel,
       status: booking.status,
     },

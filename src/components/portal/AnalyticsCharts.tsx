@@ -25,6 +25,8 @@ type AnalyticsRow = {
   revenue: number;
   commission: number;
   occupancyRate: number;
+  avgNightlyRate: number;
+  revenuePAL: number;
   channelBreakdown: Record<string, number>;
 };
 
@@ -72,12 +74,20 @@ export default function AnalyticsCharts({
 
       {selected ? (
         <>
-          <div className="grid sm:grid-cols-3 gap-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <StatCard label="Revenue" value={formatGBP(selected.revenue)} />
             <StatCard label="Commission" value={formatGBP(selected.commission)} />
             <StatCard
               label="Occupancy"
               value={formatPercent(selected.occupancyRate)}
+            />
+            <StatCard
+              label="Avg nightly"
+              value={formatGBP(selected.avgNightlyRate || 0)}
+            />
+            <StatCard
+              label="Revenue PAL"
+              value={formatGBP(selected.revenuePAL || 0)}
             />
           </div>
 

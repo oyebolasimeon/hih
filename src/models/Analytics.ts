@@ -7,6 +7,9 @@ export interface IAnalytics {
   revenue: number;
   commission: number;
   occupancyRate: number;
+  avgNightlyRate: number;
+  /** Revenue per available listing / unit (admin-curated) */
+  revenuePAL: number;
   channelBreakdown: Map<string, number> | Record<string, number>;
   createdAt: Date;
   updatedAt: Date;
@@ -24,6 +27,8 @@ const AnalyticsSchema = new Schema<IAnalytics>(
     revenue: { type: Number, default: 0 },
     commission: { type: Number, default: 0 },
     occupancyRate: { type: Number, default: 0 },
+    avgNightlyRate: { type: Number, default: 0 },
+    revenuePAL: { type: Number, default: 0 },
     channelBreakdown: {
       type: Map,
       of: Number,

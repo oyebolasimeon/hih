@@ -18,6 +18,8 @@ export default async function PortalAnalyticsPage() {
     revenue: a.revenue,
     commission: a.commission,
     occupancyRate: a.occupancyRate,
+    avgNightlyRate: a.avgNightlyRate || 0,
+    revenuePAL: a.revenuePAL || 0,
     channelBreakdown:
       a.channelBreakdown instanceof Map
         ? Object.fromEntries(a.channelBreakdown)

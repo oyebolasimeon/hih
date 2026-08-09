@@ -21,7 +21,7 @@ const updateSchema = z
   .object({
     name: z.string().trim().min(2).optional(),
     address: z.string().trim().min(2).optional(),
-    status: z.enum(["active", "inactive", "sold"]).optional(),
+    status: z.enum(["active", "pending", "inactive", "sold"]).optional(),
     purchasePrice: z.number().min(0).optional(),
     currentValue: z.number().min(0).optional(),
     notes: z.string().trim().max(2000).optional(),

@@ -16,6 +16,8 @@ const schema = z.object({
   revenue: z.number().min(0).default(0),
   commission: z.number().min(0).default(0),
   occupancyRate: z.number().min(0).max(100).default(0),
+  avgNightlyRate: z.number().min(0).default(0),
+  revenuePAL: z.number().min(0).default(0),
   channelBreakdown: z.record(z.string(), z.number()).default({}),
 });
 
@@ -91,6 +93,8 @@ export async function POST(
         "revenue",
         "commission",
         "occupancyRate",
+        "avgNightlyRate",
+        "revenuePAL",
         "channelBreakdown",
       ]),
       request,
@@ -113,6 +117,8 @@ export async function POST(
             revenue: doc!.revenue,
             commission: doc!.commission,
             occupancyRate: doc!.occupancyRate,
+            avgNightlyRate: doc!.avgNightlyRate,
+            revenuePAL: doc!.revenuePAL,
             channelBreakdown: afterBreakdown,
           }),
         },
@@ -128,6 +134,8 @@ export async function POST(
       revenue: doc!.revenue,
       commission: doc!.commission,
       occupancyRate: doc!.occupancyRate,
+      avgNightlyRate: doc!.avgNightlyRate,
+      revenuePAL: doc!.revenuePAL,
       channelBreakdown: afterBreakdown,
     },
   });

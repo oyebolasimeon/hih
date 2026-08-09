@@ -261,6 +261,7 @@ export default function AdminPropertiesClient() {
           options={[
             { value: "all", label: "All statuses" },
             { value: "active", label: "active" },
+            { value: "pending", label: "pending" },
             { value: "inactive", label: "inactive" },
             { value: "sold", label: "sold" },
           ]}
@@ -334,6 +335,7 @@ export default function AdminPropertiesClient() {
                 onChange={(v) => setForm({ ...form, status: v })}
                 options={[
                   { value: "active", label: "active" },
+                  { value: "pending", label: "pending" },
                   { value: "inactive", label: "inactive" },
                   { value: "sold", label: "sold" },
                 ]}

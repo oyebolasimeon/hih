@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { assertAdmin } from "@/lib/api-auth";
 import { Property } from "@/models/Property";
 import { Booking } from "@/models/Booking";
@@ -11,22 +10,23 @@ import {
   sanitizeAuditValue,
   writeAudit,
 } from "@/lib/audit";
-
-const updateSchema = z.object({
-  name: z.string().trim().min(2).optional(),
-  address: z.string().trim().min(2).optional(),
-  status: z.enum(["active", "inactive", "sold"]).optional(),
-  purchasePrice: z.number().min(0).optional(),
-  currentValue: z.number().min(0).optional(),
-  imageUrls: z.array(z.string().url()).optional(),
-});
+import {
+  formPropertyPayload,
+  investorPropertyUpdateSchema,
+  serializeProperty,
+} from "@/lib/property-fields";
 
 const PROPERTY_FIELDS = [
   "name",
+  "nickname",
   "address",
+  "propertyType",
+  "zone",
+  "tags",
   "status",
   "purchasePrice",
   "currentValue",
+  "monthlyRent",
   "imageUrls",
 ];
 
@@ -40,18 +40,11 @@ export async function PATCH(
   const { id, propertyId } = await context.params;
   const contentType = request.headers.get("content-type") || "";
 
-  let update: Record<string, unknown> = {};
-
   if (contentType.includes("multipart/form-data")) {
     const form = await request.formData();
-    if (form.get("name")) update.name = String(form.get("name"));
-    if (form.get("address")) update.address = String(form.get("address"));
-    if (form.get("status")) update.status = String(form.get("status"));
-    if (form.get("purchasePrice") != null) {
-      update.purchasePrice = Number(form.get("purchasePrice"));
-    }
-    if (form.get("currentValue") != null) {
-      update.currentValue = Number(form.get("currentValue"));
+    const parsed = investorPropertyUpdateSchema.safeParse(formPropertyPayload(form));
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid property data." }, { status: 400 });
     }
 
     const property = await Property.findOne({ _id: propertyId, investorId: id });
@@ -60,7 +53,6 @@ export async function PATCH(
     }
 
     const before = leanDoc(property.toObject() as Record<string, unknown>);
-
     const imageUrls = [...property.imageUrls];
     for (const file of form.getAll("images")) {
       if (file instanceof File && file.size > 0) {
@@ -69,9 +61,8 @@ export async function PATCH(
         imageUrls.push(uploaded.url);
       }
     }
-    update.imageUrls = imageUrls;
 
-    Object.assign(property, update);
+    Object.assign(property, parsed.data, { imageUrls });
     await property.save();
 
     const after = leanDoc(property.toObject() as Record<string, unknown>);
@@ -87,21 +78,14 @@ export async function PATCH(
       request,
     });
 
-    return NextResponse.json({
-      property: {
-        id: String(property._id),
-        name: property.name,
-        address: property.address,
-        imageUrls: property.imageUrls,
-        status: property.status,
-        purchasePrice: property.purchasePrice,
-        currentValue: property.currentValue,
-      },
-    });
+    return NextResponse.json({ property: serializeProperty(property) });
   }
 
   const body = await request.json();
-  const parsed = updateSchema.safeParse(body);
+  const parsed = investorPropertyUpdateSchema.safeParse({
+    ...body,
+    tags: body.tags !== undefined ? body.tags : undefined,
+  });
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid property data." }, { status: 400 });
   }
@@ -136,17 +120,7 @@ export async function PATCH(
     request,
   });
 
-  return NextResponse.json({
-    property: {
-      id: String(property._id),
-      name: property.name,
-      address: property.address,
-      imageUrls: property.imageUrls,
-      status: property.status,
-      purchasePrice: property.purchasePrice,
-      currentValue: property.currentValue,
-    },
-  });
+  return NextResponse.json({ property: serializeProperty(property) });
 }
 
 export async function DELETE(
@@ -177,14 +151,7 @@ export async function DELETE(
     changes: [
       {
         field: "property",
-        oldValue: sanitizeAuditValue({
-          name: property.name,
-          address: property.address,
-          imageUrls: property.imageUrls,
-          status: property.status,
-          purchasePrice: property.purchasePrice,
-          currentValue: property.currentValue,
-        }),
+        oldValue: sanitizeAuditValue(serializeProperty(property)),
         newValue: null,
       },
     ],
