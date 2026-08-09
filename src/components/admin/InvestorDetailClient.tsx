@@ -7,6 +7,8 @@ import { formatGBP } from "@/lib/format";
 import { FormSelect } from "@/components/ui/Select";
 import { hasPermission } from "@/lib/rbac";
 import { FormSkeleton, PageHeaderSkeleton, TableSkeleton } from "@/components/ui/Skeleton";
+import ImageFilePicker from "@/components/ui/ImageFilePicker";
+import { ImageGallery } from "@/components/ui/ImageViewer";
 
 type Property = {
   id: string;
@@ -59,6 +61,7 @@ export default function InvestorDetailClient({ investorId }: { investorId: strin
   const [properties, setProperties] = useState<Property[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsRow[]>([]);
+  const [propertyImages, setPropertyImages] = useState<File[]>([]);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -111,6 +114,7 @@ export default function InvestorDetailClient({ investorId }: { investorId: strin
     e.preventDefault();
     const formEl = e.currentTarget;
     const form = new FormData(formEl);
+    propertyImages.forEach((file) => form.append("images", file));
     const res = await fetch(`/api/admin/investors/${investorId}/properties`, {
       method: "POST",
       body: form,
@@ -121,7 +125,8 @@ export default function InvestorDetailClient({ investorId }: { investorId: strin
       return;
     }
     formEl.reset();
-    setMessage("Property added.");
+    setPropertyImages([]);
+    setMessage("Property assigned.");
     await load();
   }
 
@@ -401,8 +406,11 @@ export default function InvestorDetailClient({ investorId }: { investorId: strin
               <input name="currentValue" type="number" min={0} defaultValue={0} className="app-input" />
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-sm font-medium mb-1.5">Images</label>
-              <input name="images" type="file" accept="image/*" multiple className="app-input" />
+              <ImageFilePicker
+                value={propertyImages}
+                onChange={setPropertyImages}
+                disabled={!canWriteProperties}
+              />
             </div>
             <div>
               <button
@@ -418,22 +426,28 @@ export default function InvestorDetailClient({ investorId }: { investorId: strin
 
         <div className="space-y-3">
           {properties.map((p) => (
-            <div key={p.id} className="app-card p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <p className="font-medium">{p.name}</p>
-                <p className="text-sm text-muted">{p.address}</p>
-                <p className="text-xs text-muted mt-1">
-                  {p.status} · {formatGBP(p.currentValue)} · {p.imageUrls.length} image(s)
-                </p>
+            <div key={p.id} className="app-card p-4 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <p className="font-medium">{p.name}</p>
+                  <p className="text-sm text-muted">{p.address}</p>
+                  <p className="text-xs text-muted mt-1">
+                    {p.status} · {formatGBP(p.currentValue)} · {p.imageUrls.length}{" "}
+                    image(s)
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => deleteProperty(p.id)}
+                  className="app-btn app-btn-danger text-xs"
+                  disabled={!canWriteProperties}
+                >
+                  Delete
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => deleteProperty(p.id)}
-                className="app-btn app-btn-danger text-xs"
-                disabled={!canWriteProperties}
-              >
-                Delete
-              </button>
+              {p.imageUrls.length ? (
+                <ImageGallery images={p.imageUrls} title={p.name} />
+              ) : null}
             </div>
           ))}
         </div>

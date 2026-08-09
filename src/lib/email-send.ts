@@ -31,8 +31,17 @@ function wrapEmailHtml(body: string): string {
       <td align="center">
         <table role="presentation" width="100%" style="max-width:560px;background:#ffffff;border:1px solid #d5d9ce;border-radius:8px;overflow:hidden;">
           <tr>
-            <td style="background:#A8BF44;padding:16px 20px;">
-              <span style="font-family:Inter,Arial,sans-serif;font-weight:700;color:#0c0d0b;font-size:15px;">Nova Elite Homes</span>
+            <td style="background:#A8BF44;padding:14px 20px;">
+              <table role="presentation" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td style="vertical-align:middle;padding-right:10px;">
+                    <img src="{{logoUrl}}" width="28" height="28" alt="Nova Elite Homes" style="display:block;border:0;border-radius:4px;width:28px;height:28px;object-fit:contain;" />
+                  </td>
+                  <td style="vertical-align:middle;font-family:Inter,Arial,sans-serif;font-weight:700;color:#0c0d0b;font-size:15px;">
+                    Nova Elite Homes
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
           <tr>
@@ -41,8 +50,18 @@ function wrapEmailHtml(body: string): string {
             </td>
           </tr>
           <tr>
-            <td style="padding:14px 20px;border-top:1px solid #eceee8;font-family:Inter,Arial,sans-serif;font-size:12px;color:#5c6356;">
-              © {{year}} Nova Elite Homes
+            <td style="padding:18px 20px;border-top:1px solid #eceee8;font-family:Inter,Arial,sans-serif;font-size:12px;color:#5c6356;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td style="vertical-align:middle;padding-right:12px;width:36px;">
+                    <img src="{{logoUrl}}" width="32" height="32" alt="Nova Elite Homes" style="display:block;border:0;border-radius:4px;width:32px;height:32px;object-fit:contain;background:#A8BF44;padding:2px;" />
+                  </td>
+                  <td style="vertical-align:middle;">
+                    <div style="font-weight:600;color:#0c0d0b;font-size:13px;">Nova Elite Homes</div>
+                    <div style="margin-top:2px;">© {{year}} Nova Elite Homes</div>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
         </table>
@@ -61,6 +80,7 @@ function baseVars(extra: TemplateVars = {}): TemplateVars {
   );
   return {
     appUrl,
+    logoUrl: `${appUrl}/logo.png`,
     loginUrl: `${appUrl}/login`,
     portalUrl: `${appUrl}/portal`,
     adminUrl: `${appUrl}/admin`,

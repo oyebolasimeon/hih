@@ -5,6 +5,7 @@ import { connectDB } from "@/lib/db";
 import { Property } from "@/models/Property";
 import { Booking } from "@/models/Booking";
 import EmptyState from "@/components/ui/EmptyState";
+import { ImageGallery } from "@/components/ui/ImageViewer";
 import { formatDate, formatGBP } from "@/lib/format";
 
 export default async function PropertyDetailPage({
@@ -49,17 +50,7 @@ export default async function PropertyDetailPage({
       </div>
 
       {property.imageUrls?.length ? (
-        <div className="grid sm:grid-cols-2 gap-3">
-          {property.imageUrls.map((url: string) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              key={url}
-              src={url}
-              alt={property.name}
-              className="rounded-lg border border-border aspect-[16/10] object-cover w-full"
-            />
-          ))}
-        </div>
+        <ImageGallery images={property.imageUrls} title={property.name} />
       ) : null}
 
       <div className="grid sm:grid-cols-3 gap-4">

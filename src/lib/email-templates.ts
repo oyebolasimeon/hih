@@ -26,6 +26,7 @@ export const EMAIL_VARIABLES = [
   { key: "{{name}}", label: "Recipient name" },
   { key: "{{email}}", label: "Recipient email" },
   { key: "{{appUrl}}", label: "App base URL" },
+  { key: "{{logoUrl}}", label: "Nova Elite logo URL" },
   { key: "{{loginUrl}}", label: "Login page URL" },
   { key: "{{portalUrl}}", label: "Investor portal URL" },
   { key: "{{resetUrl}}", label: "Password reset URL (reset emails)" },

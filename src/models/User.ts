@@ -10,6 +10,8 @@ export interface IUser {
   phone: string;
   emailNotifications: boolean;
   theme: ThemePreference;
+  starredImageUrls: string[];
+  bookmarkedImageUrls: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,6 +30,8 @@ const UserSchema = new Schema<IUser>(
     phone: { type: String, default: "", trim: true },
     emailNotifications: { type: Boolean, default: true },
     theme: { type: String, enum: ["light", "dark"], default: "dark" },
+    starredImageUrls: { type: [String], default: [] },
+    bookmarkedImageUrls: { type: [String], default: [] },
   },
   { timestamps: true }
 );

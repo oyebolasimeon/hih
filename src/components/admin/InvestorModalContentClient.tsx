@@ -4,6 +4,8 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { hasPermission } from "@/lib/rbac";
 import { FormSkeleton, PageHeaderSkeleton } from "@/components/ui/Skeleton";
+import ImageFilePicker from "@/components/ui/ImageFilePicker";
+import { ImageGallery } from "@/components/ui/ImageViewer";
 
 type Content = {
   title: string;
@@ -178,26 +180,29 @@ export default function InvestorModalContentClient() {
             )}
           </div>
           {canWrite ? (
-            <div className="flex flex-wrap gap-2">
-              <label className="app-btn app-btn-secondary cursor-pointer text-sm">
-                {uploading ? "Uploading…" : "Upload image"}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  disabled={uploading}
-                  onChange={(e) => onUpload(e.target.files?.[0] || null)}
-                />
-              </label>
+            <div className="space-y-3">
+              <ImageFilePicker
+                label="Replace modal image"
+                multiple={false}
+                value={[]}
+                disabled={uploading}
+                helpText="Preview the image, confirm, then it uploads immediately."
+                onChange={(files) => {
+                  if (files[0]) void onUpload(files[0]);
+                }}
+              />
               {content.imageUrl ? (
-                <button
-                  type="button"
-                  className="app-btn app-btn-danger text-sm"
-                  onClick={() => void clearImage()}
-                  disabled={saving}
-                >
-                  Remove image
-                </button>
+                <>
+                  <ImageGallery images={[content.imageUrl]} title="Login modal image" />
+                  <button
+                    type="button"
+                    className="app-btn app-btn-danger text-sm"
+                    onClick={() => void clearImage()}
+                    disabled={saving}
+                  >
+                    Remove image
+                  </button>
+                </>
               ) : null}
             </div>
           ) : (

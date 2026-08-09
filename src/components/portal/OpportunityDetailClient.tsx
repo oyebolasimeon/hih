@@ -5,6 +5,7 @@ import Link from "next/link";
 import { formatGBP } from "@/lib/format";
 import { FormSkeleton, PageHeaderSkeleton } from "@/components/ui/Skeleton";
 import { projectInvestment } from "@/lib/investment";
+import ImageViewer from "@/components/ui/ImageViewer";
 
 type PropertyDetail = {
   id: string;
@@ -47,7 +48,8 @@ export default function OpportunityDetailClient({ id }: { id: string }) {
   const [myInterests, setMyInterests] = useState<
     { id: string; amount: number; status: string; createdAt: string }[]
   >([]);
-  const [activeImage, setActiveImage] = useState(0);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -68,7 +70,6 @@ export default function OpportunityDetailClient({ id }: { id: string }) {
     setInterestTotals(data.interestTotals || { pledgedAmount: 0, pledgeCount: 0 });
     setMyInterests(data.myInterests || []);
     setAmount(String(data.property.minInvestment || 1000));
-    setActiveImage(0);
   }, [id]);
 
   useEffect(() => {
@@ -173,11 +174,19 @@ export default function OpportunityDetailClient({ id }: { id: string }) {
       <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-6">
         <div className="space-y-4">
           <div className="app-card overflow-hidden">
-            <div className="aspect-[16/10] bg-surface-dark">
-              {images[activeImage] ? (
+            <button
+              type="button"
+              className="aspect-[16/10] w-full bg-surface-dark relative group"
+              onClick={() => {
+                if (!images.length) return;
+                setViewerIndex(0);
+                setViewerOpen(true);
+              }}
+            >
+              {images[0] ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={images[activeImage]}
+                  src={images[0]}
                   alt=""
                   className="h-full w-full object-cover"
                 />
@@ -186,17 +195,23 @@ export default function OpportunityDetailClient({ id }: { id: string }) {
                   Image placeholder — Nova will add photos
                 </div>
               )}
-            </div>
+              {images.length ? (
+                <span className="absolute bottom-3 right-3 rounded bg-black/65 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition">
+                  Open viewer · zoom · star · download
+                </span>
+              ) : null}
+            </button>
             {images.length > 1 ? (
               <div className="flex gap-2 overflow-x-auto p-3">
                 {images.map((url, i) => (
                   <button
                     key={url + i}
                     type="button"
-                    onClick={() => setActiveImage(i)}
-                    className={`h-14 w-20 shrink-0 overflow-hidden rounded border ${
-                      i === activeImage ? "border-brand" : "border-border"
-                    }`}
+                    onClick={() => {
+                      setViewerIndex(i);
+                      setViewerOpen(true);
+                    }}
+                    className="h-14 w-20 shrink-0 overflow-hidden rounded border border-border"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={url} alt="" className="h-full w-full object-cover" />
@@ -204,6 +219,13 @@ export default function OpportunityDetailClient({ id }: { id: string }) {
                 ))}
               </div>
             ) : null}
+            <ImageViewer
+              images={images}
+              initialIndex={viewerIndex}
+              open={viewerOpen}
+              onClose={() => setViewerOpen(false)}
+              title={property.name}
+            />
           </div>
 
           <section className="app-card p-5 space-y-3">

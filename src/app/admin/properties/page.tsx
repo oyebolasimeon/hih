@@ -8,6 +8,8 @@ import { formatGBP } from "@/lib/format";
 import { hasPermission } from "@/lib/rbac";
 import { PageHeaderSkeleton, TableSkeleton } from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
+import ImageFilePicker from "@/components/ui/ImageFilePicker";
+import { ImageGallery } from "@/components/ui/ImageViewer";
 
 type PropertyRow = {
   id: string;
@@ -65,7 +67,7 @@ export default function AdminPropertiesClient() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
-  const [images, setImages] = useState<FileList | null>(null);
+  const [images, setImages] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
@@ -97,7 +99,7 @@ export default function AdminPropertiesClient() {
   function startCreate() {
     setEditingId(null);
     setForm(emptyForm);
-    setImages(null);
+    setImages([]);
     setShowForm(true);
     setMessage("");
     setError("");
@@ -129,7 +131,7 @@ export default function AdminPropertiesClient() {
           : String(p.targetRaise),
       highlights: (p.highlights || []).join("\n"),
     });
-    setImages(null);
+    setImages([]);
     setShowForm(true);
     setMessage("");
     setError("");
@@ -161,9 +163,7 @@ export default function AdminPropertiesClient() {
     body.append("maxInvestment", form.maxInvestment);
     body.append("targetRaise", form.targetRaise);
     body.append("highlights", form.highlights);
-    if (images) {
-      Array.from(images).forEach((file) => body.append("images", file));
-    }
+    images.forEach((file) => body.append("images", file));
 
     const res = await fetch(
       editingId ? `/api/admin/properties/${editingId}` : "/api/admin/properties",
@@ -183,7 +183,7 @@ export default function AdminPropertiesClient() {
     setShowForm(false);
     setEditingId(null);
     setForm(emptyForm);
-    setImages(null);
+    setImages([]);
     setMessage(
       editingId
         ? "Nova property updated."
@@ -379,15 +379,15 @@ export default function AdminPropertiesClient() {
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-sm font-medium mb-1.5">
-                Images {editingId ? "(added to existing)" : ""}
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                className="block w-full text-sm text-muted file:mr-3 file:rounded-md file:border-0 file:bg-brand file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[#0c0d0b]"
-                onChange={(e) => setImages(e.target.files)}
+              <ImageFilePicker
+                label={
+                  editingId
+                    ? "Images (added to existing)"
+                    : "Images"
+                }
+                value={images}
+                onChange={setImages}
+                disabled={!canWrite}
               />
             </div>
           </div>
