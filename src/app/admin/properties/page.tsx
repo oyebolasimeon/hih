@@ -22,6 +22,15 @@ type PropertyRow = {
   purchasePrice: number;
   currentValue: number;
   notes?: string;
+  description?: string;
+  listedForInvestment?: boolean;
+  roiMode?: "percent" | "fixed_per_1000";
+  roiValue?: number;
+  roiPeriodMonths?: number;
+  minInvestment?: number;
+  maxInvestment?: number | null;
+  targetRaise?: number | null;
+  highlights?: string[];
 };
 
 const emptyForm = {
@@ -31,6 +40,15 @@ const emptyForm = {
   purchasePrice: "0",
   currentValue: "0",
   notes: "",
+  description: "",
+  listedForInvestment: false,
+  roiMode: "percent" as "percent" | "fixed_per_1000",
+  roiValue: "0",
+  roiPeriodMonths: "12",
+  minInvestment: "1000",
+  maxInvestment: "",
+  targetRaise: "",
+  highlights: "",
 };
 
 export default function AdminPropertiesClient() {
@@ -95,6 +113,21 @@ export default function AdminPropertiesClient() {
       purchasePrice: String(p.purchasePrice),
       currentValue: String(p.currentValue),
       notes: p.notes || "",
+      description: p.description || "",
+      listedForInvestment: Boolean(p.listedForInvestment),
+      roiMode: p.roiMode === "fixed_per_1000" ? "fixed_per_1000" : "percent",
+      roiValue: String(p.roiValue ?? 0),
+      roiPeriodMonths: String(p.roiPeriodMonths ?? 12),
+      minInvestment: String(p.minInvestment ?? 1000),
+      maxInvestment:
+        p.maxInvestment == null || p.maxInvestment === undefined
+          ? ""
+          : String(p.maxInvestment),
+      targetRaise:
+        p.targetRaise == null || p.targetRaise === undefined
+          ? ""
+          : String(p.targetRaise),
+      highlights: (p.highlights || []).join("\n"),
     });
     setImages(null);
     setShowForm(true);
@@ -116,6 +149,18 @@ export default function AdminPropertiesClient() {
     body.append("purchasePrice", form.purchasePrice);
     body.append("currentValue", form.currentValue);
     body.append("notes", form.notes);
+    body.append("description", form.description);
+    body.append(
+      "listedForInvestment",
+      form.listedForInvestment ? "true" : "false"
+    );
+    body.append("roiMode", form.roiMode);
+    body.append("roiValue", form.roiValue);
+    body.append("roiPeriodMonths", form.roiPeriodMonths);
+    body.append("minInvestment", form.minInvestment);
+    body.append("maxInvestment", form.maxInvestment);
+    body.append("targetRaise", form.targetRaise);
+    body.append("highlights", form.highlights);
     if (images) {
       Array.from(images).forEach((file) => body.append("images", file));
     }
@@ -173,8 +218,9 @@ export default function AdminPropertiesClient() {
             Properties
           </h1>
           <p className="mt-1 text-sm text-muted max-w-2xl">
-            Nova Elite company portfolio (admin-only) and investor properties.
-            Company assets never appear in the investor portal.
+            Nova Elite company portfolio and investor properties. Company assets
+            stay admin-managed; when marked as listed for investment they appear
+            as opportunities for investors.
           </p>
         </div>
         {canWrite ? (
@@ -346,6 +392,158 @@ export default function AdminPropertiesClient() {
             </div>
           </div>
 
+          <div className="border-t border-border pt-4 space-y-4">
+            <div>
+              <h3 className="font-display text-base font-semibold">
+                Investment listing
+              </h3>
+              <p className="text-sm text-muted mt-0.5">
+                When listed, this property is visible to investors as an
+                investment opportunity.
+              </p>
+            </div>
+
+            <label className="flex items-center gap-2.5 text-sm font-medium cursor-pointer">
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-border accent-brand"
+                checked={form.listedForInvestment}
+                onChange={(e) =>
+                  setForm({ ...form, listedForInvestment: e.target.checked })
+                }
+              />
+              Listed for investment
+            </label>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium mb-1.5">
+                  Description
+                </label>
+                <textarea
+                  className="app-input min-h-[100px]"
+                  value={form.description}
+                  onChange={(e) =>
+                    setForm({ ...form, description: e.target.value })
+                  }
+                  placeholder="Investor-facing summary of the opportunity"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium mb-1.5">
+                  Highlights
+                </label>
+                <textarea
+                  className="app-input min-h-[88px]"
+                  value={form.highlights}
+                  onChange={(e) =>
+                    setForm({ ...form, highlights: e.target.value })
+                  }
+                  placeholder="One highlight per line"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5">
+                  ROI mode
+                </label>
+                <Select
+                  value={form.roiMode}
+                  onChange={(v) =>
+                    setForm({
+                      ...form,
+                      roiMode: v as "percent" | "fixed_per_1000",
+                    })
+                  }
+                  options={[
+                    { value: "percent", label: "% over period" },
+                    {
+                      value: "fixed_per_1000",
+                      label: "£ per £1,000 over period",
+                    },
+                  ]}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5">
+                  ROI value
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  step="any"
+                  className="app-input"
+                  value={form.roiValue}
+                  onChange={(e) =>
+                    setForm({ ...form, roiValue: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5">
+                  ROI period (months)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={600}
+                  step="1"
+                  className="app-input"
+                  value={form.roiPeriodMonths}
+                  onChange={(e) =>
+                    setForm({ ...form, roiPeriodMonths: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5">
+                  Min investment (£)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  step="1"
+                  className="app-input"
+                  value={form.minInvestment}
+                  onChange={(e) =>
+                    setForm({ ...form, minInvestment: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5">
+                  Max investment (£)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  step="1"
+                  className="app-input"
+                  value={form.maxInvestment}
+                  onChange={(e) =>
+                    setForm({ ...form, maxInvestment: e.target.value })
+                  }
+                  placeholder="Optional"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5">
+                  Target raise (£)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  step="1"
+                  className="app-input"
+                  value={form.targetRaise}
+                  onChange={(e) =>
+                    setForm({ ...form, targetRaise: e.target.value })
+                  }
+                  placeholder="Optional"
+                />
+              </div>
+            </div>
+          </div>
+
           <button
             type="submit"
             className="app-btn app-btn-primary"
@@ -370,7 +568,7 @@ export default function AdminPropertiesClient() {
           title="No properties found"
           description={
             canWrite
-              ? "Add a Nova Elite company property, or open an investor to manage their portfolio."
+              ? "Add a Nova Elite company property (optionally list it for investment so investors can see it), or open an investor to manage their portfolio."
               : "No properties match your filters."
           }
         />
@@ -402,7 +600,15 @@ export default function AdminPropertiesClient() {
                         ) : null}
                       </div>
                       <div>
-                        <p className="font-medium">{p.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{p.name}</p>
+                          {p.ownerType === "company" &&
+                          p.listedForInvestment ? (
+                            <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-brand/15 text-brand">
+                              Listed
+                            </span>
+                          ) : null}
+                        </div>
                         <p className="text-xs text-muted line-clamp-1">
                           {p.address}
                         </p>

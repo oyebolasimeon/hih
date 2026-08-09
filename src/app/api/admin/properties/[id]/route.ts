@@ -10,15 +10,23 @@ import {
   sanitizeAuditValue,
   writeAudit,
 } from "@/lib/audit";
+import {
+  investmentFieldsSchema,
+  parseInvestmentFromForm,
+  PROPERTY_INVESTMENT_FIELDS,
+  serializeInvestmentFields,
+} from "@/lib/property-investment-fields";
 
-const updateSchema = z.object({
-  name: z.string().trim().min(2).optional(),
-  address: z.string().trim().min(2).optional(),
-  status: z.enum(["active", "inactive", "sold"]).optional(),
-  purchasePrice: z.number().min(0).optional(),
-  currentValue: z.number().min(0).optional(),
-  notes: z.string().trim().max(2000).optional(),
-});
+const updateSchema = z
+  .object({
+    name: z.string().trim().min(2).optional(),
+    address: z.string().trim().min(2).optional(),
+    status: z.enum(["active", "inactive", "sold"]).optional(),
+    purchasePrice: z.number().min(0).optional(),
+    currentValue: z.number().min(0).optional(),
+    notes: z.string().trim().max(2000).optional(),
+  })
+  .merge(investmentFieldsSchema.partial());
 
 const PROPERTY_FIELDS = [
   "name",
@@ -28,6 +36,7 @@ const PROPERTY_FIELDS = [
   "currentValue",
   "notes",
   "imageUrls",
+  ...PROPERTY_INVESTMENT_FIELDS,
 ];
 
 function serialize(property: InstanceType<typeof Property>) {
@@ -44,6 +53,7 @@ function serialize(property: InstanceType<typeof Property>) {
     purchasePrice: property.purchasePrice,
     currentValue: property.currentValue,
     notes: property.notes || "",
+    ...serializeInvestmentFields(property),
   };
 }
 
@@ -87,6 +97,15 @@ export async function PATCH(
     }
 
     Object.assign(property, parsed.data);
+
+    const investParsed = parseInvestmentFromForm(form);
+    if (!investParsed.success) {
+      return NextResponse.json(
+        { error: "Invalid investment listing data." },
+        { status: 400 }
+      );
+    }
+    Object.assign(property, investParsed.data);
 
     const files = form.getAll("images");
     const uploaded: string[] = [];
@@ -192,6 +211,7 @@ export async function DELETE(
           currentValue: property.currentValue,
           notes: property.notes || "",
           imageUrls: property.imageUrls,
+          ...serializeInvestmentFields(property),
         }),
         newValue: null,
       },

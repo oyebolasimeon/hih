@@ -9,6 +9,11 @@ import {
   sanitizeAuditValue,
   writeAudit,
 } from "@/lib/audit";
+import {
+  investmentFieldsSchema,
+  parseInvestmentFromForm,
+  serializeInvestmentFields,
+} from "@/lib/property-investment-fields";
 
 function serializeProperty(
   p: {
@@ -23,6 +28,15 @@ function serializeProperty(
     currentValue: number;
     notes?: string;
     updatedAt?: Date;
+    description?: string;
+    listedForInvestment?: boolean;
+    roiMode?: string;
+    roiValue?: number;
+    roiPeriodMonths?: number;
+    minInvestment?: number;
+    maxInvestment?: number | null;
+    targetRaise?: number | null;
+    highlights?: string[];
   },
   investor?: { name: string; email: string } | null
 ) {
@@ -44,6 +58,7 @@ function serializeProperty(
     currentValue: p.currentValue,
     notes: p.notes || "",
     updatedAt: p.updatedAt,
+    ...serializeInvestmentFields(p),
   };
 }
 
@@ -108,14 +123,16 @@ export async function GET(request: Request) {
   });
 }
 
-const createSchema = z.object({
-  name: z.string().trim().min(2),
-  address: z.string().trim().min(2),
-  status: z.enum(["active", "inactive", "sold"]).default("active"),
-  purchasePrice: z.number().min(0).default(0),
-  currentValue: z.number().min(0).default(0),
-  notes: z.string().trim().max(2000).optional(),
-});
+const createSchema = z
+  .object({
+    name: z.string().trim().min(2),
+    address: z.string().trim().min(2),
+    status: z.enum(["active", "inactive", "sold"]).default("active"),
+    purchasePrice: z.number().min(0).default(0),
+    currentValue: z.number().min(0).default(0),
+    notes: z.string().trim().max(2000).optional(),
+  })
+  .merge(investmentFieldsSchema);
 
 export async function POST(request: Request) {
   const { user, response } = await assertAdmin("properties:write");
@@ -149,11 +166,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid property data." }, { status: 400 });
     }
 
+    const investParsed = parseInvestmentFromForm(form);
+    if (!investParsed.success) {
+      return NextResponse.json(
+        { error: "Invalid investment listing data." },
+        { status: 400 }
+      );
+    }
+
     const imageUrls = await uploadImages(form.getAll("images"));
     const property = await Property.create({
       ownerType: "company",
       investorId: null,
       ...parsed.data,
+      ...investParsed.data,
       imageUrls,
     });
 
@@ -176,6 +202,7 @@ export async function POST(request: Request) {
             currentValue: property.currentValue,
             notes: property.notes || "",
             imageUrls: property.imageUrls,
+            ...serializeInvestmentFields(property),
           }),
         },
       ],
@@ -191,10 +218,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid property data." }, { status: 400 });
   }
 
+  const investParsed = investmentFieldsSchema.safeParse(body);
+  if (!investParsed.success) {
+    return NextResponse.json(
+      { error: "Invalid investment listing data." },
+      { status: 400 }
+    );
+  }
+
   const property = await Property.create({
     ownerType: "company",
     investorId: null,
     ...parsed.data,
+    ...investParsed.data,
     imageUrls: Array.isArray(body.imageUrls) ? body.imageUrls : [],
   });
 
@@ -217,6 +253,7 @@ export async function POST(request: Request) {
           currentValue: property.currentValue,
           notes: property.notes || "",
           imageUrls: property.imageUrls,
+          ...serializeInvestmentFields(property),
         }),
       },
     ],
