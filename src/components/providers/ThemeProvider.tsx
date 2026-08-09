@@ -46,12 +46,15 @@ export function ThemeProvider({
 
   useEffect(() => {
     applyThemeClass(theme);
+  }, [theme]);
+
+  // Restore marketing/light tokens when leaving portal/admin (unmount only)
+  useEffect(() => {
     return () => {
-      // Leave marketing site light when leaving portal/admin
       document.documentElement.classList.remove("dark", "light");
       delete document.documentElement.dataset.theme;
     };
-  }, [theme]);
+  }, []);
 
   const setTheme = useCallback(
     async (next: Theme) => {
