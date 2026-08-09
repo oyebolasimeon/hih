@@ -44,7 +44,7 @@ export default function LoginClient() {
       footer={
         <p>
           Don&apos;t have an account?{" "}
-          <Link href="/register" className="text-brand-dark font-medium hover:underline">
+          <Link href="/register" className="text-brand font-medium hover:underline">
             Create one
           </Link>
         </p>
@@ -70,7 +70,7 @@ export default function LoginClient() {
             <label htmlFor="password" className="block text-sm font-medium">
               Password
             </label>
-            <Link href="/forgot-password" className="text-xs text-muted hover:text-brand-dark">
+            <Link href="/forgot-password" className="text-xs text-muted hover:text-brand">
               Forgot password?
             </Link>
           </div>

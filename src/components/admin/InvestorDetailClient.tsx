@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { formatGBP } from "@/lib/format";
+import { FormSelect } from "@/components/ui/Select";
 
 type Property = {
   id: string;
@@ -243,7 +244,7 @@ export default function InvestorDetailClient({ investorId }: { investorId: strin
         <Link href="/admin" className="text-sm text-muted hover:text-foreground">
           ← Investors
         </Link>
-        <h1 className="mt-2 text-2xl sm:text-3xl font-serif font-semibold">
+        <h1 className="mt-2 text-2xl sm:text-3xl font-display font-semibold">
           {investor.name}
         </h1>
         <p className="text-sm text-muted">{investor.email}</p>
@@ -317,12 +318,16 @@ export default function InvestorDetailClient({ investorId }: { investorId: strin
               <input name="name" required className="app-input" />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1.5">Status</label>
-              <select name="status" className="app-input" defaultValue="active">
-                <option value="active">active</option>
-                <option value="inactive">inactive</option>
-                <option value="sold">sold</option>
-              </select>
+              <FormSelect
+                name="status"
+                label="Status"
+                defaultValue="active"
+                options={[
+                  { value: "active", label: "active" },
+                  { value: "inactive", label: "inactive" },
+                  { value: "sold", label: "sold" },
+                ]}
+              />
             </div>
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium mb-1.5">Address</label>
@@ -375,17 +380,17 @@ export default function InvestorDetailClient({ investorId }: { investorId: strin
         <div className="app-card p-5">
           <form onSubmit={addBooking} className="grid sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
-              <label className="block text-sm font-medium mb-1.5">Property</label>
-              <select name="propertyId" required className="app-input" defaultValue="">
-                <option value="" disabled>
-                  Select property
-                </option>
-                {properties.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
+              <FormSelect
+                name="propertyId"
+                label="Property"
+                required
+                defaultValue=""
+                placeholder="Select property"
+                options={[
+                  { value: "", label: "Select property", disabled: true },
+                  ...properties.map((p) => ({ value: p.id, label: p.name })),
+                ]}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1.5">Start</label>
@@ -404,21 +409,29 @@ export default function InvestorDetailClient({ investorId }: { investorId: strin
               <input name="revenue" type="number" min={0} defaultValue={0} className="app-input" />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1.5">Channel</label>
-              <select name="channel" className="app-input" defaultValue="direct">
-                <option value="direct">direct</option>
-                <option value="airbnb">airbnb</option>
-                <option value="booking.com">booking.com</option>
-                <option value="other">other</option>
-              </select>
+              <FormSelect
+                name="channel"
+                label="Channel"
+                defaultValue="direct"
+                options={[
+                  { value: "direct", label: "direct" },
+                  { value: "airbnb", label: "airbnb" },
+                  { value: "booking.com", label: "booking.com" },
+                  { value: "other", label: "other" },
+                ]}
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1.5">Status</label>
-              <select name="status" className="app-input" defaultValue="confirmed">
-                <option value="confirmed">confirmed</option>
-                <option value="pending">pending</option>
-                <option value="cancelled">cancelled</option>
-              </select>
+              <FormSelect
+                name="status"
+                label="Status"
+                defaultValue="confirmed"
+                options={[
+                  { value: "confirmed", label: "confirmed" },
+                  { value: "pending", label: "pending" },
+                  { value: "cancelled", label: "cancelled" },
+                ]}
+              />
             </div>
             <div className="sm:col-span-2">
               <button type="submit" className="app-btn app-btn-primary" disabled={!properties.length}>

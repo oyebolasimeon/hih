@@ -38,7 +38,7 @@ export default async function PropertyDetailPage({
         <Link href="/portal/properties" className="text-sm text-muted hover:text-foreground">
           ← Properties
         </Link>
-        <h1 className="mt-2 text-2xl sm:text-3xl font-serif font-semibold">{property.name}</h1>
+        <h1 className="mt-2 text-2xl sm:text-3xl font-display font-semibold">{property.name}</h1>
         <p className="mt-1 text-sm text-muted">{property.address}</p>
       </div>
 

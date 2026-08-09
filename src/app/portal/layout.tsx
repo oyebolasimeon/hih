@@ -10,7 +10,7 @@ export default async function PortalLayout({
   const session = await auth();
 
   return (
-    <ThemeProvider initialTheme={session?.user?.theme || "light"}>
+    <ThemeProvider initialTheme={session?.user?.theme || "dark"}>
       <PortalShell>{children}</PortalShell>
     </ThemeProvider>
   );

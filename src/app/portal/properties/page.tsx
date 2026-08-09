@@ -17,7 +17,7 @@ export default async function PropertiesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-serif font-semibold">Properties</h1>
+        <h1 className="text-2xl sm:text-3xl font-display font-semibold">Properties</h1>
         <p className="mt-1 text-sm text-muted">Your holdings managed by Nova Elite Homes.</p>
       </div>
 

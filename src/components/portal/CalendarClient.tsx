@@ -1,19 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  addMonths,
-  eachDayOfInterval,
-  endOfMonth,
-  endOfWeek,
-  format,
-  isSameDay,
-  isSameMonth,
-  isWithinInterval,
-  parseISO,
-  startOfMonth,
-  startOfWeek,
-} from "date-fns";
+import { format, startOfMonth } from "date-fns";
+import Calendar from "@/components/ui/Calendar";
+import Select from "@/components/ui/Select";
 import EmptyState from "@/components/ui/EmptyState";
 import { formatGBP } from "@/lib/format";
 
@@ -39,6 +29,7 @@ export default function CalendarClient({
 }) {
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
   const [propertyId, setPropertyId] = useState("all");
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
   const filtered = useMemo(
     () =>
@@ -48,18 +39,41 @@ export default function CalendarClient({
     [bookings, propertyId]
   );
 
-  const days = eachDayOfInterval({
-    start: startOfWeek(startOfMonth(month), { weekStartsOn: 1 }),
-    end: endOfWeek(endOfMonth(month), { weekStartsOn: 1 }),
-  });
+  const events = useMemo(
+    () =>
+      filtered.map((b) => ({
+        id: b.id,
+        title: b.propertyName,
+        startDate: b.startDate,
+        endDate: b.endDate,
+        tone:
+          b.status === "cancelled"
+            ? ("warn" as const)
+            : b.status === "pending"
+              ? ("muted" as const)
+              : ("brand" as const),
+        meta: `${b.status} · ${b.channel}`,
+      })),
+    [filtered]
+  );
 
-  function bookingsForDay(day: Date) {
+  const propertyOptions = useMemo(
+    () => [
+      { value: "all", label: "All properties" },
+      ...properties.map((p) => ({ value: p.id, label: p.name })),
+    ],
+    [properties]
+  );
+
+  const dayBookings = useMemo(() => {
+    if (!selectedDay) return filtered;
+    const key = format(selectedDay, "yyyy-MM-dd");
     return filtered.filter((b) => {
-      const start = parseISO(String(b.startDate).slice(0, 10));
-      const end = parseISO(String(b.endDate).slice(0, 10));
-      return isWithinInterval(day, { start, end }) || isSameDay(day, start) || isSameDay(day, end);
+      const start = String(b.startDate).slice(0, 10);
+      const end = String(b.endDate).slice(0, 10);
+      return key >= start && key <= end;
     });
-  }
+  }, [filtered, selectedDay]);
 
   if (bookings.length === 0) {
     return (
@@ -72,109 +86,86 @@ export default function CalendarClient({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="app-btn app-btn-secondary"
-            onClick={() => setMonth((m) => addMonths(m, -1))}
-          >
-            Prev
-          </button>
-          <h2 className="min-w-[10rem] text-center font-semibold">
-            {format(month, "MMMM yyyy")}
-          </h2>
-          <button
-            type="button"
-            className="app-btn app-btn-secondary"
-            onClick={() => setMonth((m) => addMonths(m, 1))}
-          >
-            Next
-          </button>
-        </div>
-        <select
-          className="app-input max-w-xs"
+      <div className="flex flex-col sm:flex-row gap-3 sm:items-end justify-between">
+        <p className="text-sm text-muted max-w-md">
+          Multi-property occupancy calendar. Filter by property or click a day
+          to focus the list below.
+        </p>
+        <Select
+          className="w-full sm:w-64"
           value={propertyId}
-          onChange={(e) => setPropertyId(e.target.value)}
-        >
-          <option value="all">All properties</option>
-          {properties.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
+          onChange={setPropertyId}
+          options={propertyOptions}
+          placeholder="Filter property"
+        />
       </div>
 
-      <div className="app-card overflow-hidden">
-        <div className="grid grid-cols-7 border-b border-border text-xs text-muted">
-          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-            <div key={d} className="px-2 py-2 text-center font-medium">
-              {d}
-            </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-7">
-          {days.map((day) => {
-            const dayBookings = bookingsForDay(day);
-            const inMonth = isSameMonth(day, month);
-            return (
-              <div
-                key={day.toISOString()}
-                className={`min-h-24 border-b border-r border-border p-1.5 ${
-                  inMonth ? "bg-background" : "bg-surface/50"
-                }`}
-              >
-                <p
-                  className={`text-xs mb-1 ${
-                    inMonth ? "text-foreground" : "text-muted"
-                  }`}
-                >
-                  {format(day, "d")}
-                </p>
-                <div className="space-y-1">
-                  {dayBookings.slice(0, 2).map((b) => (
-                    <div
-                      key={`${b.id}-${day.toISOString()}`}
-                      className="rounded bg-brand-subtle px-1 py-0.5 text-[10px] leading-tight truncate"
-                      title={`${b.propertyName} · ${b.status} · ${b.channel}`}
-                    >
-                      {b.propertyName}
-                    </div>
-                  ))}
-                  {dayBookings.length > 2 ? (
-                    <p className="text-[10px] text-muted">+{dayBookings.length - 2} more</p>
-                  ) : null}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      <Calendar
+        month={month}
+        onMonthChange={(next) => {
+          setMonth(next);
+          setSelectedDay(null);
+        }}
+        events={events}
+        selectedDay={selectedDay}
+        onDayClick={(day) =>
+          setSelectedDay((prev) =>
+            prev && format(prev, "yyyy-MM-dd") === format(day, "yyyy-MM-dd")
+              ? null
+              : day
+          )
+        }
+      />
 
       <div className="app-card overflow-x-auto">
+        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+          <p className="text-sm font-medium">
+            {selectedDay
+              ? `Bookings on ${format(selectedDay, "d MMM yyyy")}`
+              : "All filtered bookings"}
+          </p>
+          {selectedDay ? (
+            <button
+              type="button"
+              className="text-xs font-medium text-brand hover:text-brand-light"
+              onClick={() => setSelectedDay(null)}
+            >
+              Clear day filter
+            </button>
+          ) : null}
+        </div>
         <table className="w-full text-sm">
           <thead className="border-b border-border text-left text-muted">
             <tr>
-              <th className="px-4 py-3">Property</th>
-              <th className="px-4 py-3">Dates</th>
-              <th className="px-4 py-3">Channel</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Revenue</th>
+              <th className="px-4 py-3 font-medium">Property</th>
+              <th className="px-4 py-3 font-medium">Dates</th>
+              <th className="px-4 py-3 font-medium">Channel</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium">Revenue</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((b) => (
-              <tr key={b.id} className="border-b border-border last:border-0">
-                <td className="px-4 py-3">{b.propertyName}</td>
-                <td className="px-4 py-3">
-                  {String(b.startDate).slice(0, 10)} → {String(b.endDate).slice(0, 10)}
+            {dayBookings.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-4 py-6 text-muted text-center">
+                  No bookings for this selection.
                 </td>
-                <td className="px-4 py-3 capitalize">{b.channel}</td>
-                <td className="px-4 py-3 capitalize">{b.status}</td>
-                <td className="px-4 py-3">{formatGBP(b.revenue)}</td>
               </tr>
-            ))}
+            ) : (
+              dayBookings.map((b) => (
+                <tr key={b.id} className="border-b border-border last:border-0">
+                  <td className="px-4 py-3">{b.propertyName}</td>
+                  <td className="px-4 py-3 font-mono text-xs tabular-nums">
+                    {String(b.startDate).slice(0, 10)} → {String(b.endDate).slice(0, 10)}
+                  </td>
+                  <td className="px-4 py-3 capitalize">{b.channel}</td>
+                  <td className="px-4 py-3 capitalize">{b.status}</td>
+                  <td className="px-4 py-3 font-mono tabular-nums">
+                    {formatGBP(b.revenue)}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

@@ -51,7 +51,7 @@ export async function POST(request: Request) {
       name: parsed.data.name,
       email,
       passwordHash,
-      theme: "light",
+      theme: "dark",
     });
 
     await Investor.create({

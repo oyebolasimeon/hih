@@ -19,9 +19,16 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
+function applyThemeClass(theme: Theme) {
+  const root = document.documentElement;
+  root.classList.toggle("dark", theme === "dark");
+  root.classList.toggle("light", theme === "light");
+  root.dataset.theme = theme;
+}
+
 export function ThemeProvider({
   children,
-  initialTheme = "light",
+  initialTheme = "dark",
 }: {
   children: React.ReactNode;
   initialTheme?: Theme;
@@ -38,14 +45,18 @@ export function ThemeProvider({
   }, [session?.user?.theme]);
 
   useEffect(() => {
-    const root = document.documentElement;
-    root.classList.toggle("dark", theme === "dark");
-    root.dataset.theme = theme;
+    applyThemeClass(theme);
+    return () => {
+      // Leave marketing site light when leaving portal/admin
+      document.documentElement.classList.remove("dark", "light");
+      delete document.documentElement.dataset.theme;
+    };
   }, [theme]);
 
   const setTheme = useCallback(
     async (next: Theme) => {
       setThemeState(next);
+      applyThemeClass(next);
       try {
         await fetch("/api/account/theme", {
           method: "PATCH",

@@ -12,23 +12,43 @@ export default function AuthCard({
   footer?: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex items-center justify-center px-5 py-12 bg-[linear-gradient(160deg,#f8f9fa_0%,#eef5d8_45%,#f8f9fa_100%)] dark:bg-[linear-gradient(160deg,#0f1115_0%,#1a2210_50%,#0f1115_100%)]">
+    <div
+      className="auth-surface min-h-screen flex items-center justify-center px-5 py-12"
+      style={
+        {
+          ["--color-background" as string]: "#0a0b09",
+          ["--color-foreground" as string]: "#f2f4ec",
+          ["--color-surface" as string]: "#111310",
+          ["--color-muted" as string]: "#9aa392",
+          ["--color-border" as string]: "#252a20",
+          ["--color-card" as string]: "#111310",
+          ["--color-danger" as string]: "#f87171",
+          background: "#0a0b09",
+          color: "#f2f4ec",
+        } as React.CSSProperties
+      }
+    >
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <Link href="/" className="inline-flex items-center gap-2 px-2.5 py-1.5 bg-brand rounded">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 px-2.5 py-1.5 bg-brand rounded"
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/logo.png"
               alt="Nova Elite Homes"
               className="h-7 w-7 rounded-sm object-contain"
             />
-            <span className="text-base font-semibold text-foreground tracking-tight">
+            <span className="font-display text-base font-semibold text-[#0c0d0b] tracking-tight">
               Nova Elite Homes
             </span>
           </Link>
         </div>
         <div className="app-card p-6 sm:p-8 shadow-sm">
-          <h1 className="text-2xl font-serif font-semibold text-foreground">{title}</h1>
+          <h1 className="font-display text-2xl font-semibold tracking-tight">
+            {title}
+          </h1>
           {subtitle ? (
             <p className="mt-2 text-sm text-muted">{subtitle}</p>
           ) : null}

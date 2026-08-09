@@ -16,7 +16,7 @@ export default function Hero() {
 
         <div className="relative h-full max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 flex items-end sm:items-center pb-24 sm:pb-0 pt-20">
           <div className="max-w-2xl">
-            <h1 className="font-[var(--font-serif)] text-3xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight">
+            <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight tracking-tight">
               Find Your Dream Home in London
             </h1>
             <p className="mt-4 sm:mt-6 text-base sm:text-lg text-white/85 leading-relaxed max-w-xl">
@@ -53,7 +53,7 @@ export default function Hero() {
               { value: "London", label: "Prime Locations" },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
-                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-brand-dark">
+                <div className="app-stat text-xl sm:text-2xl md:text-3xl font-semibold text-brand-dark">
                   {stat.value}
                 </div>
                 <div className="text-xs sm:text-sm text-muted mt-1">{stat.label}</div>

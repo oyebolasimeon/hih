@@ -15,6 +15,7 @@ import {
 } from "recharts";
 import { formatGBP, formatPercent } from "@/lib/format";
 import StatCard from "@/components/ui/StatCard";
+import Select from "@/components/ui/Select";
 
 const COLORS = ["#A8BF44", "#8FA63A", "#6b7280", "#BFDA4F", "#1a1a1a"];
 
@@ -54,22 +55,19 @@ export default function AnalyticsCharts({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-        <label className="text-sm font-medium" htmlFor="period">
-          Period
-        </label>
-        <select
+      <div className="flex flex-col sm:flex-row sm:items-end gap-3 max-w-sm">
+        <Select
           id="period"
-          className="app-input max-w-xs"
+          label="Period"
+          className="w-full"
           value={selected?.period || ""}
-          onChange={(e) => onSelect(e.target.value)}
-        >
-          {periods.map((p) => (
-            <option key={p.id} value={p.period}>
-              {p.period}
-            </option>
-          ))}
-        </select>
+          onChange={onSelect}
+          options={periods.map((p) => ({
+            value: p.period,
+            label: p.period,
+          }))}
+          placeholder="Select period"
+        />
       </div>
 
       {selected ? (

@@ -56,7 +56,7 @@ export const authConfig = {
         email: String(token.email || ""),
         name: String(token.name || ""),
         isAdmin: Boolean(token.isAdmin),
-        theme: token.theme === "dark" ? "dark" : "light",
+        theme: token.theme === "light" ? "light" : "dark",
       } as typeof session.user;
       return session;
     },

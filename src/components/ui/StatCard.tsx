@@ -9,8 +9,12 @@ export default function StatCard({
 }) {
   return (
     <div className="app-card p-5">
-      <p className="text-xs uppercase tracking-wider text-muted font-medium">{label}</p>
-      <p className="mt-2 text-2xl font-semibold text-foreground">{value}</p>
+      <p className="text-xs uppercase tracking-wider text-muted font-medium">
+        {label}
+      </p>
+      <p className="app-stat mt-2 text-2xl font-semibold text-foreground">
+        {value}
+      </p>
       {hint ? <p className="mt-1 text-xs text-muted">{hint}</p> : null}
     </div>
   );

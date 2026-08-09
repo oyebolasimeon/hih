@@ -1,37 +1,47 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: #ffffff;
-  --color-foreground: #1a1a1a;
+  /* Light mode (marketing + explicit light preference) */
+  --color-background: #f4f5f2;
+  --color-foreground: #0c0d0b;
   --color-brand: #A8BF44;
   --color-brand-light: #BFDA4F;
   --color-brand-dark: #8FA63A;
-  --color-brand-subtle: #f5f9e8;
-  --color-surface: #f8f9fa;
-  --color-surface-dark: #f1f3f5;
-  --color-muted: #6b7280;
-  --color-border: #e5e7eb;
-  --color-border-dark: #d1d5db;
+  --color-brand-subtle: #e8efd0;
+  --color-surface: #eceee8;
+  --color-surface-dark: #e2e5dc;
+  --color-muted: #5c6356;
+  --color-border: #d5d9ce;
+  --color-border-dark: #c4c9bb;
   --color-card: #ffffff;
   --color-danger: #b91c1c;
-  --font-sans: var(--font-geist-sans);
-  --font-serif: var(--font-playfair);
+  --font-sans: var(--font-ui);
+  --font-display: var(--font-display-face);
+  --font-mono: var(--font-mono-face);
+}
+
+/*
+  Dark mode is the primary product experience (portal / admin).
+  Near-black + lime green from the geometric monogram.
+*/
+html.dark {
+  --color-background: #0a0b09;
+  --color-foreground: #f2f4ec;
+  --color-brand: #A8BF44;
+  --color-brand-light: #C5DB5C;
+  --color-brand-dark: #8FA63A;
+  --color-brand-subtle: #151a0f;
+  --color-surface: #111310;
+  --color-surface-dark: #181c14;
+  --color-muted: #9aa392;
+  --color-border: #252a20;
+  --color-border-dark: #353b2e;
+  --color-card: #111310;
+  --color-danger: #f87171;
 }
 
 html {
   scroll-behavior: smooth;
-}
-
-html.dark {
-  --color-background: #0f1115;
-  --color-foreground: #f3f4f6;
-  --color-surface: #171a21;
-  --color-surface-dark: #1e2330;
-  --color-muted: #9ca3af;
-  --color-border: #2a3142;
-  --color-border-dark: #3b4458;
-  --color-card: #171a21;
-  --color-brand-subtle: #1a2210;
 }
 
 body {
@@ -40,8 +50,25 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.font-mono,
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.font-mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+}
+
 ::selection {
-  background: rgba(168, 191, 68, 0.25);
+  background: rgba(168, 191, 68, 0.28);
   color: inherit;
 }
 
@@ -55,7 +82,7 @@ body {
 .app-card {
   background: var(--color-card);
   border: 1px solid var(--color-border);
-  border-radius: 0.75rem;
+  border-radius: 0.5rem;
 }
 
 .app-input {
@@ -63,15 +90,16 @@ body {
   border: 1px solid var(--color-border);
   background: var(--color-background);
   color: var(--color-foreground);
-  border-radius: 0.5rem;
+  border-radius: 0.375rem;
   padding: 0.625rem 0.875rem;
   font-size: 0.875rem;
+  font-family: var(--font-sans), system-ui, sans-serif;
 }
 
 .app-input:focus {
   outline: none;
   border-color: var(--color-brand);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-brand) 35%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-brand) 40%, transparent);
 }
 
 .app-btn {
@@ -79,20 +107,21 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: 0.5rem;
+  border-radius: 0.375rem;
   padding: 0.625rem 1rem;
   font-size: 0.875rem;
   font-weight: 600;
+  font-family: var(--font-sans), system-ui, sans-serif;
   transition: background-color 0.15s ease, opacity 0.15s ease;
 }
 
 .app-btn-primary {
   background: var(--color-brand);
-  color: #1a1a1a;
+  color: #0c0d0b;
 }
 
 .app-btn-primary:hover {
-  background: var(--color-brand-dark);
+  background: var(--color-brand-light);
 }
 
 .app-btn-secondary {
@@ -105,4 +134,10 @@ body {
   background: color-mix(in srgb, var(--color-danger) 12%, transparent);
   color: var(--color-danger);
   border: 1px solid color-mix(in srgb, var(--color-danger) 25%, transparent);
+}
+
+.app-stat {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
 }

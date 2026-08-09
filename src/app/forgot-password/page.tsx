@@ -38,7 +38,7 @@ export default function ForgotPasswordPage() {
       subtitle="Enter your email and we’ll send a reset link if an account exists."
       footer={
         <p>
-          <Link href="/login" className="text-brand-dark font-medium hover:underline">
+          <Link href="/login" className="text-brand font-medium hover:underline">
             Back to sign in
           </Link>
         </p>

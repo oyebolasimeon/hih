@@ -10,7 +10,7 @@ export default function AccountPage() {
   return (
     <div className="space-y-6 max-w-xl">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-serif font-semibold">Account</h1>
+        <h1 className="text-2xl sm:text-3xl font-display font-semibold">Account</h1>
         <p className="mt-1 text-sm text-muted">
           Manage your appearance preference. Theme syncs across devices.
         </p>
@@ -31,16 +31,16 @@ export default function AccountPage() {
             <button
               type="button"
               onClick={() => setTheme("light")}
-              className={`app-btn ${theme === "light" ? "app-btn-primary" : "app-btn-secondary"}`}
-            >
-              Light
-            </button>
-            <button
-              type="button"
-              onClick={() => setTheme("dark")}
               className={`app-btn ${theme === "dark" ? "app-btn-primary" : "app-btn-secondary"}`}
             >
               Dark
+            </button>
+            <button
+              type="button"
+              onClick={() => setTheme("light")}
+              className={`app-btn ${theme === "light" ? "app-btn-primary" : "app-btn-secondary"}`}
+            >
+              Light
             </button>
           </div>
         </div>

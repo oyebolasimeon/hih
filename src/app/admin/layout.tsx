@@ -9,7 +9,7 @@ export default async function AdminLayout({
 }) {
   const session = await auth();
   return (
-    <ThemeProvider initialTheme={session?.user?.theme || "light"}>
+    <ThemeProvider initialTheme={session?.user?.theme || "dark"}>
       <AdminShell>{children}</AdminShell>
     </ThemeProvider>
   );

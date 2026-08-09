@@ -56,7 +56,7 @@ export default function OnboardPage() {
         <Link href="/admin" className="text-sm text-muted hover:text-foreground">
           ← Investors
         </Link>
-        <h1 className="mt-2 text-2xl sm:text-3xl font-serif font-semibold">
+        <h1 className="mt-2 text-2xl sm:text-3xl font-display font-semibold">
           Find / onboard investor
         </h1>
         <p className="mt-1 text-sm text-muted">

@@ -27,7 +27,7 @@ export default async function PortalAnalyticsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-serif font-semibold">Analytics</h1>
+        <h1 className="text-2xl sm:text-3xl font-display font-semibold">Analytics</h1>
         <p className="mt-1 text-sm text-muted">
           Pre-aggregated portfolio performance by month.
         </p>

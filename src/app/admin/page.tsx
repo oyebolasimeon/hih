@@ -33,7 +33,7 @@ export default async function AdminInvestorsPage({
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-semibold">Investors</h1>
+          <h1 className="text-2xl sm:text-3xl font-display font-semibold">Investors</h1>
           <p className="mt-1 text-sm text-muted">
             Manage investor profiles, properties, bookings, and analytics.
           </p>

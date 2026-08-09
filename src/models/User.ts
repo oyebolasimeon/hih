@@ -23,7 +23,7 @@ const UserSchema = new Schema<IUser>(
     },
     passwordHash: { type: String, required: true },
     name: { type: String, required: true, trim: true },
-    theme: { type: String, enum: ["light", "dark"], default: "light" },
+    theme: { type: String, enum: ["light", "dark"], default: "dark" },
   },
   { timestamps: true }
 );
