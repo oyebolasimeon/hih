@@ -7,6 +7,12 @@ import {
   upsertInvestorLoginModalContent,
 } from "@/lib/site-content";
 import { deleteImage, uploadImageBuffer } from "@/lib/cloudinary";
+import {
+  actorFromUser,
+  diffObjects,
+  sanitizeAuditValue,
+  writeAudit,
+} from "@/lib/audit";
 
 export async function GET() {
   const { response } = await assertAdmin("content:read");
@@ -59,6 +65,31 @@ export async function PATCH(request: Request) {
     user.id
   );
 
+  await writeAudit({
+    action: "site_content.update",
+    summary: "Updated investor login modal content",
+    actor: actorFromUser(user),
+    entityType: "SiteContent",
+    entityId: "investor-login-modal",
+    investorVisible: false,
+    changes: diffObjects(
+      {
+        title: current.title,
+        body: current.body,
+        ctaLabel: current.ctaLabel,
+        imageUrl: current.imageUrl,
+      },
+      {
+        title: content.title,
+        body: content.body,
+        ctaLabel: content.ctaLabel,
+        imageUrl: content.imageUrl,
+      },
+      ["title", "body", "ctaLabel", "imageUrl"]
+    ),
+    request,
+  });
+
   return NextResponse.json({ content });
 }
 
@@ -99,6 +130,23 @@ export async function POST(request: Request) {
     },
     user.id
   );
+
+  await writeAudit({
+    action: "site_content.image_upload",
+    summary: "Uploaded investor login modal image",
+    actor: actorFromUser(user),
+    entityType: "SiteContent",
+    entityId: "investor-login-modal",
+    investorVisible: false,
+    changes: [
+      {
+        field: "imageUrl",
+        oldValue: sanitizeAuditValue(current.imageUrl || null),
+        newValue: sanitizeAuditValue(content.imageUrl),
+      },
+    ],
+    request,
+  });
 
   return NextResponse.json({ content });
 }

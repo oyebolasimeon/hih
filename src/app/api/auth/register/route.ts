@@ -6,6 +6,7 @@ import { User } from "@/models/User";
 import { Investor } from "@/models/Investor";
 import { sendWelcomeEmail } from "@/lib/mail";
 import { rateLimit } from "@/lib/redis";
+import { sanitizeAuditValue, writeAudit } from "@/lib/audit";
 
 const schema = z.object({
   name: z.string().trim().min(2).max(100),
@@ -71,9 +72,38 @@ export async function POST(request: Request) {
       console.error("Welcome email failed:", err);
     }
 
+    const userId = String(user._id);
+    await writeAudit({
+      action: "auth.register",
+      summary: `Registered account ${email}`,
+      actor: {
+        id: userId,
+        email: user.email,
+        name: user.name,
+        kind: "investor",
+      },
+      entityType: "User",
+      entityId: userId,
+      investorId: userId,
+      investorVisible: true,
+      changes: [
+        {
+          field: "account",
+          oldValue: null,
+          newValue: sanitizeAuditValue({
+            name: user.name,
+            email: user.email,
+            phone: user.phone || "",
+            emailNotifications: user.emailNotifications !== false,
+          }),
+        },
+      ],
+      request,
+    });
+
     return NextResponse.json({
       success: true,
-      user: { id: String(user._id), email: user.email, name: user.name },
+      user: { id: userId, email: user.email, name: user.name },
     });
   } catch (err) {
     console.error("Register error:", err);

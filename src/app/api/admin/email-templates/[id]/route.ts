@@ -5,6 +5,13 @@ import { EmailTemplate } from "@/models/EmailTemplate";
 import { EMAIL_ACTIONS, type EmailAction } from "@/lib/email-templates";
 import { resolveEmailTemplate } from "@/lib/email-send";
 import { sendMail } from "@/lib/smtp";
+import {
+  actorFromUser,
+  diffObjects,
+  leanDoc,
+  sanitizeAuditValue,
+  writeAudit,
+} from "@/lib/audit";
 
 function serialize(doc: {
   _id: unknown;
@@ -67,6 +74,8 @@ export async function PATCH(
     return NextResponse.json({ error: "Template not found." }, { status: 404 });
   }
 
+  const before = leanDoc(doc.toObject() as Record<string, unknown>);
+
   const body = await request.json();
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) {
@@ -99,21 +108,61 @@ export async function PATCH(
   doc.updatedBy = user.id as unknown as typeof doc.updatedBy;
 
   await doc.save();
+
+  await writeAudit({
+    action: "email_template.update",
+    summary: `Updated email template ${doc.name}`,
+    actor: actorFromUser(user),
+    entityType: "EmailTemplate",
+    entityId: String(doc._id),
+    investorVisible: false,
+    changes: diffObjects(
+      before,
+      leanDoc(doc.toObject() as Record<string, unknown>),
+      ["name", "subject", "html", "isDefault", "actions", "active"]
+    ),
+    request,
+  });
+
   return NextResponse.json({ template: serialize(doc) });
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
-  const { response } = await assertAdmin("content:write");
-  if (response) return response;
+  const { user, response } = await assertAdmin("content:write");
+  if (response || !user) return response!;
 
   const { id } = await context.params;
   const doc = await EmailTemplate.findByIdAndDelete(id);
   if (!doc) {
     return NextResponse.json({ error: "Template not found." }, { status: 404 });
   }
+
+  await writeAudit({
+    action: "email_template.delete",
+    summary: `Deleted email template ${doc.name}`,
+    actor: actorFromUser(user),
+    entityType: "EmailTemplate",
+    entityId: String(doc._id),
+    investorVisible: false,
+    changes: [
+      {
+        field: "template",
+        oldValue: sanitizeAuditValue({
+          name: doc.name,
+          subject: doc.subject,
+          isDefault: doc.isDefault,
+          actions: doc.actions,
+          active: doc.active,
+        }),
+        newValue: null,
+      },
+    ],
+    request,
+  });
+
   return NextResponse.json({ success: true });
 }
 
@@ -177,6 +226,16 @@ export async function POST(
   if (parsed.data.send) {
     const to = parsed.data.to || user.email;
     await sendMail({ to, subject: `[Preview] ${subject}`, html, text });
+    await writeAudit({
+      action: "email_template.test_send",
+      summary: `Sent test email for template ${doc.name} to ${to}`,
+      actor: actorFromUser(user),
+      entityType: "EmailTemplate",
+      entityId: String(doc._id),
+      investorVisible: false,
+      metadata: { to, action, subject },
+      request,
+    });
     return NextResponse.json({ ok: true, sentTo: to, subject, html, action });
   }
 

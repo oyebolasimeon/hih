@@ -2,11 +2,12 @@ import mongoose, { Schema, models, model } from "mongoose";
 
 export type PropertyStatus = "active" | "inactive" | "sold";
 export type PropertyOwnerType = "investor" | "company";
+/** percent = return over the set period; fixed_per_1000 = £ return per £1,000 capital over the period */
+export type RoiMode = "percent" | "fixed_per_1000";
 
 export interface IProperty {
   _id: mongoose.Types.ObjectId;
   ownerType: PropertyOwnerType;
-  /** Set for investor-owned properties; null for Nova company portfolio */
   investorId?: mongoose.Types.ObjectId | null;
   name: string;
   address: string;
@@ -15,6 +16,18 @@ export interface IProperty {
   purchasePrice: number;
   currentValue: number;
   notes?: string;
+  /** Public description for investment listings */
+  description?: string;
+  /** Shown to investors when listedForInvestment */
+  listedForInvestment: boolean;
+  roiMode: RoiMode;
+  /** Percent over period, or £ per £1000 over period */
+  roiValue: number;
+  roiPeriodMonths: number;
+  minInvestment: number;
+  maxInvestment?: number | null;
+  targetRaise?: number | null;
+  highlights?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -44,6 +57,19 @@ const PropertySchema = new Schema<IProperty>(
     purchasePrice: { type: Number, default: 0 },
     currentValue: { type: Number, default: 0 },
     notes: { type: String, default: "", trim: true },
+    description: { type: String, default: "", trim: true },
+    listedForInvestment: { type: Boolean, default: false, index: true },
+    roiMode: {
+      type: String,
+      enum: ["percent", "fixed_per_1000"],
+      default: "percent",
+    },
+    roiValue: { type: Number, default: 0 },
+    roiPeriodMonths: { type: Number, default: 12, min: 1 },
+    minInvestment: { type: Number, default: 1000, min: 0 },
+    maxInvestment: { type: Number, default: null },
+    targetRaise: { type: Number, default: null },
+    highlights: { type: [String], default: [] },
   },
   { timestamps: true }
 );
@@ -51,6 +77,8 @@ const PropertySchema = new Schema<IProperty>(
 PropertySchema.pre("validate", function () {
   if (this.ownerType === "company") {
     this.investorId = null;
+  } else {
+    this.listedForInvestment = false;
   }
 });
 

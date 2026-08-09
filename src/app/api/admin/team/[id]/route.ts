@@ -9,6 +9,13 @@ import {
   permissionsForRole,
   resolvePermissions,
 } from "@/lib/rbac";
+import {
+  actorFromUser,
+  diffObjects,
+  leanDoc,
+  sanitizeAuditValue,
+  writeAudit,
+} from "@/lib/audit";
 
 const updateSchema = z.object({
   role: z.enum(["superadmin", "admin", "viewer"]).optional(),
@@ -35,6 +42,8 @@ export async function PATCH(
   if (!admin) {
     return NextResponse.json({ error: "Admin not found." }, { status: 404 });
   }
+
+  const before = leanDoc(admin.toObject() as Record<string, unknown>);
 
   const body = await request.json();
   const parsed = updateSchema.safeParse(body);
@@ -86,6 +95,21 @@ export async function PATCH(
 
   await admin.save();
 
+  await writeAudit({
+    action: "admin.update",
+    summary: `Updated admin ${admin.email}`,
+    actor: actorFromUser(user),
+    entityType: "Admin",
+    entityId: String(admin._id),
+    investorVisible: false,
+    changes: diffObjects(
+      before,
+      leanDoc(admin.toObject() as Record<string, unknown>),
+      ["role", "permissions", "active", "name", "email"]
+    ),
+    request,
+  });
+
   return NextResponse.json({
     admin: {
       id: String(admin._id),
@@ -101,7 +125,7 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   const { user, response } = await assertAdmin("admins:manage");
@@ -135,5 +159,29 @@ export async function DELETE(
   }
 
   await Admin.findByIdAndDelete(id);
+
+  await writeAudit({
+    action: "admin.remove",
+    summary: `Removed admin ${admin.email}`,
+    actor: actorFromUser(user),
+    entityType: "Admin",
+    entityId: String(admin._id),
+    investorVisible: false,
+    changes: [
+      {
+        field: "admin",
+        oldValue: sanitizeAuditValue({
+          email: admin.email,
+          name: admin.name,
+          role: admin.role,
+          permissions: admin.permissions,
+          active: admin.active,
+        }),
+        newValue: null,
+      },
+    ],
+    request,
+  });
+
   return NextResponse.json({ success: true });
 }

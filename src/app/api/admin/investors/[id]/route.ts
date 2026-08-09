@@ -5,6 +5,7 @@ import { Investor } from "@/models/Investor";
 import { Property } from "@/models/Property";
 import { Booking } from "@/models/Booking";
 import { Analytics } from "@/models/Analytics";
+import { actorFromUser, diffObjects, leanDoc, writeAudit } from "@/lib/audit";
 
 const updateSchema = z.object({
   name: z.string().trim().min(2).max(100).optional(),
@@ -93,6 +94,11 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid investor payload." }, { status: 400 });
   }
 
+  const before = await Investor.findById(id).lean();
+  if (!before) {
+    return NextResponse.json({ error: "Investor not found." }, { status: 404 });
+  }
+
   const investor = await Investor.findByIdAndUpdate(id, parsed.data, {
     new: true,
   }).lean();
@@ -100,6 +106,23 @@ export async function PATCH(
   if (!investor) {
     return NextResponse.json({ error: "Investor not found." }, { status: 404 });
   }
+
+  await writeAudit({
+    action: "investor.update",
+    summary: `Updated investor ${investor.name}`,
+    actor: actorFromUser(user),
+    entityType: "Investor",
+    entityId: String(investor._id),
+    investorId: String(investor._id),
+    investorVisible: true,
+    changes: diffObjects(leanDoc(before), leanDoc(investor), [
+      "name",
+      "totalInvested",
+      "totalReturns",
+      "portfolioValue",
+    ]),
+    request,
+  });
 
   return NextResponse.json({
     investor: {

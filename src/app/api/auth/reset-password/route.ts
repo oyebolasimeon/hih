@@ -4,6 +4,7 @@ import { z } from "zod";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
 import { redisDel, redisGet } from "@/lib/redis";
+import { writeAudit } from "@/lib/audit";
 
 const schema = z.object({
   token: z.string().min(10),
@@ -41,6 +42,30 @@ export async function POST(request: Request) {
     user.passwordHash = await bcrypt.hash(parsed.data.password, 12);
     await user.save();
     await redisDel(`pwdreset:${parsed.data.token}`);
+
+    const accountId = String(user._id);
+    await writeAudit({
+      action: "auth.password_reset",
+      summary: `Password reset completed for ${user.email}`,
+      actor: {
+        id: accountId,
+        email: user.email,
+        name: user.name,
+        kind: "investor",
+      },
+      entityType: "User",
+      entityId: accountId,
+      investorId: accountId,
+      investorVisible: true,
+      changes: [
+        {
+          field: "password",
+          oldValue: "[redacted]",
+          newValue: "[changed]",
+        },
+      ],
+      request,
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {

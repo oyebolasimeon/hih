@@ -3,6 +3,7 @@ import { z } from "zod";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
 import { assertInvestor } from "@/lib/api-auth";
+import { actorFromUser, diffObjects, leanDoc, writeAudit } from "@/lib/audit";
 
 export async function GET() {
   const { user, response } = await assertInvestor();
@@ -58,10 +59,31 @@ export async function PATCH(request: Request) {
     updates.emailNotifications = parsed.data.emailNotifications;
   }
 
+  const before = await User.findById(user.id).lean();
+  if (!before) {
+    return NextResponse.json({ error: "User not found." }, { status: 404 });
+  }
+
   const doc = await User.findByIdAndUpdate(user.id, updates, { new: true }).lean();
   if (!doc) {
     return NextResponse.json({ error: "User not found." }, { status: 404 });
   }
+
+  await writeAudit({
+    action: "user.update",
+    summary: `Updated account profile for ${doc.email}`,
+    actor: actorFromUser(user),
+    entityType: "User",
+    entityId: String(doc._id),
+    investorId: user.id,
+    investorVisible: true,
+    changes: diffObjects(leanDoc(before), leanDoc(doc), [
+      "name",
+      "phone",
+      "emailNotifications",
+    ]),
+    request,
+  });
 
   return NextResponse.json({
     profile: {

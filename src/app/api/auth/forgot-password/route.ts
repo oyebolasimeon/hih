@@ -5,6 +5,7 @@ import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
 import { sendPasswordResetEmail } from "@/lib/mail";
 import { rateLimit, redisSet } from "@/lib/redis";
+import { writeAudit } from "@/lib/audit";
 
 const schema = z.object({
   email: z.string().trim().email(),
@@ -42,6 +43,18 @@ export async function POST(request: Request) {
       } catch (err) {
         console.error("Reset email failed:", err);
       }
+
+      await writeAudit({
+        action: "auth.password_reset_request",
+        summary: `Password reset requested for ${email}`,
+        actor: { email, kind: "anonymous" },
+        entityType: "User",
+        entityId: String(user._id),
+        investorId: String(user._id),
+        investorVisible: true,
+        metadata: { email },
+        request,
+      });
     }
 
     return NextResponse.json({

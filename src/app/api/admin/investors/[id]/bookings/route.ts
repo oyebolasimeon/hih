@@ -4,6 +4,11 @@ import { assertAdmin } from "@/lib/api-auth";
 import { Investor } from "@/models/Investor";
 import { Property } from "@/models/Property";
 import { Booking } from "@/models/Booking";
+import {
+  actorFromUser,
+  sanitizeAuditValue,
+  writeAudit,
+} from "@/lib/audit";
 
 const schema = z.object({
   propertyId: z.string().min(1),
@@ -51,6 +56,32 @@ export async function POST(
     revenue: parsed.data.revenue,
     channel: parsed.data.channel,
     status: parsed.data.status,
+  });
+
+  await writeAudit({
+    action: "booking.create",
+    summary: `Created booking for ${property.name}`,
+    actor: actorFromUser(user),
+    entityType: "Booking",
+    entityId: String(booking._id),
+    investorId,
+    investorVisible: true,
+    changes: [
+      {
+        field: "booking",
+        oldValue: null,
+        newValue: sanitizeAuditValue({
+          propertyId: String(booking.propertyId),
+          startDate: booking.startDate,
+          endDate: booking.endDate,
+          guestName: booking.guestName,
+          revenue: booking.revenue,
+          channel: booking.channel,
+          status: booking.status,
+        }),
+      },
+    ],
+    request,
   });
 
   return NextResponse.json({

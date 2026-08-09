@@ -265,6 +265,12 @@ export default function InvestorDetailClient({ investorId }: { investorId: strin
         </h1>
         <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
           <p className="text-sm text-muted">{investor.email}</p>
+          <Link
+            href={`/admin/audit?investorId=${investorId}`}
+            className="text-xs font-medium text-brand hover:underline"
+          >
+            View audit trail
+          </Link>
           {canWriteInvestor ? (
             <button
               type="button"

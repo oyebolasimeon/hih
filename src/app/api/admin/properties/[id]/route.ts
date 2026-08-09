@@ -3,6 +3,13 @@ import { z } from "zod";
 import { assertAdmin } from "@/lib/api-auth";
 import { Property } from "@/models/Property";
 import { uploadImageBuffer } from "@/lib/cloudinary";
+import {
+  actorFromUser,
+  diffObjects,
+  leanDoc,
+  sanitizeAuditValue,
+  writeAudit,
+} from "@/lib/audit";
 
 const updateSchema = z.object({
   name: z.string().trim().min(2).optional(),
@@ -12,6 +19,16 @@ const updateSchema = z.object({
   currentValue: z.number().min(0).optional(),
   notes: z.string().trim().max(2000).optional(),
 });
+
+const PROPERTY_FIELDS = [
+  "name",
+  "address",
+  "status",
+  "purchasePrice",
+  "currentValue",
+  "notes",
+  "imageUrls",
+];
 
 function serialize(property: InstanceType<typeof Property>) {
   return {
@@ -46,6 +63,7 @@ export async function PATCH(
     );
   }
 
+  const before = leanDoc(property.toObject() as Record<string, unknown>);
   const contentType = request.headers.get("content-type") || "";
 
   if (contentType.includes("multipart/form-data")) {
@@ -87,6 +105,22 @@ export async function PATCH(
     }
 
     await property.save();
+
+    await writeAudit({
+      action: "company_property.update",
+      summary: `Updated company property ${property.name}`,
+      actor: actorFromUser(user),
+      entityType: "Property",
+      entityId: String(property._id),
+      investorVisible: false,
+      changes: diffObjects(
+        before,
+        leanDoc(property.toObject() as Record<string, unknown>),
+        PROPERTY_FIELDS
+      ),
+      request,
+    });
+
     return NextResponse.json({ property: serialize(property) });
   }
 
@@ -102,11 +136,26 @@ export async function PATCH(
   }
   await property.save();
 
+  await writeAudit({
+    action: "company_property.update",
+    summary: `Updated company property ${property.name}`,
+    actor: actorFromUser(user),
+    entityType: "Property",
+    entityId: String(property._id),
+    investorVisible: false,
+    changes: diffObjects(
+      before,
+      leanDoc(property.toObject() as Record<string, unknown>),
+      PROPERTY_FIELDS
+    ),
+    request,
+  });
+
   return NextResponse.json({ property: serialize(property) });
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   const { user, response } = await assertAdmin("properties:write");
@@ -124,6 +173,31 @@ export async function DELETE(
       { status: 404 }
     );
   }
+
+  await writeAudit({
+    action: "company_property.delete",
+    summary: `Deleted company property ${property.name}`,
+    actor: actorFromUser(user),
+    entityType: "Property",
+    entityId: String(property._id),
+    investorVisible: false,
+    changes: [
+      {
+        field: "property",
+        oldValue: sanitizeAuditValue({
+          name: property.name,
+          address: property.address,
+          status: property.status,
+          purchasePrice: property.purchasePrice,
+          currentValue: property.currentValue,
+          notes: property.notes || "",
+          imageUrls: property.imageUrls,
+        }),
+        newValue: null,
+      },
+    ],
+    request,
+  });
 
   return NextResponse.json({ success: true });
 }

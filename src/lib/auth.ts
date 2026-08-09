@@ -5,6 +5,7 @@ import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
 import { resolveAdminAccess } from "@/lib/admin";
 import { authConfig } from "@/lib/auth.config";
+import { actorFromUser, writeAudit } from "@/lib/audit";
 import type { AdminRole, Permission } from "@/lib/rbac";
 
 declare module "next-auth" {
@@ -66,10 +67,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         await connectDB();
         const user = await User.findOne({ email });
-        if (!user) return null;
+        if (!user) {
+          await writeAudit({
+            action: "auth.login_failed",
+            summary: `Failed login attempt for ${email}`,
+            actor: { email, kind: "anonymous" },
+            entityType: "User",
+            metadata: { reason: "user_not_found" },
+          });
+          return null;
+        }
 
         const valid = await bcrypt.compare(password, user.passwordHash);
-        if (!valid) return null;
+        if (!valid) {
+          await writeAudit({
+            action: "auth.login_failed",
+            summary: `Failed login attempt for ${email}`,
+            actor: { email, kind: "anonymous" },
+            entityType: "User",
+            entityId: String(user._id),
+            metadata: { reason: "invalid_password" },
+          });
+          return null;
+        }
 
         const access = await resolveAdminAccess(String(user._id), user.email);
 
@@ -85,6 +105,52 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
+  events: {
+    async signIn({ user }) {
+      const u = user as {
+        id?: string;
+        email?: string | null;
+        name?: string | null;
+        isAdmin?: boolean;
+      };
+      if (!u?.id) return;
+      await writeAudit({
+        action: "auth.login",
+        summary: `Signed in ${u.email || u.id}`,
+        actor: actorFromUser(u),
+        entityType: "User",
+        entityId: u.id,
+        investorId: u.isAdmin ? null : u.id,
+        investorVisible: !u.isAdmin,
+      });
+    },
+    async signOut(message) {
+      const token =
+        "token" in message
+          ? (message.token as {
+              id?: string;
+              email?: string;
+              name?: string;
+              isAdmin?: boolean;
+            })
+          : null;
+      if (!token?.id) return;
+      await writeAudit({
+        action: "auth.logout",
+        summary: `Signed out ${token.email || token.id}`,
+        actor: actorFromUser({
+          id: String(token.id),
+          email: token.email,
+          name: token.name,
+          isAdmin: Boolean(token.isAdmin),
+        }),
+        entityType: "User",
+        entityId: String(token.id),
+        investorId: token.isAdmin ? null : String(token.id),
+        investorVisible: !token.isAdmin,
+      });
+    },
+  },
   callbacks: {
     ...authConfig.callbacks,
     async jwt({ token, user, trigger, session }) {

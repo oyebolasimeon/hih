@@ -13,6 +13,11 @@ import {
   resolvePermissions,
 } from "@/lib/rbac";
 import { sendAdminInviteEmail } from "@/lib/mail";
+import {
+  actorFromUser,
+  sanitizeAuditValue,
+  writeAudit,
+} from "@/lib/audit";
 
 export async function GET() {
   const { user, response } = await assertAdmin("admins:manage");
@@ -137,6 +142,29 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("Admin invite email failed:", err);
   }
+
+  await writeAudit({
+    action: "admin.invite",
+    summary: `Invited admin ${email} as ${role}`,
+    actor: actorFromUser(user),
+    entityType: "Admin",
+    entityId: String(admin._id),
+    investorVisible: false,
+    changes: [
+      {
+        field: "admin",
+        oldValue: null,
+        newValue: sanitizeAuditValue({
+          email: admin.email,
+          name: admin.name,
+          role: admin.role,
+          permissions: admin.permissions,
+          active: admin.active,
+        }),
+      },
+    ],
+    request,
+  });
 
   return NextResponse.json({
     admin: {

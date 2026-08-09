@@ -9,6 +9,11 @@ import {
   BUILTIN_TEMPLATES,
   type EmailAction,
 } from "@/lib/email-templates";
+import {
+  actorFromUser,
+  sanitizeAuditValue,
+  writeAudit,
+} from "@/lib/audit";
 
 function serialize(doc: {
   _id: unknown;
@@ -103,6 +108,29 @@ export async function POST(request: Request) {
     actions,
     active: parsed.data.active !== false,
     updatedBy: user.id,
+  });
+
+  await writeAudit({
+    action: "email_template.create",
+    summary: `Created email template ${doc.name}`,
+    actor: actorFromUser(user),
+    entityType: "EmailTemplate",
+    entityId: String(doc._id),
+    investorVisible: false,
+    changes: [
+      {
+        field: "template",
+        oldValue: null,
+        newValue: sanitizeAuditValue({
+          name: doc.name,
+          subject: doc.subject,
+          isDefault: doc.isDefault,
+          actions: doc.actions,
+          active: doc.active,
+        }),
+      },
+    ],
+    request,
   });
 
   return NextResponse.json({ template: serialize(doc) });

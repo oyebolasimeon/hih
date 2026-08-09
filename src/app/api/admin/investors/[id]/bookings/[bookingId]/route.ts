@@ -2,6 +2,13 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { assertAdmin } from "@/lib/api-auth";
 import { Booking } from "@/models/Booking";
+import {
+  actorFromUser,
+  diffObjects,
+  leanDoc,
+  sanitizeAuditValue,
+  writeAudit,
+} from "@/lib/audit";
 
 const schema = z.object({
   propertyId: z.string().optional(),
@@ -12,6 +19,16 @@ const schema = z.object({
   channel: z.enum(["direct", "airbnb", "booking.com", "other"]).optional(),
   status: z.enum(["confirmed", "pending", "cancelled"]).optional(),
 });
+
+const BOOKING_FIELDS = [
+  "propertyId",
+  "startDate",
+  "endDate",
+  "guestName",
+  "revenue",
+  "channel",
+  "status",
+];
 
 export async function PATCH(
   request: Request,
@@ -25,6 +42,14 @@ export async function PATCH(
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid booking data." }, { status: 400 });
+  }
+
+  const before = await Booking.findOne({
+    _id: bookingId,
+    investorId: id,
+  }).lean();
+  if (!before) {
+    return NextResponse.json({ error: "Booking not found." }, { status: 404 });
   }
 
   const update: Record<string, unknown> = { ...parsed.data };
@@ -41,6 +66,18 @@ export async function PATCH(
     return NextResponse.json({ error: "Booking not found." }, { status: 404 });
   }
 
+  await writeAudit({
+    action: "booking.update",
+    summary: `Updated booking ${bookingId}`,
+    actor: actorFromUser(user),
+    entityType: "Booking",
+    entityId: String(booking._id),
+    investorId: id,
+    investorVisible: true,
+    changes: diffObjects(leanDoc(before), leanDoc(booking), BOOKING_FIELDS),
+    request,
+  });
+
   return NextResponse.json({
     booking: {
       id: String(booking._id),
@@ -56,7 +93,7 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ id: string; bookingId: string }> }
 ) {
   const { user, response } = await assertAdmin("bookings:write");
@@ -70,5 +107,32 @@ export async function DELETE(
   if (!booking) {
     return NextResponse.json({ error: "Booking not found." }, { status: 404 });
   }
+
+  await writeAudit({
+    action: "booking.delete",
+    summary: `Deleted booking ${bookingId}`,
+    actor: actorFromUser(user),
+    entityType: "Booking",
+    entityId: String(booking._id),
+    investorId: id,
+    investorVisible: true,
+    changes: [
+      {
+        field: "booking",
+        oldValue: sanitizeAuditValue({
+          propertyId: String(booking.propertyId),
+          startDate: booking.startDate,
+          endDate: booking.endDate,
+          guestName: booking.guestName,
+          revenue: booking.revenue,
+          channel: booking.channel,
+          status: booking.status,
+        }),
+        newValue: null,
+      },
+    ],
+    request,
+  });
+
   return NextResponse.json({ success: true });
 }

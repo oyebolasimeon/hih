@@ -4,6 +4,11 @@ import { assertAdmin } from "@/lib/api-auth";
 import { Property } from "@/models/Property";
 import { Investor } from "@/models/Investor";
 import { uploadImageBuffer } from "@/lib/cloudinary";
+import {
+  actorFromUser,
+  sanitizeAuditValue,
+  writeAudit,
+} from "@/lib/audit";
 
 function serializeProperty(
   p: {
@@ -152,6 +157,31 @@ export async function POST(request: Request) {
       imageUrls,
     });
 
+    await writeAudit({
+      action: "company_property.create",
+      summary: `Created company property ${property.name}`,
+      actor: actorFromUser(user),
+      entityType: "Property",
+      entityId: String(property._id),
+      investorVisible: false,
+      changes: [
+        {
+          field: "property",
+          oldValue: null,
+          newValue: sanitizeAuditValue({
+            name: property.name,
+            address: property.address,
+            status: property.status,
+            purchasePrice: property.purchasePrice,
+            currentValue: property.currentValue,
+            notes: property.notes || "",
+            imageUrls: property.imageUrls,
+          }),
+        },
+      ],
+      request,
+    });
+
     return NextResponse.json({ property: serializeProperty(property) });
   }
 
@@ -166,6 +196,31 @@ export async function POST(request: Request) {
     investorId: null,
     ...parsed.data,
     imageUrls: Array.isArray(body.imageUrls) ? body.imageUrls : [],
+  });
+
+  await writeAudit({
+    action: "company_property.create",
+    summary: `Created company property ${property.name}`,
+    actor: actorFromUser(user),
+    entityType: "Property",
+    entityId: String(property._id),
+    investorVisible: false,
+    changes: [
+      {
+        field: "property",
+        oldValue: null,
+        newValue: sanitizeAuditValue({
+          name: property.name,
+          address: property.address,
+          status: property.status,
+          purchasePrice: property.purchasePrice,
+          currentValue: property.currentValue,
+          notes: property.notes || "",
+          imageUrls: property.imageUrls,
+        }),
+      },
+    ],
+    request,
   });
 
   return NextResponse.json({ property: serializeProperty(property) });

@@ -3,6 +3,13 @@ import { z } from "zod";
 import { assertAdmin } from "@/lib/api-auth";
 import { Investor } from "@/models/Investor";
 import { Analytics } from "@/models/Analytics";
+import {
+  actorFromUser,
+  diffObjects,
+  leanDoc,
+  sanitizeAuditValue,
+  writeAudit,
+} from "@/lib/audit";
 
 const schema = z.object({
   period: z.string().regex(/^\d{4}-\d{2}$/),
@@ -11,6 +18,16 @@ const schema = z.object({
   occupancyRate: z.number().min(0).max(100).default(0),
   channelBreakdown: z.record(z.string(), z.number()).default({}),
 });
+
+function breakdownOf(
+  value: unknown
+): Record<string, number> {
+  if (value instanceof Map) return Object.fromEntries(value);
+  if (value && typeof value === "object") {
+    return value as Record<string, number>;
+  }
+  return {};
+}
 
 export async function POST(
   request: Request,
@@ -34,6 +51,11 @@ export async function POST(
     );
   }
 
+  const before = await Analytics.findOne({
+    investorId,
+    period: parsed.data.period,
+  }).lean();
+
   const doc = await Analytics.findOneAndUpdate(
     { investorId, period: parsed.data.period },
     {
@@ -43,6 +65,62 @@ export async function POST(
     { upsert: true, new: true, setDefaultsOnInsert: true }
   ).lean();
 
+  const afterBreakdown = breakdownOf(doc!.channelBreakdown);
+  const beforeLean = before
+    ? {
+        ...leanDoc(before),
+        channelBreakdown: breakdownOf(before.channelBreakdown),
+      }
+    : null;
+  const afterLean = {
+    ...leanDoc(doc!),
+    channelBreakdown: afterBreakdown,
+  };
+
+  if (before) {
+    await writeAudit({
+      action: "analytics.update",
+      summary: `Updated analytics for ${parsed.data.period}`,
+      actor: actorFromUser(user),
+      entityType: "Analytics",
+      entityId: String(doc!._id),
+      investorId,
+      investorVisible: true,
+      changes: diffObjects(beforeLean, afterLean, [
+        "period",
+        "revenue",
+        "commission",
+        "occupancyRate",
+        "channelBreakdown",
+      ]),
+      request,
+    });
+  } else {
+    await writeAudit({
+      action: "analytics.create",
+      summary: `Created analytics for ${parsed.data.period}`,
+      actor: actorFromUser(user),
+      entityType: "Analytics",
+      entityId: String(doc!._id),
+      investorId,
+      investorVisible: true,
+      changes: [
+        {
+          field: "analytics",
+          oldValue: null,
+          newValue: sanitizeAuditValue({
+            period: doc!.period,
+            revenue: doc!.revenue,
+            commission: doc!.commission,
+            occupancyRate: doc!.occupancyRate,
+            channelBreakdown: afterBreakdown,
+          }),
+        },
+      ],
+      request,
+    });
+  }
+
   return NextResponse.json({
     analytics: {
       id: String(doc!._id),
@@ -50,10 +128,7 @@ export async function POST(
       revenue: doc!.revenue,
       commission: doc!.commission,
       occupancyRate: doc!.occupancyRate,
-      channelBreakdown:
-        doc!.channelBreakdown instanceof Map
-          ? Object.fromEntries(doc!.channelBreakdown)
-          : doc!.channelBreakdown || {},
+      channelBreakdown: afterBreakdown,
     },
   });
 }

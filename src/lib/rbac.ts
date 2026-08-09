@@ -9,6 +9,7 @@ export const PERMISSIONS = [
   "analytics:write",
   "content:read",
   "content:write",
+  "audit:read",
   "admins:manage",
 ] as const;
 
@@ -28,6 +29,7 @@ export const ROLE_PERMISSIONS: Record<AdminRole, Permission[]> = {
     "analytics:write",
     "content:read",
     "content:write",
+    "audit:read",
   ],
   viewer: [
     "investors:read",
@@ -35,6 +37,7 @@ export const ROLE_PERMISSIONS: Record<AdminRole, Permission[]> = {
     "bookings:read",
     "analytics:read",
     "content:read",
+    "audit:read",
   ],
 };
 
@@ -49,6 +52,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   "analytics:write": "Edit analytics",
   "content:read": "View site content",
   "content:write": "Edit site content",
+  "audit:read": "View audit logs",
   "admins:manage": "Manage admins & RBAC",
 };
 

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
 import { assertInvestor } from "@/lib/api-auth";
+import { actorFromUser, writeAudit } from "@/lib/audit";
 
 const schema = z.object({
   currentPassword: z.string().min(1),
@@ -49,6 +50,24 @@ export async function PATCH(request: Request) {
 
   doc.passwordHash = await bcrypt.hash(parsed.data.newPassword, 12);
   await doc.save();
+
+  await writeAudit({
+    action: "user.password_change",
+    summary: `Changed password for ${doc.email}`,
+    actor: actorFromUser(user),
+    entityType: "User",
+    entityId: String(doc._id),
+    investorId: user.id,
+    investorVisible: true,
+    changes: [
+      {
+        field: "password",
+        oldValue: "[redacted]",
+        newValue: "[changed]",
+      },
+    ],
+    request,
+  });
 
   return NextResponse.json({ success: true });
 }

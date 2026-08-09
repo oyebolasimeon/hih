@@ -4,6 +4,11 @@ import { assertAdmin } from "@/lib/api-auth";
 import { Investor } from "@/models/Investor";
 import { Property } from "@/models/Property";
 import { uploadImageBuffer } from "@/lib/cloudinary";
+import {
+  actorFromUser,
+  sanitizeAuditValue,
+  writeAudit,
+} from "@/lib/audit";
 
 const createSchema = z.object({
   name: z.string().trim().min(2),
@@ -12,6 +17,24 @@ const createSchema = z.object({
   purchasePrice: z.number().min(0).default(0),
   currentValue: z.number().min(0).default(0),
 });
+
+function propertySnapshot(property: {
+  name: string;
+  address: string;
+  imageUrls: string[];
+  status: string;
+  purchasePrice: number;
+  currentValue: number;
+}) {
+  return sanitizeAuditValue({
+    name: property.name,
+    address: property.address,
+    imageUrls: property.imageUrls,
+    status: property.status,
+    purchasePrice: property.purchasePrice,
+    currentValue: property.currentValue,
+  });
+}
 
 export async function POST(
   request: Request,
@@ -58,6 +81,24 @@ export async function POST(
       imageUrls,
     });
 
+    await writeAudit({
+      action: "property.create",
+      summary: `Created property ${property.name} for investor ${investor.name}`,
+      actor: actorFromUser(user),
+      entityType: "Property",
+      entityId: String(property._id),
+      investorId,
+      investorVisible: true,
+      changes: [
+        {
+          field: "property",
+          oldValue: null,
+          newValue: propertySnapshot(property),
+        },
+      ],
+      request,
+    });
+
     return NextResponse.json({
       property: {
         id: String(property._id),
@@ -82,6 +123,24 @@ export async function POST(
     investorId,
     ...parsed.data,
     imageUrls: body.imageUrls || [],
+  });
+
+  await writeAudit({
+    action: "property.create",
+    summary: `Created property ${property.name} for investor ${investor.name}`,
+    actor: actorFromUser(user),
+    entityType: "Property",
+    entityId: String(property._id),
+    investorId,
+    investorVisible: true,
+    changes: [
+      {
+        field: "property",
+        oldValue: null,
+        newValue: propertySnapshot(property),
+      },
+    ],
+    request,
   });
 
   return NextResponse.json({
