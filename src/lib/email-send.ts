@@ -89,6 +89,11 @@ function baseVars(extra: TemplateVars = {}): TemplateVars {
   };
 }
 
+const AUTH_ACTIONS_NO_DEFAULT_FALLBACK: EmailAction[] = [
+  "email_verify",
+  "password_reset",
+];
+
 export async function resolveEmailTemplate(
   action: EmailAction,
   vars: TemplateVars = {}
@@ -110,7 +115,9 @@ export async function resolveEmailTemplate(
     subject = actionTemplate.subject;
     htmlBody = actionTemplate.html;
     templateId = String(actionTemplate._id);
-  } else {
+  } else if (!AUTH_ACTIONS_NO_DEFAULT_FALLBACK.includes(action)) {
+    // Generic fallback is for portfolio/welcome-style mail — never swallow
+    // verify/reset links (those require the built-in or an action binding).
     const defaultTemplate = await EmailTemplate.findOne({
       active: true,
       isDefault: true,

@@ -83,10 +83,17 @@ export default function EmailTemplatesClient() {
     return actions.map((a) => {
       const assigned = templates.find((t) => t.id === a.templateId);
       const fallback = templates.find((t) => t.id === defaultTemplateId);
+      const usesBuiltinAuth =
+        !assigned &&
+        (a.key === "email_verify" || a.key === "password_reset");
       return {
         ...a,
         assignedName: assigned?.name || null,
-        fallbackName: fallback?.name || "Fallback template",
+        fallbackName: usesBuiltinAuth
+          ? a.key === "email_verify"
+            ? "Built-in verify email (with link)"
+            : "Built-in password reset (with link)"
+          : fallback?.name || "Fallback template",
       };
     });
   }, [actions, templates, defaultTemplateId]);
@@ -299,7 +306,9 @@ export default function EmailTemplatesClient() {
       <section className="app-card p-5 space-y-3">
         <h2 className="font-semibold">Action bindings</h2>
         <p className="text-sm text-muted">
-          If an action has no dedicated template, it uses the fallback above.
+          If an action has no dedicated template, it uses the fallback above —
+          except Verify email and Password reset, which always keep their
+          built-in link emails unless you attach a custom template to them.
         </p>
         <div className="divide-y divide-border rounded-lg border border-border overflow-hidden">
           {actionCoverage.map((a) => (
