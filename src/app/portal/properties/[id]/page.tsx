@@ -1,0 +1,112 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { connectDB } from "@/lib/db";
+import { Property } from "@/models/Property";
+import { Booking } from "@/models/Booking";
+import EmptyState from "@/components/ui/EmptyState";
+import { formatDate, formatGBP } from "@/lib/format";
+
+export default async function PropertyDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+
+  const { id } = await params;
+  await connectDB();
+
+  const property = await Property.findOne({
+    _id: id,
+    investorId: session.user.id,
+  }).lean();
+
+  if (!property) notFound();
+
+  const bookings = await Booking.find({
+    investorId: session.user.id,
+    propertyId: id,
+  })
+    .sort({ startDate: -1 })
+    .lean();
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <Link href="/portal/properties" className="text-sm text-muted hover:text-foreground">
+          ← Properties
+        </Link>
+        <h1 className="mt-2 text-2xl sm:text-3xl font-serif font-semibold">{property.name}</h1>
+        <p className="mt-1 text-sm text-muted">{property.address}</p>
+      </div>
+
+      {property.imageUrls?.length ? (
+        <div className="grid sm:grid-cols-2 gap-3">
+          {property.imageUrls.map((url: string) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={url}
+              src={url}
+              alt={property.name}
+              className="rounded-lg border border-border aspect-[16/10] object-cover w-full"
+            />
+          ))}
+        </div>
+      ) : null}
+
+      <div className="grid sm:grid-cols-3 gap-4">
+        <div className="app-card p-4">
+          <p className="text-xs text-muted uppercase tracking-wider">Status</p>
+          <p className="mt-1 font-semibold capitalize">{property.status}</p>
+        </div>
+        <div className="app-card p-4">
+          <p className="text-xs text-muted uppercase tracking-wider">Purchase price</p>
+          <p className="mt-1 font-semibold">{formatGBP(property.purchasePrice)}</p>
+        </div>
+        <div className="app-card p-4">
+          <p className="text-xs text-muted uppercase tracking-wider">Current value</p>
+          <p className="mt-1 font-semibold">{formatGBP(property.currentValue)}</p>
+        </div>
+      </div>
+
+      <div>
+        <h2 className="text-lg font-semibold mb-3">Booking history</h2>
+        {bookings.length === 0 ? (
+          <EmptyState
+            title="No bookings yet"
+            description="Bookings for this property will appear here once recorded by the Nova team."
+          />
+        ) : (
+          <div className="app-card overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b border-border text-left text-muted">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Dates</th>
+                  <th className="px-4 py-3 font-medium">Guest</th>
+                  <th className="px-4 py-3 font-medium">Channel</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium">Revenue</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bookings.map((b) => (
+                  <tr key={String(b._id)} className="border-b border-border last:border-0">
+                    <td className="px-4 py-3">
+                      {formatDate(b.startDate)} – {formatDate(b.endDate)}
+                    </td>
+                    <td className="px-4 py-3">{b.guestName || "—"}</td>
+                    <td className="px-4 py-3 capitalize">{b.channel}</td>
+                    <td className="px-4 py-3 capitalize">{b.status}</td>
+                    <td className="px-4 py-3">{formatGBP(b.revenue)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

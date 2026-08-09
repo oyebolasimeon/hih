@@ -12,12 +12,26 @@
   --color-muted: #6b7280;
   --color-border: #e5e7eb;
   --color-border-dark: #d1d5db;
+  --color-card: #ffffff;
+  --color-danger: #b91c1c;
   --font-sans: var(--font-geist-sans);
   --font-serif: var(--font-playfair);
 }
 
 html {
   scroll-behavior: smooth;
+}
+
+html.dark {
+  --color-background: #0f1115;
+  --color-foreground: #f3f4f6;
+  --color-surface: #171a21;
+  --color-surface-dark: #1e2330;
+  --color-muted: #9ca3af;
+  --color-border: #2a3142;
+  --color-border-dark: #3b4458;
+  --color-card: #171a21;
+  --color-brand-subtle: #1a2210;
 }
 
 body {
@@ -27,6 +41,68 @@ body {
 }
 
 ::selection {
-  background: rgba(27, 122, 61, 0.15);
+  background: rgba(168, 191, 68, 0.25);
+  color: inherit;
+}
+
+/* App shell utilities */
+.app-shell {
+  min-height: 100vh;
+  background: var(--color-background);
+  color: var(--color-foreground);
+}
+
+.app-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+}
+
+.app-input {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  background: var(--color-background);
+  color: var(--color-foreground);
+  border-radius: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+}
+
+.app-input:focus {
+  outline: none;
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-brand) 35%, transparent);
+}
+
+.app-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.5rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+
+.app-btn-primary {
+  background: var(--color-brand);
   color: #1a1a1a;
+}
+
+.app-btn-primary:hover {
+  background: var(--color-brand-dark);
+}
+
+.app-btn-secondary {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-foreground);
+}
+
+.app-btn-danger {
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  color: var(--color-danger);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 25%, transparent);
 }

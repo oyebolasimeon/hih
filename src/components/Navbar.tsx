@@ -65,6 +65,12 @@ export default function Navbar() {
               0330 229 6964
             </a>
             <Link
+              href="/login"
+              className="text-sm text-white/80 hover:text-white transition-colors"
+            >
+              Investor Login
+            </Link>
+            <Link
               href="#contact"
               className="px-5 py-2.5 bg-brand text-foreground text-sm font-medium rounded-md hover:bg-brand-dark transition-colors duration-200"
             >
@@ -113,7 +119,14 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
-            <div className="pt-4 border-t border-border">
+            <div className="pt-4 border-t border-border space-y-3">
+              <Link
+                href="/login"
+                onClick={() => setMobileOpen(false)}
+                className="block w-full text-center px-5 py-3 border border-border text-foreground font-medium rounded-md"
+              >
+                Investor Login
+              </Link>
               <Link
                 href="#contact"
                 onClick={() => setMobileOpen(false)}
