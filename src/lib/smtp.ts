@@ -22,6 +22,9 @@ function getTransporter() {
     host,
     port,
     secure,
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 15_000,
     auth: { user, pass },
   });
 }
@@ -38,11 +41,26 @@ export async function sendMail(options: {
     "noreply@novaelitehomes.co.uk";
 
   const transporter = getTransporter();
-  await transporter.sendMail({
+  const sendPromise = transporter.sendMail({
     from,
     to: options.to,
     subject: options.subject,
     html: options.html,
     text: options.text,
   });
+
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      sendPromise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error("Email send timed out")),
+          15_000
+        );
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }

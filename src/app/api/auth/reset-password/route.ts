@@ -40,6 +40,7 @@ export async function POST(request: Request) {
     }
 
     user.passwordHash = await bcrypt.hash(parsed.data.password, 12);
+    user.emailVerified = true;
     await user.save();
     await redisDel(`pwdreset:${parsed.data.token}`);
 

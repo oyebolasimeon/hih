@@ -9,6 +9,23 @@ export async function sendWelcomeEmail(to: string, name: string) {
   });
 }
 
+export async function sendVerificationEmail(
+  to: string,
+  token: string,
+  name = ""
+) {
+  const appUrl = (process.env.AUTH_URL || "http://localhost:3000").replace(
+    /\/$/,
+    ""
+  );
+  const verifyUrl = `${appUrl}/verify-email?token=${encodeURIComponent(token)}`;
+  await sendTemplatedEmail({
+    action: "email_verify",
+    to,
+    vars: { name: name || to, email: to, verifyUrl },
+  });
+}
+
 export async function sendPasswordResetEmail(
   to: string,
   token: string,

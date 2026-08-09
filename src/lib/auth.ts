@@ -1,12 +1,18 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import { CredentialsSignin } from "next-auth";
 import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
 import { resolveAdminAccess } from "@/lib/admin";
 import { authConfig } from "@/lib/auth.config";
 import { actorFromUser, writeAudit } from "@/lib/audit";
+import { redisDel, redisGet } from "@/lib/redis";
 import type { AdminRole, Permission } from "@/lib/rbac";
+
+class EmailNotVerifiedError extends CredentialsSignin {
+  code = "email_not_verified";
+}
 
 declare module "next-auth" {
   interface Session {
@@ -56,16 +62,38 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        autoLoginToken: { label: "Auto login token", type: "text" },
       },
       async authorize(credentials) {
         const email = String(credentials?.email || "")
           .trim()
           .toLowerCase();
         const password = String(credentials?.password || "");
+        const autoLoginToken = String(credentials?.autoLoginToken || "").trim();
+
+        await connectDB();
+
+        if (autoLoginToken) {
+          const userId = await redisGet(`autologin:${autoLoginToken}`);
+          if (!userId) return null;
+          const user = await User.findById(userId);
+          await redisDel(`autologin:${autoLoginToken}`);
+          if (!user || user.emailVerified === false) return null;
+
+          const access = await resolveAdminAccess(String(user._id), user.email);
+          return {
+            id: String(user._id),
+            email: user.email,
+            name: user.name,
+            isAdmin: access.isAdmin,
+            theme: user.theme,
+            role: access.role,
+            permissions: access.permissions,
+          };
+        }
 
         if (!email || !password) return null;
 
-        await connectDB();
         const user = await User.findOne({ email });
         if (!user) {
           await writeAudit({
@@ -89,6 +117,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             metadata: { reason: "invalid_password" },
           });
           return null;
+        }
+
+        if (user.emailVerified === false) {
+          await writeAudit({
+            action: "auth.login_failed",
+            summary: `Login blocked — email not verified (${email})`,
+            actor: { email, kind: "anonymous" },
+            entityType: "User",
+            entityId: String(user._id),
+            metadata: { reason: "email_not_verified" },
+          });
+          throw new EmailNotVerifiedError();
         }
 
         const access = await resolveAdminAccess(String(user._id), user.email);

@@ -93,6 +93,7 @@ export async function POST(request: Request) {
       phone,
       theme: "dark",
       emailNotifications: true,
+      emailVerified: true,
     });
     createdAuthUser = true;
   } else if (phone && !account.phone) {

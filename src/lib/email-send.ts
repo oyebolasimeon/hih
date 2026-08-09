@@ -148,7 +148,8 @@ export async function sendTemplatedEmail(options: {
   if (
     options.allowOptOut &&
     options.emailNotifications === false &&
-    options.action !== "password_reset"
+    options.action !== "password_reset" &&
+    options.action !== "email_verify"
   ) {
     return { skipped: true as const };
   }

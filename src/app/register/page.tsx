@@ -2,57 +2,131 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import AuthCard from "@/components/auth/AuthCard";
 
 export default function RegisterPage() {
-  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pendingVerify, setPendingVerify] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [resending, setResending] = useState(false);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setStatusMessage("");
 
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
-    });
-    const data = await res.json();
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+      const data = await res.json().catch(() => ({}));
 
-    if (!res.ok) {
+      if (!res.ok) {
+        setError(data.error || "Unable to create account.");
+        return;
+      }
+
+      setPendingVerify(true);
+      setStatusMessage(
+        data.message ||
+          "Check your email for a verification link to finish signing up."
+      );
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
       setLoading(false);
-      setError(data.error || "Unable to create account.");
-      return;
     }
+  }
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
-
-    setLoading(false);
-
-    if (result?.error) {
-      router.push("/login");
-      return;
+  async function resend() {
+    setResending(true);
+    setError("");
+    try {
+      const res = await fetch("/api/auth/verify-email", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "Unable to resend email.");
+        return;
+      }
+      setStatusMessage(data.message || "Verification email sent.");
+    } catch {
+      setError("Unable to resend email. Please try again.");
+    } finally {
+      setResending(false);
     }
+  }
 
-    router.push("/portal");
-    router.refresh();
+  if (pendingVerify) {
+    return (
+      <AuthCard
+        title="Check your email"
+        subtitle="We sent a verification link to finish creating your account."
+        footer={
+          <p>
+            Wrong email?{" "}
+            <button
+              type="button"
+              className="text-brand font-medium hover:underline"
+              onClick={() => {
+                setPendingVerify(false);
+                setStatusMessage("");
+                setError("");
+              }}
+            >
+              Go back
+            </button>
+          </p>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-muted">
+            Open the link in <span className="text-foreground font-medium">{email}</span>{" "}
+            to verify and sign in. The link expires in 24 hours.
+          </p>
+          {statusMessage ? (
+            <p className="text-sm text-foreground" role="status">
+              {statusMessage}
+            </p>
+          ) : null}
+          {error ? (
+            <p className="text-sm text-danger" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <button
+            type="button"
+            className="app-btn app-btn-secondary w-full"
+            disabled={resending}
+            onClick={() => void resend()}
+          >
+            {resending ? "Sending…" : "Resend verification email"}
+          </button>
+          <Link
+            href="/login"
+            className="block text-center text-sm text-muted hover:text-foreground"
+          >
+            Back to sign in
+          </Link>
+        </div>
+      </AuthCard>
+    );
   }
 
   return (
     <AuthCard
       title="Create account"
-      subtitle="Sign up to access your investor portal. Our team will complete your portfolio setup."
+      subtitle="Sign up to access your investor portal. Verify your email to continue."
       footer={
         <p>
           Already have an account?{" "}
@@ -112,7 +186,11 @@ export default function RegisterPage() {
             {error}
           </p>
         ) : null}
-        <button type="submit" disabled={loading} className="app-btn app-btn-primary w-full">
+        <button
+          type="submit"
+          disabled={loading}
+          className="app-btn app-btn-primary w-full"
+        >
           {loading ? "Creating account…" : "Create account"}
         </button>
       </form>

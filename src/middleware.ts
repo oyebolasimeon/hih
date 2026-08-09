@@ -13,7 +13,8 @@ export default auth((req) => {
     pathname.startsWith("/login") ||
     pathname.startsWith("/register") ||
     pathname.startsWith("/forgot-password") ||
-    pathname.startsWith("/reset-password");
+    pathname.startsWith("/reset-password") ||
+    pathname.startsWith("/verify-email");
 
   const isPortal = pathname.startsWith("/portal");
   const isAdminRoute = pathname.startsWith("/admin");
@@ -28,7 +29,7 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/portal", req.nextUrl.origin));
   }
 
-  if (isAuthPage && isLoggedIn) {
+  if (isAuthPage && isLoggedIn && !pathname.startsWith("/verify-email")) {
     return NextResponse.redirect(
       new URL(isAdmin ? "/admin" : "/portal", req.nextUrl.origin)
     );
@@ -45,5 +46,6 @@ export const config = {
     "/register",
     "/forgot-password",
     "/reset-password",
+    "/verify-email",
   ],
 };

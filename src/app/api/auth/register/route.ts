@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
+import { randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
 import { Investor } from "@/models/Investor";
-import { sendWelcomeEmail } from "@/lib/mail";
-import { rateLimit } from "@/lib/redis";
+import { sendVerificationEmail } from "@/lib/mail";
+import { rateLimit, redisSet } from "@/lib/redis";
 import { sanitizeAuditValue, writeAudit } from "@/lib/audit";
 
 const schema = z.object({
@@ -20,16 +21,22 @@ export async function POST(request: Request) {
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Please provide a valid name, email, and password (min 8 characters)." },
+        {
+          error:
+            "Please provide a valid name, email, and password (min 8 characters).",
+        },
         { status: 400 }
       );
     }
 
     const email = parsed.data.email.toLowerCase();
     const ip =
-      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      "unknown";
 
-    const allowed = await rateLimit(`register:${ip}`, 10, 3600).catch(() => true);
+    const allowed = await rateLimit(`register:${ip}`, 10, 3600).catch(
+      () => true
+    );
     if (!allowed) {
       return NextResponse.json(
         { error: "Too many registration attempts. Please try again later." },
@@ -41,6 +48,21 @@ export async function POST(request: Request) {
 
     const existing = await User.findOne({ email });
     if (existing) {
+      if (existing.emailVerified === false) {
+        const token = randomBytes(32).toString("hex");
+        await redisSet(`emailverify:${token}`, String(existing._id), 86400);
+        try {
+          await sendVerificationEmail(email, token, existing.name);
+        } catch (err) {
+          console.error("Resend verification email failed:", err);
+        }
+        return NextResponse.json({
+          success: true,
+          needsVerification: true,
+          message:
+            "Account pending verification. We sent a new verification link to your email.",
+        });
+      }
       return NextResponse.json(
         { error: "An account with this email already exists." },
         { status: 409 }
@@ -55,6 +77,7 @@ export async function POST(request: Request) {
       theme: "dark",
       phone: "",
       emailNotifications: true,
+      emailVerified: false,
     });
 
     await Investor.create({
@@ -66,16 +89,21 @@ export async function POST(request: Request) {
       portfolioValue: 0,
     });
 
+    const userId = String(user._id);
+    const token = randomBytes(32).toString("hex");
+    await redisSet(`emailverify:${token}`, userId, 86400);
+
+    let emailSent = true;
     try {
-      await sendWelcomeEmail(email, parsed.data.name);
+      await sendVerificationEmail(email, token, parsed.data.name);
     } catch (err) {
-      console.error("Welcome email failed:", err);
+      emailSent = false;
+      console.error("Verification email failed:", err);
     }
 
-    const userId = String(user._id);
     await writeAudit({
       action: "auth.register",
-      summary: `Registered account ${email}`,
+      summary: `Registered account ${email} (pending verification)`,
       actor: {
         id: userId,
         email: user.email,
@@ -93,6 +121,7 @@ export async function POST(request: Request) {
           newValue: sanitizeAuditValue({
             name: user.name,
             email: user.email,
+            emailVerified: false,
             phone: user.phone || "",
             emailNotifications: user.emailNotifications !== false,
           }),
@@ -103,6 +132,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
+      needsVerification: true,
+      emailSent,
+      message: emailSent
+        ? "Check your email for a verification link to finish signing up."
+        : "Account created, but we could not send the verification email. Use Resend on the next screen or contact support.",
       user: { id: userId, email: user.email, name: user.name },
     });
   } catch (err) {

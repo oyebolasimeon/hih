@@ -32,6 +32,8 @@ function createRedis() {
     return new Redis(process.env.REDIS_URL, {
       maxRetriesPerRequest: 2,
       enableOfflineQueue: false,
+      connectTimeout: 5_000,
+      commandTimeout: 5_000,
     });
   }
 
@@ -52,6 +54,8 @@ function createRedis() {
     password,
     maxRetriesPerRequest: 2,
     enableOfflineQueue: false,
+    connectTimeout: 5_000,
+    commandTimeout: 5_000,
     ...(useTls ? { tls: {} } : {}),
   });
 }

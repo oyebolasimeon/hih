@@ -1,5 +1,6 @@
 export const EMAIL_ACTIONS = [
   "welcome",
+  "email_verify",
   "password_reset",
   "admin_invite",
   "portfolio_update",
@@ -9,13 +10,15 @@ export type EmailAction = (typeof EMAIL_ACTIONS)[number];
 
 export const EMAIL_ACTION_LABELS: Record<EmailAction, string> = {
   welcome: "Investor welcome / account created",
+  email_verify: "Verify email address",
   password_reset: "Password reset",
   admin_invite: "Admin invited / access granted",
   portfolio_update: "Portfolio / performance update",
 };
 
 export const EMAIL_ACTION_DESCRIPTIONS: Record<EmailAction, string> = {
-  welcome: "Sent when a new investor registers.",
+  welcome: "Sent after an investor verifies their email (or when admins invite).",
+  email_verify: "Sent when a new investor registers — contains the verify link.",
   password_reset: "Sent when someone requests a password reset link.",
   admin_invite: "Sent when an admin is added on Team & RBAC.",
   portfolio_update: "Used when admins send a portfolio update from the console.",
@@ -30,6 +33,7 @@ export const EMAIL_VARIABLES = [
   { key: "{{loginUrl}}", label: "Login page URL" },
   { key: "{{portalUrl}}", label: "Investor portal URL" },
   { key: "{{resetUrl}}", label: "Password reset URL (reset emails)" },
+  { key: "{{verifyUrl}}", label: "Email verification URL" },
   { key: "{{adminUrl}}", label: "Admin console URL" },
   { key: "{{role}}", label: "Admin role (invite emails)" },
   { key: "{{year}}", label: "Current year" },
@@ -83,9 +87,21 @@ export const BUILTIN_TEMPLATES: Record<
     html: `
       <div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0c0d0b;">
         <p>Hi {{name}},</p>
-        <p>Welcome to Nova Elite Homes. Your investor account has been created.</p>
+        <p>Welcome to Nova Elite Homes. Your investor account is verified and ready.</p>
         <p><a href="{{loginUrl}}" style="color:#8FA63A;font-weight:600;">Sign in to your portal</a></p>
         <p>Our team will complete your portfolio onboarding shortly.</p>
+        <p>— Nova Elite Homes</p>
+      </div>
+    `.trim(),
+  },
+  email_verify: {
+    subject: "Verify your Nova Elite Homes email",
+    html: `
+      <div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0c0d0b;">
+        <p>Hi {{name}},</p>
+        <p>Thanks for creating a Nova Elite Homes account. Please verify your email to continue.</p>
+        <p><a href="{{verifyUrl}}" style="color:#8FA63A;font-weight:600;">Verify email address</a></p>
+        <p>This link expires in 24 hours. If you did not create an account, you can ignore this email.</p>
         <p>— Nova Elite Homes</p>
       </div>
     `.trim(),
