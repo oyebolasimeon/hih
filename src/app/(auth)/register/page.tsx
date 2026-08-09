@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import AuthCard from "@/components/auth/AuthCard";
+import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -193,6 +194,7 @@ export default function RegisterPage() {
         >
           {loading ? "Creating account…" : "Create account"}
         </button>
+        <GoogleAuthButton callbackUrl="/portal" />
       </form>
     </AuthCard>
   );

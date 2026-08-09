@@ -1,12 +1,16 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
 import { CredentialsSignin } from "next-auth";
+import { randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
+import { Investor } from "@/models/Investor";
 import { resolveAdminAccess } from "@/lib/admin";
 import { authConfig } from "@/lib/auth.config";
-import { actorFromUser, writeAudit } from "@/lib/audit";
+import { actorFromUser, sanitizeAuditValue, writeAudit } from "@/lib/audit";
+import { sendWelcomeEmail } from "@/lib/mail";
 import { redisDel, redisGet } from "@/lib/redis";
 import type { AdminRole, Permission } from "@/lib/rbac";
 
@@ -52,6 +56,10 @@ declare module "@auth/core/jwt" {
 }
 
 const PERMISSION_REFRESH_MS = 60_000;
+
+const googleConfigured = Boolean(
+  process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET
+);
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -144,74 +152,150 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         };
       },
     }),
+    ...(googleConfigured
+      ? [
+          Google({
+            clientId: process.env.AUTH_GOOGLE_ID!,
+            clientSecret: process.env.AUTH_GOOGLE_SECRET!,
+            allowDangerousEmailAccountLinking: true,
+          }),
+        ]
+      : []),
   ],
-  events: {
-    async signIn({ user }) {
-      const u = user as {
-        id?: string;
-        email?: string | null;
-        name?: string | null;
-        isAdmin?: boolean;
-      };
-      if (!u?.id) return;
-      await writeAudit({
-        action: "auth.login",
-        summary: `Signed in ${u.email || u.id}`,
-        actor: actorFromUser(u),
-        entityType: "User",
-        entityId: u.id,
-        investorId: u.isAdmin ? null : u.id,
-        investorVisible: !u.isAdmin,
-      });
-    },
-    async signOut(message) {
-      const token =
-        "token" in message
-          ? (message.token as {
-              id?: string;
-              email?: string;
-              name?: string;
-              isAdmin?: boolean;
-            })
-          : null;
-      if (!token?.id) return;
-      await writeAudit({
-        action: "auth.logout",
-        summary: `Signed out ${token.email || token.id}`,
-        actor: actorFromUser({
-          id: String(token.id),
-          email: token.email,
-          name: token.name,
-          isAdmin: Boolean(token.isAdmin),
-        }),
-        entityType: "User",
-        entityId: String(token.id),
-        investorId: token.isAdmin ? null : String(token.id),
-        investorVisible: !token.isAdmin,
-      });
-    },
-  },
   callbacks: {
     ...authConfig.callbacks,
+    async signIn({ user, account, profile }) {
+      if (account?.provider !== "google") return true;
+
+      const email = String(user.email || "")
+        .trim()
+        .toLowerCase();
+      if (!email) return "/login?error=google_email";
+
+      await connectDB();
+      const googleId = String(
+        (profile as { sub?: string } | undefined)?.sub || ""
+      );
+      let dbUser = await User.findOne({ email });
+      let created = false;
+
+      if (!dbUser) {
+        const passwordHash = await bcrypt.hash(randomBytes(32).toString("hex"), 12);
+        dbUser = await User.create({
+          name: user.name || email.split("@")[0],
+          email,
+          passwordHash,
+          googleId,
+          phone: "",
+          emailNotifications: true,
+          emailVerified: true,
+          theme: "dark",
+        });
+        await Investor.create({
+          _id: dbUser._id,
+          name: dbUser.name,
+          email,
+          totalInvested: 0,
+          totalReturns: 0,
+          portfolioValue: 0,
+        });
+        created = true;
+
+        try {
+          await sendWelcomeEmail(email, dbUser.name);
+        } catch (err) {
+          console.error("Welcome email after Google signup failed:", err);
+        }
+
+        await writeAudit({
+          action: "auth.google_register",
+          summary: `Registered via Google ${email}`,
+          actor: {
+            id: String(dbUser._id),
+            email,
+            name: dbUser.name,
+            kind: "investor",
+          },
+          entityType: "User",
+          entityId: String(dbUser._id),
+          investorId: String(dbUser._id),
+          investorVisible: true,
+          changes: [
+            {
+              field: "account",
+              oldValue: null,
+              newValue: sanitizeAuditValue({
+                name: dbUser.name,
+                email,
+                googleId: Boolean(googleId),
+                emailVerified: true,
+              }),
+            },
+          ],
+        });
+      } else {
+        let dirty = false;
+        if (dbUser.emailVerified === false) {
+          dbUser.emailVerified = true;
+          dirty = true;
+        }
+        if (googleId && dbUser.googleId !== googleId) {
+          dbUser.googleId = googleId;
+          dirty = true;
+        }
+        if (user.name && dbUser.name !== user.name && !dbUser.name.trim()) {
+          dbUser.name = user.name;
+          dirty = true;
+        }
+        if (dirty) await dbUser.save();
+      }
+
+      user.id = String(dbUser._id);
+      user.name = dbUser.name;
+      user.email = dbUser.email;
+      return true;
+    },
     async jwt({ token, user, trigger, session }) {
       if (user) {
-        const u = user as {
-          id: string;
-          email: string;
-          name: string;
-          isAdmin: boolean;
-          theme: "light" | "dark";
-          role?: AdminRole | null;
-          permissions?: Permission[];
-        };
-        token.id = u.id;
-        token.email = u.email;
-        token.name = u.name;
-        token.isAdmin = u.isAdmin;
-        token.theme = u.theme;
-        token.role = u.role ?? null;
-        token.permissions = u.permissions ?? [];
-        token.permissionsCheckedAt = Date.now();
+        await connectDB();
+        const dbUser =
+          (user.id ? await User.findById(user.id) : null) ||
+          (user.email
+            ? await User.findOne({ email: String(user.email).toLowerCase() })
+            : null);
+
+        if (dbUser) {
+          const access = await resolveAdminAccess(
+            String(dbUser._id),
+            dbUser.email
+          );
+          token.id = String(dbUser._id);
+          token.email = dbUser.email;
+          token.name = dbUser.name;
+          token.isAdmin = access.isAdmin;
+          token.theme = dbUser.theme;
+          token.role = access.role;
+          token.permissions = access.permissions;
+          token.permissionsCheckedAt = Date.now();
+        } else {
+          const u = user as {
+            id: string;
+            email: string;
+            name: string;
+            isAdmin?: boolean;
+            theme?: "light" | "dark";
+            role?: AdminRole | null;
+            permissions?: Permission[];
+          };
+          token.id = u.id;
+          token.email = u.email;
+          token.name = u.name;
+          token.isAdmin = Boolean(u.isAdmin);
+          token.theme = u.theme === "light" ? "light" : "dark";
+          token.role = u.role ?? null;
+          token.permissions = u.permissions ?? [];
+          token.permissionsCheckedAt = Date.now();
+        }
       }
 
       if (trigger === "update" && session) {
@@ -249,6 +333,78 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
 
       return token;
+    },
+  },
+  events: {
+    async signIn({ user, account }) {
+      const u = user as {
+        id?: string;
+        email?: string | null;
+        name?: string | null;
+        isAdmin?: boolean;
+      };
+      if (!u?.id) return;
+      // Google registration audit is written in signIn callback; avoid duplicate noise?
+      // Still log successful login for Google and credentials.
+      if (account?.provider === "google") {
+        await connectDB();
+        const access = await resolveAdminAccess(
+          u.id,
+          String(u.email || "")
+        ).catch(() => ({ isAdmin: false as boolean }));
+        await writeAudit({
+          action: "auth.login",
+          summary: `Signed in with Google ${u.email || u.id}`,
+          actor: actorFromUser({
+            id: u.id,
+            email: u.email,
+            name: u.name,
+            isAdmin: access.isAdmin,
+          }),
+          entityType: "User",
+          entityId: u.id,
+          investorId: access.isAdmin ? null : u.id,
+          investorVisible: !access.isAdmin,
+          metadata: { provider: "google" },
+        });
+        return;
+      }
+
+      await writeAudit({
+        action: "auth.login",
+        summary: `Signed in ${u.email || u.id}`,
+        actor: actorFromUser(u),
+        entityType: "User",
+        entityId: u.id,
+        investorId: u.isAdmin ? null : u.id,
+        investorVisible: !u.isAdmin,
+      });
+    },
+    async signOut(message) {
+      const token =
+        "token" in message
+          ? (message.token as {
+              id?: string;
+              email?: string;
+              name?: string;
+              isAdmin?: boolean;
+            })
+          : null;
+      if (!token?.id) return;
+      await writeAudit({
+        action: "auth.logout",
+        summary: `Signed out ${token.email || token.id}`,
+        actor: actorFromUser({
+          id: String(token.id),
+          email: token.email,
+          name: token.name,
+          isAdmin: Boolean(token.isAdmin),
+        }),
+        entityType: "User",
+        entityId: String(token.id),
+        investorId: token.isAdmin ? null : String(token.id),
+        investorVisible: !token.isAdmin,
+      });
     },
   },
   secret: process.env.AUTH_SECRET,

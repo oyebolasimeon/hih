@@ -6,6 +6,8 @@ export interface IUser {
   _id: mongoose.Types.ObjectId;
   email: string;
   passwordHash: string;
+  /** Present when the user has linked Google OAuth */
+  googleId: string;
   name: string;
   phone: string;
   emailNotifications: boolean;
@@ -28,6 +30,7 @@ const UserSchema = new Schema<IUser>(
       trim: true,
     },
     passwordHash: { type: String, required: true },
+    googleId: { type: String, default: "", index: true },
     name: { type: String, required: true, trim: true },
     phone: { type: String, default: "", trim: true },
     emailNotifications: { type: Boolean, default: true },

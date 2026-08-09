@@ -5,14 +5,22 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AuthCard from "@/components/auth/AuthCard";
+import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
 
 export default function LoginClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/portal";
+  const oauthError = searchParams.get("error");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(
+    oauthError === "google_email"
+      ? "Google did not provide an email address for this account."
+      : oauthError
+        ? "Google sign-in failed. Please try again."
+        : ""
+  );
   const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
@@ -164,6 +172,7 @@ export default function LoginClient() {
         >
           {loading ? "Signing in…" : "Sign In"}
         </button>
+        <GoogleAuthButton callbackUrl={callbackUrl} />
       </form>
     </AuthCard>
   );

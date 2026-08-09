@@ -4,6 +4,7 @@ import type { AdminRole, Permission } from "@/lib/rbac";
 export const authConfig = {
   pages: {
     signIn: "/login",
+    error: "/login",
   },
   providers: [],
   callbacks: {
