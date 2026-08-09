@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import Select from "@/components/ui/Select";
+import Checkbox from "@/components/ui/Checkbox";
 import {
   PERMISSION_LABELS,
   PERMISSIONS,
@@ -158,8 +159,13 @@ export default function TeamClient() {
         </p>
       ) : null}
 
-      <section className="app-card p-5 space-y-4">
-        <h2 className="font-semibold">Add admin</h2>
+      <section className="app-card p-5 sm:p-6 space-y-5">
+        <div>
+          <h2 className="font-display text-lg font-semibold">Add admin</h2>
+          <p className="text-sm text-muted mt-1">
+            Invite a registered user and assign a role or custom permission set.
+          </p>
+        </div>
         <form onSubmit={onAdd} className="grid sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2">
             <label className="block text-sm font-medium mb-1.5">User email</label>
@@ -182,24 +188,23 @@ export default function TeamClient() {
               { value: "superadmin", label: "Superadmin (full)" },
             ]}
           />
-          <div className="sm:col-span-2">
-            <p className="text-sm font-medium mb-2">Permissions</p>
-            <div className="grid sm:grid-cols-2 gap-2">
+          <div className="sm:col-span-2 space-y-3">
+            <div>
+              <p className="text-sm font-medium">Permissions</p>
+              <p className="text-xs text-muted mt-0.5">
+                Role presets fill these in. Customise as needed before inviting.
+              </p>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-2.5">
               {PERMISSIONS.map((p) => (
-                <label
+                <Checkbox
                   key={p}
-                  className={`flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm ${
-                    role === "superadmin" ? "opacity-60" : ""
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={perms.includes(p)}
-                    disabled={role === "superadmin"}
-                    onChange={() => togglePerm(p)}
-                  />
-                  <span>{PERMISSION_LABELS[p]}</span>
-                </label>
+                  variant="card"
+                  label={PERMISSION_LABELS[p]}
+                  checked={perms.includes(p)}
+                  disabled={role === "superadmin"}
+                  onChange={() => togglePerm(p)}
+                />
               ))}
             </div>
           </div>
@@ -288,14 +293,14 @@ export default function TeamClient() {
                         { value: "superadmin", label: "Superadmin" },
                       ]}
                     />
-                    <div className="grid sm:grid-cols-2 gap-2">
-                      {PERMISSIONS.map((p) => (
-                        <label
-                          key={p}
-                          className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm"
-                        >
-                          <input
-                            type="checkbox"
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Permissions</p>
+                      <div className="grid sm:grid-cols-2 gap-2.5">
+                        {PERMISSIONS.map((p) => (
+                          <Checkbox
+                            key={p}
+                            variant="card"
+                            label={PERMISSION_LABELS[p]}
                             checked={admin.permissions.includes(p)}
                             disabled={admin.role === "superadmin"}
                             onChange={() =>
@@ -310,26 +315,21 @@ export default function TeamClient() {
                               )
                             }
                           />
-                          {PERMISSION_LABELS[p]}
-                        </label>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={admin.active}
-                        onChange={(e) =>
-                          setAdmins((rows) =>
-                            rows.map((r) =>
-                              r.id === admin.id
-                                ? { ...r, active: e.target.checked }
-                                : r
-                            )
+                    <Checkbox
+                      label="Active"
+                      description="Inactive admins cannot access the console."
+                      checked={admin.active}
+                      onChange={(checked) =>
+                        setAdmins((rows) =>
+                          rows.map((r) =>
+                            r.id === admin.id ? { ...r, active: checked } : r
                           )
-                        }
-                      />
-                      Active
-                    </label>
+                        )
+                      }
+                    />
                     <button
                       type="button"
                       className="app-btn app-btn-primary text-sm"
@@ -343,7 +343,7 @@ export default function TeamClient() {
                     {admin.permissions.map((p) => (
                       <span
                         key={p}
-                        className="rounded bg-brand-subtle px-2 py-0.5 text-[11px] text-foreground"
+                        className="inline-flex items-center rounded-md border border-brand/25 bg-brand-subtle px-2 py-1 text-[11px] font-medium text-foreground"
                       >
                         {PERMISSION_LABELS[p] || p}
                       </span>
