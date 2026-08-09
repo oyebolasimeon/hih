@@ -21,6 +21,12 @@ export async function GET(request: Request) {
 
   const investors = await Investor.find(filter).sort({ createdAt: -1 }).lean();
   const counts = await Property.aggregate([
+    {
+      $match: {
+        investorId: { $ne: null },
+        ownerType: { $ne: "company" },
+      },
+    },
     { $group: { _id: "$investorId", count: { $sum: 1 } } },
   ]);
   const countMap = new Map(counts.map((c) => [String(c._id), c.count as number]));

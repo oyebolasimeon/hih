@@ -52,6 +52,7 @@ export async function POST(
     }
 
     const property = await Property.create({
+      ownerType: "investor",
       investorId,
       ...parsed.data,
       imageUrls,
@@ -77,6 +78,7 @@ export async function POST(
   }
 
   const property = await Property.create({
+    ownerType: "investor",
     investorId,
     ...parsed.data,
     imageUrls: body.imageUrls || [],
