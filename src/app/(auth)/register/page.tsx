@@ -77,7 +77,7 @@ export default function RegisterPage() {
             Wrong email?{" "}
             <button
               type="button"
-              className="text-brand font-medium hover:underline"
+              className="text-brand font-semibold hover:underline"
               onClick={() => {
                 setPendingVerify(false);
                 setStatusMessage("");
@@ -126,11 +126,11 @@ export default function RegisterPage() {
   return (
     <AuthCard
       title="Create account"
-      subtitle="Sign up to access your investor portal. Verify your email to continue."
+      subtitle="Sign up to access your investor dashboard"
       footer={
         <p>
           Already have an account?{" "}
-          <Link href="/login" className="text-brand font-medium hover:underline">
+          <Link href="/login" className="text-brand font-semibold hover:underline">
             Sign in
           </Link>
         </p>

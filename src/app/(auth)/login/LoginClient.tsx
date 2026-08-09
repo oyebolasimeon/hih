@@ -81,20 +81,23 @@ export default function LoginClient() {
 
   return (
     <AuthCard
-      title="Sign in"
-      subtitle="Access your investor portal or admin console."
+      title="Welcome back"
+      subtitle="Sign in to your investor dashboard"
       footer={
         <p>
           Don&apos;t have an account?{" "}
-          <Link href="/register" className="text-brand font-medium hover:underline">
-            Create one
+          <Link href="/register" className="text-brand font-semibold hover:underline">
+            Sign up
           </Link>
         </p>
       }
     >
       <form onSubmit={onSubmit} className="space-y-4">
         <div>
-          <label htmlFor="email" className="block text-sm font-medium mb-1.5">
+          <label
+            htmlFor="email"
+            className="block text-sm font-semibold text-[#0c0d0b] mb-1.5"
+          >
             Email
           </label>
           <input
@@ -102,32 +105,37 @@ export default function LoginClient() {
             type="email"
             required
             className="app-input"
+            placeholder="your@email.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="email"
           />
         </div>
         <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label htmlFor="password" className="block text-sm font-medium">
-              Password
-            </label>
-            <Link
-              href="/forgot-password"
-              className="text-xs text-muted hover:text-brand"
-            >
-              Forgot password?
-            </Link>
-          </div>
+          <label
+            htmlFor="password"
+            className="block text-sm font-semibold text-[#0c0d0b] mb-1.5"
+          >
+            Password
+          </label>
           <input
             id="password"
             type="password"
             required
             className="app-input"
+            placeholder="Your password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="current-password"
           />
+          <div className="mt-2 flex justify-end">
+            <Link
+              href="/forgot-password"
+              className="text-xs font-medium text-brand hover:underline"
+            >
+              Forgot password?
+            </Link>
+          </div>
         </div>
         {error ? (
           <p className="text-sm text-danger" role="alert">
@@ -135,7 +143,7 @@ export default function LoginClient() {
           </p>
         ) : null}
         {info ? (
-          <p className="text-sm text-foreground" role="status">
+          <p className="text-sm text-[#0c0d0b]" role="status">
             {info}
           </p>
         ) : null}
@@ -154,7 +162,7 @@ export default function LoginClient() {
           disabled={loading}
           className="app-btn app-btn-primary w-full"
         >
-          {loading ? "Signing in…" : "Sign in"}
+          {loading ? "Signing in…" : "Sign In"}
         </button>
       </form>
     </AuthCard>

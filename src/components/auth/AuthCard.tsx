@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useAuthBackground } from "@/components/auth/AuthBackgroundContext";
 
 export default function AuthCard({
   title,
@@ -11,49 +14,56 @@ export default function AuthCard({
   children: React.ReactNode;
   footer?: React.ReactNode;
 }) {
+  const backgroundUrl = useAuthBackground();
+
   return (
-    <div
-      className="auth-surface min-h-screen flex items-center justify-center px-5 py-12"
-      style={
-        {
-          ["--color-background" as string]: "#0a0b09",
-          ["--color-foreground" as string]: "#f2f4ec",
-          ["--color-surface" as string]: "#111310",
-          ["--color-muted" as string]: "#9aa392",
-          ["--color-border" as string]: "#252a20",
-          ["--color-card" as string]: "#111310",
-          ["--color-danger" as string]: "#f87171",
-          background: "#0a0b09",
-          color: "#f2f4ec",
-        } as React.CSSProperties
-      }
-    >
-      <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 px-2.5 py-1.5 bg-brand rounded"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/logo.png"
-              alt="Nova Elite Homes"
-              className="h-7 w-7 rounded-sm object-contain"
-            />
-            <span className="font-display text-base font-semibold text-[#0c0d0b] tracking-tight">
-              Nova Elite Homes
-            </span>
-          </Link>
-        </div>
-        <div className="app-card p-6 sm:p-8 shadow-sm">
-          <h1 className="font-display text-2xl font-semibold tracking-tight">
+    <div className="relative min-h-screen overflow-hidden">
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: `url(${backgroundUrl})` }}
+        aria-hidden
+      />
+      <div className="absolute inset-0 bg-black/55" aria-hidden />
+
+      <Link
+        href="/"
+        className="absolute top-5 left-5 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm hover:bg-black/70 transition-colors"
+        aria-label="Back to home"
+      >
+        <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path
+            fillRule="evenodd"
+            d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+            clipRule="evenodd"
+          />
+        </svg>
+      </Link>
+
+      <Link
+        href="/"
+        className="absolute bottom-5 left-5 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full bg-black/60 p-1.5 backdrop-blur-sm hover:bg-black/75 transition-colors"
+        aria-label="Nova Elite Homes home"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logo.png"
+          alt="Nova Elite Homes"
+          className="h-full w-full rounded-full object-contain"
+        />
+      </Link>
+
+      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-16 sm:px-6">
+        <div className="w-full max-w-[420px] rounded-2xl bg-white p-7 sm:p-9 shadow-[0_24px_80px_rgba(0,0,0,0.35)] text-[#0c0d0b]">
+          <h1 className="font-display text-2xl sm:text-[1.75rem] font-semibold tracking-tight text-[#0c0d0b]">
             {title}
           </h1>
           {subtitle ? (
-            <p className="mt-2 text-sm text-muted">{subtitle}</p>
+            <p className="mt-2 text-sm text-[#5c6356]">{subtitle}</p>
           ) : null}
-          <div className="mt-6">{children}</div>
-          {footer ? <div className="mt-6 text-sm text-muted">{footer}</div> : null}
+          <div className="mt-7 auth-card-body">{children}</div>
+          {footer ? (
+            <div className="mt-7 text-sm text-[#5c6356] text-center">{footer}</div>
+          ) : null}
         </div>
       </div>
     </div>

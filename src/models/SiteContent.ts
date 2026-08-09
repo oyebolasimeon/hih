@@ -1,6 +1,7 @@
 import mongoose, { Schema, models, model } from "mongoose";
 
 export const INVESTOR_LOGIN_MODAL_KEY = "investor_login_modal";
+export const AUTH_BACKGROUND_KEY = "auth_background";
 
 export interface ISiteContent {
   _id: mongoose.Types.ObjectId;

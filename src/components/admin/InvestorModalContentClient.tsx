@@ -134,12 +134,12 @@ export default function InvestorModalContentClient() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-display font-semibold">
+        <h2 className="text-xl font-display font-semibold">
           Investor Login modal
-        </h1>
+        </h2>
         <p className="mt-1 text-sm text-muted max-w-2xl">
-          Controls the typewriter intro that appears when visitors click Investor
-          Login on the marketing site. Add an image that fits the modal panel
+          Controls the typewriter intro that appears when visitors click Sign in
+          on the marketing site. Add an image that fits the modal panel
           (portrait or square works best).
         </p>
       </div>

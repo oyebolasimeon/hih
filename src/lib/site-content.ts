@@ -1,9 +1,20 @@
 import { connectDB } from "@/lib/db";
 import {
+  AUTH_BACKGROUND_KEY,
   INVESTOR_LOGIN_MODAL_KEY,
   SiteContent,
   type ISiteContent,
 } from "@/models/SiteContent";
+
+export const DEFAULT_AUTH_BACKGROUND = {
+  imageUrl: "/hero-london.png",
+  imagePublicId: "",
+} as const;
+
+export type AuthBackgroundContent = {
+  imageUrl: string;
+  imagePublicId: string;
+};
 
 export const DEFAULT_INVESTOR_MODAL = {
   title: "Your Investor Portal",
@@ -100,4 +111,58 @@ export async function upsertInvestorLoginModalContent(
   );
 
   return serializeInvestorModal(doc);
+}
+
+export function serializeAuthBackground(
+  doc?: ISiteContent | null
+): AuthBackgroundContent {
+  const url = (doc?.imageUrl || "").trim();
+  return {
+    imageUrl: url || DEFAULT_AUTH_BACKGROUND.imageUrl,
+    imagePublicId: doc?.imagePublicId || "",
+  };
+}
+
+export async function getAuthBackgroundContent(): Promise<AuthBackgroundContent> {
+  await connectDB();
+  const doc = await SiteContent.findOne({ key: AUTH_BACKGROUND_KEY }).lean();
+  return serializeAuthBackground(doc as ISiteContent | null);
+}
+
+export async function upsertAuthBackgroundContent(
+  data: Partial<AuthBackgroundContent>,
+  updatedBy?: string
+): Promise<AuthBackgroundContent> {
+  await connectDB();
+  const existing = await SiteContent.findOne({ key: AUTH_BACKGROUND_KEY });
+
+  const next = {
+    title: existing?.title || "Auth page background",
+    body:
+      existing?.body ||
+      "Background image for sign-in and related auth pages.",
+    ctaLabel: existing?.ctaLabel || "Auth",
+    imageUrl:
+      data.imageUrl !== undefined
+        ? data.imageUrl
+        : existing?.imageUrl || "",
+    imagePublicId:
+      data.imagePublicId !== undefined
+        ? data.imagePublicId
+        : existing?.imagePublicId || "",
+  };
+
+  const doc = await SiteContent.findOneAndUpdate(
+    { key: AUTH_BACKGROUND_KEY },
+    {
+      $set: {
+        ...next,
+        ...(updatedBy ? { updatedBy } : {}),
+      },
+      $setOnInsert: { key: AUTH_BACKGROUND_KEY },
+    },
+    { upsert: true, new: true }
+  );
+
+  return serializeAuthBackground(doc);
 }

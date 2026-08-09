@@ -185,3 +185,29 @@ h3,
   height: 0;
   pointer-events: none;
 }
+
+/* Auth card sits on a white surface — keep form controls light */
+.auth-card-body .app-input {
+  background: #ffffff;
+  color: #0c0d0b;
+  border-color: #d5d9ce;
+}
+.auth-card-body .app-input::placeholder {
+  color: #9aa392;
+}
+.auth-card-body .app-btn-primary {
+  background: #a8bf44;
+  color: #ffffff;
+}
+.auth-card-body .app-btn-primary:hover {
+  background: #8fa63a;
+}
+.auth-card-body .app-btn-secondary {
+  background: #f4f5f2;
+  border-color: #d5d9ce;
+  color: #0c0d0b;
+}
+.auth-card-body a.text-brand {
+  color: #8fa63a;
+}
+
