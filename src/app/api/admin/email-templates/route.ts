@@ -43,6 +43,22 @@ export async function GET() {
   const { response } = await assertAdmin("content:read");
   if (response) return response;
 
+  // Ensure an editable fallback always exists in the DB
+  let defaultTpl = await EmailTemplate.findOne({ isDefault: true });
+  if (!defaultTpl) {
+    defaultTpl = await EmailTemplate.create({
+      name: "Fallback (default)",
+      subject: BUILTIN_TEMPLATES.default.subject,
+      html: BUILTIN_TEMPLATES.default.html,
+      isDefault: true,
+      actions: [],
+      active: true,
+    });
+  } else if (!defaultTpl.active) {
+    defaultTpl.active = true;
+    await defaultTpl.save();
+  }
+
   const templates = await EmailTemplate.find().sort({ updatedAt: -1 }).lean();
 
   const actionMap: Record<string, string | null> = {};
@@ -53,7 +69,10 @@ export async function GET() {
     actionMap[action] = match ? String(match._id) : null;
   }
 
-  const defaultTpl = templates.find((t) => t.active && t.isDefault);
+  const activeDefault =
+    templates.find((t) => t.active && t.isDefault) ||
+    templates.find((t) => t.isDefault) ||
+    null;
 
   return NextResponse.json({
     templates: templates.map(serialize),
@@ -62,7 +81,9 @@ export async function GET() {
       label: EMAIL_ACTION_LABELS[key],
       templateId: actionMap[key],
     })),
-    defaultTemplateId: defaultTpl ? String(defaultTpl._id) : null,
+    defaultTemplateId: activeDefault
+      ? String(activeDefault._id)
+      : String(defaultTpl._id),
     variables: EMAIL_VARIABLES,
     builtins: BUILTIN_TEMPLATES,
   });

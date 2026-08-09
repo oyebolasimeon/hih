@@ -98,7 +98,32 @@ export async function PATCH(
     );
     doc.isDefault = true;
   } else if (parsed.data.isDefault === false) {
+    if (doc.isDefault) {
+      const otherDefault = await EmailTemplate.findOne({
+        _id: { $ne: doc._id },
+        isDefault: true,
+      });
+      if (!otherDefault) {
+        return NextResponse.json(
+          {
+            error:
+              "Cannot remove fallback status. Mark another template as fallback first, or edit this one instead.",
+          },
+          { status: 400 }
+        );
+      }
+    }
     doc.isDefault = false;
+  }
+
+  if (parsed.data.active === false && doc.isDefault) {
+    return NextResponse.json(
+      {
+        error:
+          "Cannot deactivate the fallback template. Mark another template as fallback first.",
+      },
+      { status: 400 }
+    );
   }
 
   if (parsed.data.name !== undefined) doc.name = parsed.data.name;
@@ -135,10 +160,22 @@ export async function DELETE(
   if (response || !user) return response!;
 
   const { id } = await context.params;
-  const doc = await EmailTemplate.findByIdAndDelete(id);
+  const doc = await EmailTemplate.findById(id);
   if (!doc) {
     return NextResponse.json({ error: "Template not found." }, { status: 404 });
   }
+
+  if (doc.isDefault) {
+    return NextResponse.json(
+      {
+        error:
+          "Cannot delete the fallback template. Mark another template as fallback first.",
+      },
+      { status: 400 }
+    );
+  }
+
+  await doc.deleteOne();
 
   await writeAudit({
     action: "email_template.delete",

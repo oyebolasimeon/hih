@@ -86,10 +86,15 @@ export default function EmailTemplatesClient() {
       return {
         ...a,
         assignedName: assigned?.name || null,
-        fallbackName: fallback?.name || "Built-in system default",
+        fallbackName: fallback?.name || "Fallback template",
       };
     });
   }, [actions, templates, defaultTemplateId]);
+
+  const fallbackTemplate = useMemo(
+    () => templates.find((t) => t.id === defaultTemplateId) || null,
+    [templates, defaultTemplateId]
+  );
 
   function startCreate() {
     setEditingId(null);
@@ -111,6 +116,27 @@ export default function EmailTemplatesClient() {
       active: t.active,
     });
     setPreviewHtml(t.html);
+    setShowEditor(true);
+    setMessage("");
+    setError("");
+  }
+
+  function startEditFallback() {
+    if (fallbackTemplate) {
+      startEdit(fallbackTemplate);
+      return;
+    }
+    // Safety: create locally as default if API somehow had none
+    setEditingId(null);
+    setDraft({
+      name: "Fallback (default)",
+      subject: "Message from Nova Elite Homes",
+      html: "<p>Hi {{name}},</p><p>This is a message from Nova Elite Homes.</p><p><a href=\"{{loginUrl}}\">Sign in to your account</a></p><p>— Nova Elite Homes</p>",
+      isDefault: true,
+      actions: [],
+      active: true,
+    });
+    setPreviewHtml("");
     setShowEditor(true);
     setMessage("");
     setError("");
@@ -241,10 +267,39 @@ export default function EmailTemplatesClient() {
       ) : null}
 
       <section className="app-card p-5 space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+          <div>
+            <h2 className="font-semibold">Fallback email template</h2>
+            <p className="text-sm text-muted mt-1">
+              Used for any system action that doesn&apos;t have its own template
+              attached. This is always editable.
+            </p>
+            {fallbackTemplate ? (
+              <p className="mt-2 text-sm">
+                Current:{" "}
+                <span className="font-medium">{fallbackTemplate.name}</span>
+                <span className="text-muted">
+                  {" "}
+                  · {fallbackTemplate.subject}
+                </span>
+              </p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            className="app-btn app-btn-primary shrink-0"
+            onClick={startEditFallback}
+            disabled={!canWrite && !fallbackTemplate}
+          >
+            {canWrite ? "Edit fallback" : "View fallback"}
+          </button>
+        </div>
+      </section>
+
+      <section className="app-card p-5 space-y-3">
         <h2 className="font-semibold">Action bindings</h2>
         <p className="text-sm text-muted">
-          If an action has no template, the default template is used. If there
-          is no default, the built-in system email is used.
+          If an action has no dedicated template, it uses the fallback above.
         </p>
         <div className="divide-y divide-border rounded-lg border border-border overflow-hidden">
           {actionCoverage.map((a) => (
@@ -281,7 +336,13 @@ export default function EmailTemplatesClient() {
         <form onSubmit={onSave} className="app-card p-5 sm:p-6 space-y-5">
           <div className="flex items-start justify-between gap-3">
             <h2 className="font-display text-lg font-semibold">
-              {editingId ? "Edit template" : "New template"}
+              {editingId
+                ? draft.isDefault
+                  ? "Edit fallback template"
+                  : "Edit template"
+                : draft.isDefault
+                  ? "New fallback template"
+                  : "New template"}
             </h2>
             <button
               type="button"
@@ -342,10 +403,19 @@ export default function EmailTemplatesClient() {
               </div>
 
               <Checkbox
-                label="Default template"
-                description="Used when an action has no template attached."
+                label="Fallback (default) template"
+                description={
+                  draft.isDefault && editingId === defaultTemplateId
+                    ? "This is the fallback for unassigned actions. Keep this on."
+                    : "When enabled, this becomes the fallback for actions without their own template."
+                }
                 checked={draft.isDefault}
-                disabled={!canWrite}
+                disabled={
+                  !canWrite ||
+                  (Boolean(editingId) &&
+                    editingId === defaultTemplateId &&
+                    draft.isDefault)
+                }
                 onChange={(checked) =>
                   setDraft({ ...draft, isDefault: checked })
                 }
@@ -437,7 +507,7 @@ export default function EmailTemplatesClient() {
         {templates.length === 0 ? (
           <EmptyState
             title="No custom templates yet"
-            description="Create one and attach it to Welcome, Password reset, Admin invite, or Portfolio update — or mark it as the default fallback."
+            description="Create one and attach it to Welcome, Password reset, Admin invite, or Portfolio update — or use Edit fallback above."
           />
         ) : (
           <div className="space-y-3">
@@ -449,7 +519,7 @@ export default function EmailTemplatesClient() {
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {t.isDefault ? (
                       <span className="rounded-md border border-brand/30 bg-brand-subtle px-2 py-0.5 text-[11px] font-medium">
-                        Default
+                        Fallback
                       </span>
                     ) : null}
                     {!t.active ? (
@@ -475,7 +545,7 @@ export default function EmailTemplatesClient() {
                   >
                     {canWrite ? "Edit" : "View"}
                   </button>
-                  {canWrite ? (
+                  {canWrite && !t.isDefault ? (
                     <button
                       type="button"
                       className="app-btn app-btn-danger text-xs"
