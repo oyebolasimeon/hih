@@ -24,7 +24,8 @@ export default async function PortalCalendarPage() {
       <div>
         <h1 className="text-2xl sm:text-3xl font-display font-semibold">Calendar</h1>
         <p className="mt-1 text-sm text-muted">
-          Bookings across all of your properties. Filter by property as needed.
+          Stays Nova is managing across your properties — Airbnb, Booking.com,
+          direct, and other channels. Filter by property as needed.
         </p>
       </div>
       <CalendarClient

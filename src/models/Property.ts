@@ -2,6 +2,8 @@ import mongoose, { Schema, models, model } from "mongoose";
 
 export type PropertyStatus = "active" | "inactive" | "sold";
 export type PropertyOwnerType = "investor" | "company";
+/** How an investor-held property was acquired from Nova (investors never self-list) */
+export type AcquisitionType = "nova_outright" | "nova_investment";
 /** percent = return over the set period; fixed_per_1000 = £ return per £1,000 capital over the period */
 export type RoiMode = "percent" | "fixed_per_1000";
 
@@ -9,6 +11,8 @@ export interface IProperty {
   _id: mongoose.Types.ObjectId;
   ownerType: PropertyOwnerType;
   investorId?: mongoose.Types.ObjectId | null;
+  /** For investor-owned rows: assigned outright by Nova, or via investment */
+  acquisitionType?: AcquisitionType | null;
   name: string;
   address: string;
   imageUrls: string[];
@@ -46,6 +50,11 @@ const PropertySchema = new Schema<IProperty>(
       default: null,
       index: true,
     },
+    acquisitionType: {
+      type: String,
+      enum: ["nova_outright", "nova_investment"],
+      default: null,
+    },
     name: { type: String, required: true, trim: true },
     address: { type: String, required: true, trim: true },
     imageUrls: { type: [String], default: [] },
@@ -77,8 +86,12 @@ const PropertySchema = new Schema<IProperty>(
 PropertySchema.pre("validate", function () {
   if (this.ownerType === "company") {
     this.investorId = null;
+    this.acquisitionType = null;
   } else {
     this.listedForInvestment = false;
+    if (!this.acquisitionType) {
+      this.acquisitionType = "nova_outright";
+    }
   }
 });
 

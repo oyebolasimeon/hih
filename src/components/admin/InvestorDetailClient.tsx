@@ -363,7 +363,13 @@ export default function InvestorDetailClient({ investorId }: { investorId: strin
       </section>
 
       <section className="space-y-4">
-        <h2 className="font-semibold">Properties</h2>
+        <h2 className="font-semibold">Properties from Nova</h2>
+        <p className="text-sm text-muted -mt-2 mb-2">
+          Investors cannot create properties. Assign an outright Nova holding —
+          Nova can then manage lease, rent, or Airbnb operations and post returns
+          the investor sees in their portal. They can also express interest on
+          Opportunities listings.
+        </p>
         <div className="app-card p-5">
           <form onSubmit={addProperty} className="grid sm:grid-cols-2 gap-4">
             <div>
@@ -404,7 +410,7 @@ export default function InvestorDetailClient({ investorId }: { investorId: strin
                 className="app-btn app-btn-primary"
                 disabled={!canWriteProperties}
               >
-                Add property
+                Assign Nova property
               </button>
             </div>
           </form>
@@ -434,7 +440,12 @@ export default function InvestorDetailClient({ investorId }: { investorId: strin
       </section>
 
       <section className="space-y-4">
-        <h2 className="font-semibold">Bookings</h2>
+        <h2 className="font-semibold">Bookings (Nova-managed stays)</h2>
+        <p className="text-sm text-muted -mt-2">
+          Record stays Nova operated on this investor&apos;s properties — lease,
+          short let, Airbnb, Booking.com, or direct. Revenue flows to their
+          portal returns.
+        </p>
         <div className="app-card p-5">
           <form onSubmit={addBooking} className="grid sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
@@ -540,7 +551,11 @@ export default function InvestorDetailClient({ investorId }: { investorId: strin
       </section>
 
       <section className="space-y-4">
-        <h2 className="font-semibold">Analytics periods</h2>
+        <h2 className="font-semibold">Analytics periods (investor-facing returns)</h2>
+        <p className="text-sm text-muted -mt-2">
+          Monthly summary investors see for Nova-managed performance —
+          revenue, commission, occupancy, and channel mix.
+        </p>
         <div className="app-card p-5">
           <form onSubmit={saveAnalytics} className="grid sm:grid-cols-2 gap-4">
             <div>

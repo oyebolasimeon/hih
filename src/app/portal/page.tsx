@@ -24,7 +24,10 @@ export default async function PortalDashboardPage() {
   }
 
   const [propertyCount, bookings] = await Promise.all([
-    Property.countDocuments({ investorId: session.user.id }),
+    Property.countDocuments({
+      investorId: session.user.id,
+      ownerType: { $ne: "company" },
+    }),
     Booking.find({
       investorId: session.user.id,
       status: { $ne: "cancelled" },
@@ -50,7 +53,10 @@ export default async function PortalDashboardPage() {
       <div>
         <h1 className="text-2xl sm:text-3xl font-display font-semibold">Dashboard</h1>
         <p className="mt-1 text-sm text-muted">
-          Live portfolio summary for {investor.name}.
+          Capital and performance Nova reports for {investor.name}. After you buy,
+          Nova can manage lease, rent, or Airbnb operations — returns show in
+          Analytics, Calendar, and each property. Open Opportunities for new
+          listings.
         </p>
       </div>
 
@@ -62,24 +68,37 @@ export default async function PortalDashboardPage() {
       </div>
 
       {empty ? (
-        <EmptyState
-          title="No properties yet"
-          description="Your portfolio is being prepared. Once our team adds properties, they will appear here automatically."
-        />
+        <div className="space-y-4">
+          <EmptyState
+            title="No Nova properties in your portfolio yet"
+            description="Nova Elite assigns holdings to you after onboarding, or you can express interest on open Opportunities. Investors cannot create properties themselves."
+          />
+          <div className="flex flex-wrap gap-2">
+            <Link href="/portal/opportunities" className="app-btn app-btn-primary text-sm">
+              Browse opportunities
+            </Link>
+            <Link href="/portal/properties" className="app-btn app-btn-secondary text-sm">
+              My properties
+            </Link>
+          </div>
+        </div>
       ) : (
         <div className="app-card p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="font-semibold">Portfolio value</h2>
               <p className="text-sm text-muted mt-1">
-                Current reported value across your holdings.
+                Current reported value across holdings Nova assigned to you.
               </p>
             </div>
             <p className="text-2xl font-semibold">{formatGBP(investor.portfolioValue)}</p>
           </div>
-          <div className="mt-4">
+          <div className="mt-4 flex flex-wrap gap-3">
             <Link href="/portal/properties" className="text-sm font-medium text-brand-dark hover:underline">
-              View properties →
+              View my properties →
+            </Link>
+            <Link href="/portal/opportunities" className="text-sm font-medium text-brand-dark hover:underline">
+              Browse opportunities →
             </Link>
           </div>
         </div>

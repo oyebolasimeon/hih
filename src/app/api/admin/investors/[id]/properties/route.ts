@@ -77,13 +77,14 @@ export async function POST(
     const property = await Property.create({
       ownerType: "investor",
       investorId,
+      acquisitionType: "nova_outright",
       ...parsed.data,
       imageUrls,
     });
 
     await writeAudit({
-      action: "property.create",
-      summary: `Created property ${property.name} for investor ${investor.name}`,
+      action: "property.assign",
+      summary: `Assigned Nova property ${property.name} outright to ${investor.name}`,
       actor: actorFromUser(user),
       entityType: "Property",
       entityId: String(property._id),
@@ -121,13 +122,14 @@ export async function POST(
   const property = await Property.create({
     ownerType: "investor",
     investorId,
+    acquisitionType: "nova_outright",
     ...parsed.data,
     imageUrls: body.imageUrls || [],
   });
 
   await writeAudit({
-    action: "property.create",
-    summary: `Created property ${property.name} for investor ${investor.name}`,
+    action: "property.assign",
+    summary: `Assigned Nova property ${property.name} outright to ${investor.name}`,
     actor: actorFromUser(user),
     entityType: "Property",
     entityId: String(property._id),

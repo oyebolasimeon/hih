@@ -60,9 +60,9 @@ export default function OpportunitiesClient() {
           Opportunities
         </h1>
         <p className="mt-1 text-sm text-muted max-w-2xl">
-          Nova Elite Homes listings open for investment. Open a property to see
-          images, terms, and transparent return projections before expressing
-          interest.
+          Open Nova Elite listings you can invest in. Your own holdings never
+          come from self-listing — they are assigned by Nova outright, or you
+          express interest here for Nova-run opportunities.
         </p>
       </div>
 

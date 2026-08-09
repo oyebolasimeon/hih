@@ -19,15 +19,26 @@ export default async function PropertiesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-display font-semibold">Properties</h1>
-        <p className="mt-1 text-sm text-muted">Your holdings managed by Nova Elite Homes.</p>
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-display font-semibold">
+            My properties
+          </h1>
+          <p className="mt-1 text-sm text-muted max-w-2xl">
+            Holdings Nova Elite assigned to you outright. Nova can also manage
+            lettings for you — lease, rent, or Airbnb — and you track those
+            returns here. Browse Opportunities for open investment listings.
+          </p>
+        </div>
+        <Link href="/portal/opportunities" className="app-btn app-btn-secondary shrink-0">
+          Browse opportunities
+        </Link>
       </div>
 
       {properties.length === 0 ? (
         <EmptyState
-          title="No properties yet"
-          description="When properties are assigned to your portfolio, they will show up here with photos, status, and valuations."
+          title="No assigned properties yet"
+          description="When Nova assigns a property to your portfolio (outright purchase / onboarding), it will appear here. Meanwhile you can review open investment opportunities."
         />
       ) : (
         <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -54,10 +65,19 @@ export default async function PropertiesPage() {
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2">
                   <h2 className="font-semibold">{p.name}</h2>
-                  <span className="text-xs uppercase tracking-wide text-muted">{p.status}</span>
+                  <span className="text-[10px] uppercase tracking-wide rounded bg-brand-subtle px-1.5 py-0.5 text-foreground">
+                    {p.acquisitionType === "nova_investment"
+                      ? "Via investment"
+                      : "Nova outright"}
+                  </span>
                 </div>
                 <p className="mt-1 text-sm text-muted line-clamp-2">{p.address}</p>
-                <p className="mt-3 text-sm font-medium">{formatGBP(p.currentValue)}</p>
+                <div className="mt-3 flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium">{formatGBP(p.currentValue)}</p>
+                  <span className="text-xs uppercase tracking-wide text-muted">
+                    {p.status}
+                  </span>
+                </div>
               </div>
             </Link>
           ))}

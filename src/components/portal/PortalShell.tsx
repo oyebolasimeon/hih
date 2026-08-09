@@ -9,7 +9,7 @@ const links = [
   { href: "/portal", label: "Dashboard", exact: true },
   { href: "/portal/analytics", label: "Analytics" },
   { href: "/portal/calendar", label: "Calendar" },
-  { href: "/portal/properties", label: "Properties" },
+  { href: "/portal/properties", label: "My properties" },
   { href: "/portal/opportunities", label: "Opportunities" },
   { href: "/portal/activity", label: "Activity" },
   { href: "/portal/account", label: "Account" },

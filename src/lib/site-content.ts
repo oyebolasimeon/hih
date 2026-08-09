@@ -10,25 +10,31 @@ export const DEFAULT_INVESTOR_MODAL = {
   ctaLabel: "Continue to Login",
   body: `Welcome to Nova Elite Homes.
 
-As a Nova investor, you unlock a private command centre built around your London portfolio — not a generic dashboard.
+As a Nova investor, you unlock a private command centre for capital placed with us — you never list or create properties yourself.
+
+How you hold assets with Nova:
+
+• Outright — Nova assigns a property into your portfolio after purchase / onboarding
+• Open investments — browse Opportunities, review ROI terms, and express interest on Nova-listed assets
+
+Even when you buy outright, Nova can manage the property for you: long-term lease, short let, or Airbnb-style stays. We handle guests, operations, and return reporting — you see results in your portal.
 
 Inside the portal you can:
 
-• See your total invested capital, portfolio value, and returns at a glance
-• Browse every property you own with photos, status, and live valuations
-• Track confirmed bookings across channels — Airbnb, Booking.com, and direct stays
+• See invested capital, portfolio value, and returns at a glance
+• Browse properties Nova has assigned to you (photos, status, valuations)
+• Track Nova-managed stays, channels (Airbnb, Booking.com, direct), and revenue
 • Review monthly analytics: revenue, commission, occupancy, and channel mix
-• Plan ahead with a calendar of arrivals, departures, and open nights
-• Switch light or dark mode so late-evening reviews stay comfortable
+• Explore open investment opportunities Nova is raising for
+• Switch light or dark mode for comfortable late-evening reviews
 
 What we manage for you:
 
-• Hands-on short-let operations across carefully selected London assets
+• Letting & hospitality operations on your behalf
 • Guest experience, compliance, and day-to-day property care
 • Clear reporting so you always know how your capital is performing
-• A trusted partnership — we operate; you stay informed and in control
 
-When you are ready, continue to sign in or create your investor account. Your data is private to you — only your portfolio, never someone else's.`,
+Continue to sign in or create your investor account. Your data is private to you — only your portfolio, never someone else's.`,
   imageUrl: "",
   imagePublicId: "",
 } as const;

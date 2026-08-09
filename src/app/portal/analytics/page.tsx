@@ -29,7 +29,9 @@ export default async function PortalAnalyticsPage() {
       <div>
         <h1 className="text-2xl sm:text-3xl font-display font-semibold">Analytics</h1>
         <p className="mt-1 text-sm text-muted">
-          Pre-aggregated portfolio performance by month.
+          Monthly performance Nova recorded while managing your portfolio —
+          revenue, commission, occupancy, and channels (Airbnb, Booking.com, and
+          more).
         </p>
       </div>
       <AnalyticsClient periods={periods} />

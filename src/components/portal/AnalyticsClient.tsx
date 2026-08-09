@@ -24,8 +24,8 @@ export default function AnalyticsClient({ periods }: { periods: AnalyticsRow[] }
   if (sorted.length === 0) {
     return (
       <EmptyState
-        title="No analytics yet"
-        description="Once the Nova team records monthly performance for your portfolio, revenue, commission, occupancy, and channel charts will appear here."
+        title="No returns published yet"
+        description="When Nova manages lettings on your properties, monthly revenue, commission, occupancy, and channel mix will appear here."
       />
     );
   }

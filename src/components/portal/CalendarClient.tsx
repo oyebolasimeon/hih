@@ -78,8 +78,8 @@ export default function CalendarClient({
   if (bookings.length === 0) {
     return (
       <EmptyState
-        title="No bookings on the calendar"
-        description="Confirmed stays across your properties will show here once added by the Nova team."
+        title="No managed stays yet"
+        description="When Nova operates lease, rent, or Airbnb stays on your properties, they will appear on this calendar."
       />
     );
   }

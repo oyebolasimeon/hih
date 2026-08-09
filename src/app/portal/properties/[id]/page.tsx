@@ -41,6 +41,11 @@ export default async function PropertyDetailPage({
         </Link>
         <h1 className="mt-2 text-2xl sm:text-3xl font-display font-semibold">{property.name}</h1>
         <p className="mt-1 text-sm text-muted">{property.address}</p>
+        <p className="mt-2 text-sm text-muted max-w-2xl">
+          Managed by Nova Elite Homes — lettings, short stays, and guest
+          operations can run through us. Revenue below is what Nova recorded for
+          this property.
+        </p>
       </div>
 
       {property.imageUrls?.length ? (
@@ -73,11 +78,11 @@ export default async function PropertyDetailPage({
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold mb-3">Booking history</h2>
+        <h2 className="text-lg font-semibold mb-3">Nova-managed stays & returns</h2>
         {bookings.length === 0 ? (
           <EmptyState
-            title="No bookings yet"
-            description="Bookings for this property will appear here once recorded by the Nova team."
+            title="No managed stays yet"
+            description="When Nova operates this property (lease, rent, or Airbnb-style stays), bookings and revenue will appear here."
           />
         ) : (
           <div className="app-card overflow-x-auto">
