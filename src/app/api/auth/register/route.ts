@@ -52,6 +52,8 @@ export async function POST(request: Request) {
       email,
       passwordHash,
       theme: "dark",
+      phone: "",
+      emailNotifications: true,
     });
 
     await Investor.create({

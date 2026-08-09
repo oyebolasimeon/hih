@@ -75,6 +75,12 @@ export async function sendPasswordResetEmail(to: string, token: string) {
       <p>You requested a password reset for your Nova Elite Homes account.</p>
       <p><a href="${resetUrl}">Reset password</a></p>
       <p>This link expires in 1 hour. If you did not request this, you can ignore this email.</p>
+      <p>This email is always sent for security, even if marketing/notifications are off.</p>
     `,
   });
+}
+
+/** Helper for future portfolio emails — skips users who opted out. */
+export function shouldSendAccountEmail(emailNotifications?: boolean | null) {
+  return emailNotifications !== false;
 }

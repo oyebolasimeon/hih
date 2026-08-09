@@ -19,6 +19,7 @@ const links: NavLink[] = [
   { href: "/admin/investors/new", label: "Find / onboard", permission: "investors:write" },
   { href: "/admin/content", label: "Login modal", permission: "content:read" },
   { href: "/admin/team", label: "Team & RBAC", permission: "admins:manage" },
+  { href: "/admin/account", label: "Account" },
 ];
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {

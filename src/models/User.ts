@@ -7,6 +7,8 @@ export interface IUser {
   email: string;
   passwordHash: string;
   name: string;
+  phone: string;
+  emailNotifications: boolean;
   theme: ThemePreference;
   createdAt: Date;
   updatedAt: Date;
@@ -23,6 +25,8 @@ const UserSchema = new Schema<IUser>(
     },
     passwordHash: { type: String, required: true },
     name: { type: String, required: true, trim: true },
+    phone: { type: String, default: "", trim: true },
+    emailNotifications: { type: Boolean, default: true },
     theme: { type: String, enum: ["light", "dark"], default: "dark" },
   },
   { timestamps: true }
