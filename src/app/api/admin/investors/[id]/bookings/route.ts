@@ -19,7 +19,7 @@ export async function POST(
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
-  const { user, response } = await assertAdmin();
+  const { user, response } = await assertAdmin("bookings:write");
   if (response || !user) return response!;
 
   const { id: investorId } = await context.params;

@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { auth } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { Investor } from "@/models/Investor";
 import { Property } from "@/models/Property";
 import EmptyState from "@/components/ui/EmptyState";
 import { formatGBP } from "@/lib/format";
 import InvestorSearch from "@/components/admin/InvestorSearch";
+import { hasPermission } from "@/lib/rbac";
 
 export default async function AdminInvestorsPage({
   searchParams,
@@ -12,6 +14,11 @@ export default async function AdminInvestorsPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q = "" } = await searchParams;
+  const session = await auth();
+  const canWrite = hasPermission(
+    session?.user?.permissions,
+    "investors:write"
+  );
   await connectDB();
 
   const filter = q.trim()
@@ -38,9 +45,11 @@ export default async function AdminInvestorsPage({
             Manage investor profiles, properties, bookings, and analytics.
           </p>
         </div>
-        <Link href="/admin/investors/new" className="app-btn app-btn-primary">
-          Find / onboard
-        </Link>
+        {canWrite ? (
+          <Link href="/admin/investors/new" className="app-btn app-btn-primary">
+            Find / onboard
+          </Link>
+        ) : null}
       </div>
 
       <InvestorSearch initialQuery={q} />
@@ -74,7 +83,7 @@ export default async function AdminInvestorsPage({
                       href={`/admin/investors/${inv._id}`}
                       className="text-brand-dark font-medium hover:underline"
                     >
-                      Edit
+                      {canWrite ? "Manage" : "View"}
                     </Link>
                   </td>
                 </tr>

@@ -4,7 +4,7 @@ import { Investor } from "@/models/Investor";
 import { Property } from "@/models/Property";
 
 export async function GET(request: Request) {
-  const { user, response } = await assertAdmin();
+  const { user, response } = await assertAdmin("investors:read");
   if (response || !user) return response!;
 
   const { searchParams } = new URL(request.url);

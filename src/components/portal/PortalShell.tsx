@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { useTheme } from "@/components/providers/ThemeProvider";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 const links = [
-  { href: "/portal", label: "Dashboard" },
+  { href: "/portal", label: "Dashboard", exact: true },
   { href: "/portal/analytics", label: "Analytics" },
   { href: "/portal/calendar", label: "Calendar" },
   { href: "/portal/properties", label: "Properties" },
@@ -16,7 +16,6 @@ const links = [
 export default function PortalShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const { theme, toggleTheme } = useTheme();
 
   return (
     <div className="app-shell flex min-h-screen">
@@ -39,10 +38,9 @@ export default function PortalShell({ children }: { children: React.ReactNode })
         </div>
         <nav className="flex-1 p-3 space-y-1">
           {links.map((link) => {
-            const active =
-              link.href === "/portal"
-                ? pathname === "/portal"
-                : pathname.startsWith(link.href);
+            const active = link.exact
+              ? pathname === link.href
+              : pathname.startsWith(link.href);
             return (
               <Link
                 key={link.href}
@@ -66,7 +64,11 @@ export default function PortalShell({ children }: { children: React.ReactNode })
             </Link>
           ) : null}
         </nav>
-        <div className="p-4 border-t border-border space-y-2">
+        <div className="p-4 border-t border-border space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs text-muted">Theme</span>
+            <ThemeToggle />
+          </div>
           <p className="text-sm font-medium truncate">{session?.user?.name}</p>
           <p className="text-xs text-muted truncate">{session?.user?.email}</p>
           <button
@@ -96,14 +98,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
             Welcome back{session?.user?.name ? `, ${session.user.name}` : ""}
           </div>
           <div className="flex items-center gap-2 ml-auto">
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="app-btn app-btn-secondary text-xs"
-              aria-label="Toggle theme"
-            >
-              {theme === "dark" ? "Light" : "Dark"}
-            </button>
+            <ThemeToggle />
             <button
               type="button"
               onClick={() => signOut({ callbackUrl: "/login" })}
@@ -116,16 +111,15 @@ export default function PortalShell({ children }: { children: React.ReactNode })
 
         <nav className="lg:hidden flex gap-1 overflow-x-auto border-b border-border px-3 py-2 bg-surface">
           {links.map((link) => {
-            const active =
-              link.href === "/portal"
-                ? pathname === "/portal"
-                : pathname.startsWith(link.href);
+            const active = link.exact
+              ? pathname === link.href
+              : pathname.startsWith(link.href);
             return (
               <Link
                 key={link.href}
                 href={link.href}
                 className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium ${
-                  active ? "bg-brand text-foreground" : "text-muted"
+                  active ? "bg-brand text-[#0c0d0b]" : "text-muted"
                 }`}
               >
                 {link.label}

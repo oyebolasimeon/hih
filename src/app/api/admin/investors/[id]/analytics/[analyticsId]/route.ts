@@ -15,7 +15,7 @@ export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string; analyticsId: string }> }
 ) {
-  const { user, response } = await assertAdmin();
+  const { user, response } = await assertAdmin("analytics:write");
   if (response || !user) return response!;
 
   const { id, analyticsId } = await context.params;
@@ -54,7 +54,7 @@ export async function DELETE(
   _request: Request,
   context: { params: Promise<{ id: string; analyticsId: string }> }
 ) {
-  const { user, response } = await assertAdmin();
+  const { user, response } = await assertAdmin("analytics:write");
   if (response || !user) return response!;
 
   const { id, analyticsId } = await context.params;

@@ -17,7 +17,7 @@ export async function GET(
   _request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
-  const { user, response } = await assertAdmin();
+  const { user, response } = await assertAdmin("investors:read");
   if (response || !user) return response!;
 
   const { id } = await context.params;
@@ -78,7 +78,7 @@ export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
-  const { user, response } = await assertAdmin();
+  const { user, response } = await assertAdmin("investors:write");
   if (response || !user) return response!;
 
   const { id } = await context.params;

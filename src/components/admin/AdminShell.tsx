@@ -3,17 +3,32 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { useTheme } from "@/components/providers/ThemeProvider";
+import ThemeToggle from "@/components/ui/ThemeToggle";
+import { hasPermission, type Permission } from "@/lib/rbac";
 
-const links = [
-  { href: "/admin", label: "Investors" },
-  { href: "/admin/investors/new", label: "Find / onboard" },
+type NavLink = {
+  href: string;
+  label: string;
+  permission?: Permission;
+  exact?: boolean;
+};
+
+const links: NavLink[] = [
+  { href: "/admin", label: "Investors", permission: "investors:read", exact: true },
+  { href: "/admin/properties", label: "Properties", permission: "properties:read" },
+  { href: "/admin/investors/new", label: "Find / onboard", permission: "investors:write" },
+  { href: "/admin/content", label: "Login modal", permission: "content:read" },
+  { href: "/admin/team", label: "Team & RBAC", permission: "admins:manage" },
 ];
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const { theme, toggleTheme } = useTheme();
+  const perms = session?.user?.permissions || [];
+
+  const visibleLinks = links.filter(
+    (link) => !link.permission || hasPermission(perms, link.permission)
+  );
 
   return (
     <div className="app-shell flex min-h-screen">
@@ -33,13 +48,17 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             </span>
           </Link>
           <p className="text-xs text-muted mt-2">Admin Console</p>
+          {session?.user?.role ? (
+            <p className="mt-1 text-[11px] uppercase tracking-wider text-brand font-semibold">
+              {session.user.role}
+            </p>
+          ) : null}
         </div>
         <nav className="flex-1 p-3 space-y-1">
-          {links.map((link) => {
-            const active =
-              link.href === "/admin"
-                ? pathname === "/admin"
-                : pathname.startsWith(link.href);
+          {visibleLinks.map((link) => {
+            const active = link.exact
+              ? pathname === link.href
+              : pathname === link.href || pathname.startsWith(`${link.href}/`);
             return (
               <Link
                 key={link.href}
@@ -61,7 +80,11 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             Investor view
           </Link>
         </nav>
-        <div className="p-4 border-t border-border space-y-2">
+        <div className="p-4 border-t border-border space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs text-muted">Theme</span>
+            <ThemeToggle />
+          </div>
           <p className="text-sm font-medium truncate">{session?.user?.name}</p>
           <p className="text-xs text-muted truncate">{session?.user?.email}</p>
           <button
@@ -75,7 +98,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur px-4 sm:px-6 py-3 flex items-center justify-between">
+        <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
           <Link href="/admin" className="inline-flex items-center gap-2 px-2 py-1 bg-brand rounded lg:hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -86,10 +109,28 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             <span className="text-sm font-semibold text-foreground">Admin</span>
           </Link>
           <p className="hidden lg:block text-sm text-muted">Admin Console</p>
-          <button type="button" onClick={toggleTheme} className="app-btn app-btn-secondary text-xs">
-            {theme === "dark" ? "Light" : "Dark"}
-          </button>
+          <div className="flex items-center gap-3 ml-auto">
+            <ThemeToggle />
+          </div>
         </header>
+        <nav className="lg:hidden flex gap-1 overflow-x-auto border-b border-border px-3 py-2 bg-surface">
+          {visibleLinks.map((link) => {
+            const active = link.exact
+              ? pathname === link.href
+              : pathname.startsWith(link.href);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium ${
+                  active ? "bg-brand text-[#0c0d0b]" : "text-muted"
+                }`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
+        </nav>
         <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
     </div>

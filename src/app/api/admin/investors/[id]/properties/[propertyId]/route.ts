@@ -18,7 +18,7 @@ export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string; propertyId: string }> }
 ) {
-  const { user, response } = await assertAdmin();
+  const { user, response } = await assertAdmin("properties:write");
   if (response || !user) return response!;
 
   const { id, propertyId } = await context.params;
@@ -101,7 +101,7 @@ export async function DELETE(
   _request: Request,
   context: { params: Promise<{ id: string; propertyId: string }> }
 ) {
-  const { user, response } = await assertAdmin();
+  const { user, response } = await assertAdmin("properties:write");
   if (response || !user) return response!;
 
   const { id, propertyId } = await context.params;

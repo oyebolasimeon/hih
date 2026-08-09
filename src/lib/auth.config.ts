@@ -1,4 +1,5 @@
 import type { NextAuthConfig } from "next-auth";
+import type { AdminRole, Permission } from "@/lib/rbac";
 
 export const authConfig = {
   pages: {
@@ -33,12 +34,16 @@ export const authConfig = {
           name: string;
           isAdmin: boolean;
           theme: "light" | "dark";
+          role?: AdminRole | null;
+          permissions?: Permission[];
         };
         token.id = u.id;
         token.email = u.email;
         token.name = u.name;
         token.isAdmin = u.isAdmin;
         token.theme = u.theme;
+        token.role = u.role ?? null;
+        token.permissions = u.permissions ?? [];
       }
 
       if (trigger === "update" && session) {
@@ -46,6 +51,11 @@ export const authConfig = {
           token.theme = session.theme;
         }
         if (typeof session.name === "string") token.name = session.name;
+        if (typeof session.isAdmin === "boolean") token.isAdmin = session.isAdmin;
+        if ("role" in session) token.role = session.role;
+        if (Array.isArray(session.permissions)) {
+          token.permissions = session.permissions;
+        }
       }
 
       return token;
@@ -57,6 +67,8 @@ export const authConfig = {
         name: String(token.name || ""),
         isAdmin: Boolean(token.isAdmin),
         theme: token.theme === "light" ? "light" : "dark",
+        role: (token.role as AdminRole | null) || null,
+        permissions: (token.permissions as Permission[]) || [],
       } as typeof session.user;
       return session;
     },

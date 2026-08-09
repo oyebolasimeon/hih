@@ -2,8 +2,11 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { formatGBP } from "@/lib/format";
 import { FormSelect } from "@/components/ui/Select";
+import { hasPermission } from "@/lib/rbac";
+import { FormSkeleton, PageHeaderSkeleton, TableSkeleton } from "@/components/ui/Skeleton";
 
 type Property = {
   id: string;
@@ -45,6 +48,13 @@ type Investor = {
 };
 
 export default function InvestorDetailClient({ investorId }: { investorId: string }) {
+  const { data: session } = useSession();
+  const perms = session?.user?.permissions || [];
+  const canWriteInvestor = hasPermission(perms, "investors:write");
+  const canWriteProperties = hasPermission(perms, "properties:write");
+  const canWriteBookings = hasPermission(perms, "bookings:write");
+  const canWriteAnalytics = hasPermission(perms, "analytics:write");
+
   const [investor, setInvestor] = useState<Investor | null>(null);
   const [properties, setProperties] = useState<Property[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -224,7 +234,13 @@ export default function InvestorDetailClient({ investorId }: { investorId: strin
   }
 
   if (loading) {
-    return <p className="text-sm text-muted">Loading investor…</p>;
+    return (
+      <div className="space-y-6">
+        <PageHeaderSkeleton />
+        <FormSkeleton />
+        <TableSkeleton />
+      </div>
+    );
   }
 
   if (!investor) {
@@ -302,9 +318,16 @@ export default function InvestorDetailClient({ investorId }: { investorId: strin
             />
           </div>
           <div className="sm:col-span-2">
-            <button type="submit" className="app-btn app-btn-primary">
+            <button
+              type="submit"
+              className="app-btn app-btn-primary"
+              disabled={!canWriteInvestor}
+            >
               Save profile
             </button>
+            {!canWriteInvestor ? (
+              <p className="mt-2 text-xs text-muted">Read-only: you lack investors:write.</p>
+            ) : null}
           </div>
         </form>
       </section>
@@ -346,7 +369,11 @@ export default function InvestorDetailClient({ investorId }: { investorId: strin
               <input name="images" type="file" accept="image/*" multiple className="app-input" />
             </div>
             <div>
-              <button type="submit" className="app-btn app-btn-primary">
+              <button
+                type="submit"
+                className="app-btn app-btn-primary"
+                disabled={!canWriteProperties}
+              >
                 Add property
               </button>
             </div>
@@ -367,6 +394,7 @@ export default function InvestorDetailClient({ investorId }: { investorId: strin
                 type="button"
                 onClick={() => deleteProperty(p.id)}
                 className="app-btn app-btn-danger text-xs"
+                disabled={!canWriteProperties}
               >
                 Delete
               </button>
@@ -434,7 +462,11 @@ export default function InvestorDetailClient({ investorId }: { investorId: strin
               />
             </div>
             <div className="sm:col-span-2">
-              <button type="submit" className="app-btn app-btn-primary" disabled={!properties.length}>
+              <button
+                type="submit"
+                className="app-btn app-btn-primary"
+                disabled={!properties.length || !canWriteBookings}
+              >
                 Add booking
               </button>
             </div>
@@ -516,7 +548,7 @@ export default function InvestorDetailClient({ investorId }: { investorId: strin
               />
             </div>
             <div>
-              <button type="submit" className="app-btn app-btn-primary">
+              <button type="submit" className="app-btn app-btn-primary" disabled={!canWriteAnalytics}>
                 Save period
               </button>
             </div>
