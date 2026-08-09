@@ -10,7 +10,10 @@ export default async function PropertiesPage() {
   if (!session?.user?.id) return null;
 
   await connectDB();
-  const properties = await Property.find({ investorId: session.user.id })
+  const properties = await Property.find({
+    investorId: session.user.id,
+    ownerType: { $ne: "company" },
+  })
     .sort({ createdAt: -1 })
     .lean();
 

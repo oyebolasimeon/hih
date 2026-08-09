@@ -10,7 +10,10 @@ export default async function PortalCalendarPage() {
 
   await connectDB();
   const [properties, bookings] = await Promise.all([
-    Property.find({ investorId: session.user.id }).lean(),
+    Property.find({
+      investorId: session.user.id,
+      ownerType: { $ne: "company" },
+    }).lean(),
     Booking.find({ investorId: session.user.id }).sort({ startDate: 1 }).lean(),
   ]);
 

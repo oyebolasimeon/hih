@@ -30,9 +30,6 @@ const PropertySchema = new Schema<IProperty>(
     investorId: {
       type: Schema.Types.ObjectId,
       ref: "Investor",
-      required: function (this: IProperty) {
-        return this.ownerType !== "company";
-      },
       default: null,
       index: true,
     },
@@ -51,11 +48,10 @@ const PropertySchema = new Schema<IProperty>(
   { timestamps: true }
 );
 
-PropertySchema.pre("validate", function (next) {
+PropertySchema.pre("validate", function () {
   if (this.ownerType === "company") {
     this.investorId = null;
   }
-  next();
 });
 
 export const Property =

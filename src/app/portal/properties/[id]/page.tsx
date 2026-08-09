@@ -21,6 +21,7 @@ export default async function PropertyDetailPage({
   const property = await Property.findOne({
     _id: id,
     investorId: session.user.id,
+    ownerType: { $ne: "company" },
   }).lean();
 
   if (!property) notFound();

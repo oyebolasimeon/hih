@@ -12,6 +12,7 @@ import {
   permissionsForRole,
   resolvePermissions,
 } from "@/lib/rbac";
+import { sendAdminInviteEmail } from "@/lib/mail";
 
 export async function GET() {
   const { user, response } = await assertAdmin("admins:manage");
@@ -126,6 +127,16 @@ export async function POST(request: Request) {
     active: true,
     createdBy: user.id,
   });
+
+  try {
+    await sendAdminInviteEmail({
+      to: email,
+      name: targetUser.name,
+      role,
+    });
+  } catch (err) {
+    console.error("Admin invite email failed:", err);
+  }
 
   return NextResponse.json({
     admin: {

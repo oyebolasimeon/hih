@@ -141,3 +141,31 @@ h3,
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
 }
+
+/* TipTap email editor */
+.ProseMirror p {
+  margin: 0 0 0.75em;
+}
+.ProseMirror ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+  margin: 0 0 0.75em;
+}
+.ProseMirror h2,
+.ProseMirror h3 {
+  font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
+  font-weight: 600;
+  margin: 0 0 0.5em;
+}
+.ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+}
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: var(--color-muted);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}

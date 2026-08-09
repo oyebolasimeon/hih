@@ -6,7 +6,10 @@ export async function GET() {
   const { user, response } = await assertInvestor();
   if (response || !user) return response!;
 
-  const properties = await Property.find({ investorId: user.id })
+  const properties = await Property.find({
+    investorId: user.id,
+    ownerType: { $ne: "company" },
+  })
     .sort({ createdAt: -1 })
     .lean();
 

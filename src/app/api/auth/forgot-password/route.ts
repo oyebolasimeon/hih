@@ -38,7 +38,7 @@ export async function POST(request: Request) {
       const token = randomBytes(32).toString("hex");
       await redisSet(`pwdreset:${token}`, String(user._id), 3600);
       try {
-        await sendPasswordResetEmail(email, token);
+        await sendPasswordResetEmail(email, token, user.name);
       } catch (err) {
         console.error("Reset email failed:", err);
       }

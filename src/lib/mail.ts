@@ -1,86 +1,61 @@
-import nodemailer from "nodemailer";
-
-function getTransporter() {
-  const host = process.env.GOOGLE_SMTP_HOST || "smtp.gmail.com";
-  const port = Number(process.env.GOOGLE_SMTP_PORT || 587);
-  const user = process.env.GOOGLE_SMTP_USER;
-  // Support both GOOGLE_SMTP_PASSWORD (preferred) and legacy GOOGLE_SMTP_PASS
-  const rawPass =
-    process.env.GOOGLE_SMTP_PASSWORD || process.env.GOOGLE_SMTP_PASS;
-  const pass = rawPass?.replace(/\s+/g, "");
-
-  if (!user || !pass) {
-    throw new Error("Google SMTP credentials are not configured");
-  }
-
-  const secureEnv = process.env.GOOGLE_SMTP_SECURE;
-  const secure =
-    secureEnv != null
-      ? secureEnv === "true" || secureEnv === "1"
-      : port === 465;
-
-  return nodemailer.createTransport({
-    host,
-    port,
-    secure,
-    auth: { user, pass },
-  });
-}
-
-export async function sendMail(options: {
-  to: string;
-  subject: string;
-  html: string;
-  text?: string;
-}) {
-  const from =
-    process.env.GOOGLE_SMTP_FROM ||
-    process.env.GOOGLE_SMTP_USER ||
-    "noreply@novaelitehomes.co.uk";
-
-  const transporter = getTransporter();
-  await transporter.sendMail({
-    from,
-    to: options.to,
-    subject: options.subject,
-    html: options.html,
-    text: options.text,
-  });
-}
+import { sendTemplatedEmail } from "@/lib/email-send";
+export { sendMail } from "@/lib/smtp";
 
 export async function sendWelcomeEmail(to: string, name: string) {
-  const appUrl = process.env.AUTH_URL || "http://localhost:3000";
-  await sendMail({
+  await sendTemplatedEmail({
+    action: "welcome",
     to,
-    subject: "Welcome to Nova Elite Homes",
-    text: `Hi ${name}, your investor account is ready. Sign in at ${appUrl}/login`,
-    html: `
-      <p>Hi ${name},</p>
-      <p>Welcome to Nova Elite Homes. Your investor account has been created.</p>
-      <p><a href="${appUrl}/login">Sign in to your portal</a></p>
-      <p>Our team will complete your portfolio onboarding shortly.</p>
-      <p>— Nova Elite Homes</p>
-    `,
+    vars: { name, email: to },
   });
 }
 
-export async function sendPasswordResetEmail(to: string, token: string) {
-  const appUrl = process.env.AUTH_URL || "http://localhost:3000";
+export async function sendPasswordResetEmail(
+  to: string,
+  token: string,
+  name = ""
+) {
+  const appUrl = (process.env.AUTH_URL || "http://localhost:3000").replace(
+    /\/$/,
+    ""
+  );
   const resetUrl = `${appUrl}/reset-password?token=${encodeURIComponent(token)}`;
-  await sendMail({
+  await sendTemplatedEmail({
+    action: "password_reset",
     to,
-    subject: "Reset your Nova Elite Homes password",
-    text: `Reset your password: ${resetUrl}`,
-    html: `
-      <p>You requested a password reset for your Nova Elite Homes account.</p>
-      <p><a href="${resetUrl}">Reset password</a></p>
-      <p>This link expires in 1 hour. If you did not request this, you can ignore this email.</p>
-      <p>This email is always sent for security, even if marketing/notifications are off.</p>
-    `,
+    vars: { name: name || to, email: to, resetUrl },
   });
 }
 
-/** Helper for future portfolio emails — skips users who opted out. */
+export async function sendAdminInviteEmail(options: {
+  to: string;
+  name: string;
+  role: string;
+}) {
+  await sendTemplatedEmail({
+    action: "admin_invite",
+    to: options.to,
+    vars: {
+      name: options.name,
+      email: options.to,
+      role: options.role,
+    },
+  });
+}
+
+export async function sendPortfolioUpdateEmail(options: {
+  to: string;
+  name: string;
+  emailNotifications?: boolean | null;
+}) {
+  return sendTemplatedEmail({
+    action: "portfolio_update",
+    to: options.to,
+    vars: { name: options.name, email: options.to },
+    allowOptOut: true,
+    emailNotifications: options.emailNotifications,
+  });
+}
+
 export function shouldSendAccountEmail(emailNotifications?: boolean | null) {
   return emailNotifications !== false;
 }

@@ -263,7 +263,31 @@ export default function InvestorDetailClient({ investorId }: { investorId: strin
         <h1 className="mt-2 text-2xl sm:text-3xl font-display font-semibold">
           {investor.name}
         </h1>
-        <p className="text-sm text-muted">{investor.email}</p>
+        <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+          <p className="text-sm text-muted">{investor.email}</p>
+          {canWriteInvestor ? (
+            <button
+              type="button"
+              className="app-btn app-btn-secondary text-xs w-fit"
+              onClick={async () => {
+                setError("");
+                setMessage("");
+                const res = await fetch(
+                  `/api/admin/investors/${investorId}/notify`,
+                  { method: "POST" }
+                );
+                const data = await res.json();
+                if (!res.ok) {
+                  setError(data.error || "Unable to send email.");
+                  return;
+                }
+                setMessage(data.message || "Email sent.");
+              }}
+            >
+              Send portfolio update email
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {error ? (

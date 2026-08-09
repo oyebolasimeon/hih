@@ -18,6 +18,7 @@ const links: NavLink[] = [
   { href: "/admin/properties", label: "Properties", permission: "properties:read" },
   { href: "/admin/investors/new", label: "Find / onboard", permission: "investors:write" },
   { href: "/admin/content", label: "Login modal", permission: "content:read" },
+  { href: "/admin/emails", label: "Email templates", permission: "content:read" },
   { href: "/admin/team", label: "Team & RBAC", permission: "admins:manage" },
   { href: "/admin/account", label: "Account" },
 ];

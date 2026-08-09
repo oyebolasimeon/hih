@@ -27,7 +27,12 @@ export async function GET(
   }
 
   const [properties, bookings, analytics] = await Promise.all([
-    Property.find({ investorId: id }).sort({ createdAt: -1 }).lean(),
+    Property.find({
+      investorId: id,
+      ownerType: { $ne: "company" },
+    })
+      .sort({ createdAt: -1 })
+      .lean(),
     Booking.find({ investorId: id }).sort({ startDate: -1 }).lean(),
     Analytics.find({ investorId: id }).sort({ period: -1 }).lean(),
   ]);
