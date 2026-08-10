@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Reveal, Stagger, StaggerItem } from "@/components/motion/Motion";
 import EmptyState from "@/components/ui/EmptyState";
 
 const PROFILES = [
@@ -59,7 +60,11 @@ export default function DashboardClient({ name }: Props) {
 
   return (
     <div className="space-y-6">
-      <div>
+      <Reveal>
+        <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-teal mb-3">
+          <span className="site-live-dot" aria-hidden />
+          Your workspace
+        </div>
         <h1 className="text-2xl sm:text-3xl font-display font-semibold">
           Welcome, {name}
         </h1>
@@ -67,96 +72,110 @@ export default function DashboardClient({ name }: Props) {
           House In Hand brings housing search, listings, applications, payments,
           and agreements together. Create or select a profile to get started.
         </p>
-      </div>
+      </Reveal>
 
       {recs.length > 0 ? (
         <section className="space-y-3">
-          <div className="flex flex-wrap items-end justify-between gap-2">
-            <div>
-              <h2 className="font-display text-lg font-semibold">
-                Recommended for you
-              </h2>
-              {recReason ? (
-                <p className="text-sm text-muted">{recReason}</p>
-              ) : null}
-            </div>
-            <Link
-              href="/portal/search"
-              className="text-sm text-brand-dark hover:underline"
-            >
-              Browse all
-            </Link>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {recs.slice(0, 4).map((l) => (
-              <Link
-                key={l.id}
-                href={`/portal/search/${l.id}`}
-                className="app-card p-4 block hover:border-brand/40 transition-colors"
-              >
-                <h3 className="font-semibold text-sm line-clamp-2">{l.title}</h3>
-                <p className="mt-1 text-xs text-muted">
-                  {[l.address?.city, l.address?.state].filter(Boolean).join(", ")}
-                </p>
-                {l.price ? (
-                  <p className="mt-2 text-sm font-medium">
-                    {l.price.currency} {l.price.amount.toLocaleString()} /{" "}
-                    {l.price.period}
-                  </p>
+          <Reveal delay={0.05}>
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <div>
+                <h2 className="font-display text-lg font-semibold">
+                  Recommended for you
+                </h2>
+                {recReason ? (
+                  <p className="text-sm text-muted">{recReason}</p>
                 ) : null}
+              </div>
+              <Link
+                href="/portal/search"
+                className="text-sm text-brand-dark hover:underline"
+              >
+                Browse all
               </Link>
+            </div>
+          </Reveal>
+          <Stagger className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {recs.slice(0, 4).map((l) => (
+              <StaggerItem key={l.id}>
+                <Link
+                  href={`/portal/search/${l.id}`}
+                  className="app-card app-card-interactive p-4 block"
+                >
+                  <h3 className="font-semibold text-sm line-clamp-2">
+                    {l.title}
+                  </h3>
+                  <p className="mt-1 text-xs text-muted">
+                    {[l.address?.city, l.address?.state]
+                      .filter(Boolean)
+                      .join(", ")}
+                  </p>
+                  {l.price ? (
+                    <p className="mt-2 text-sm font-medium">
+                      {l.price.currency} {l.price.amount.toLocaleString()} /{" "}
+                      {l.price.period}
+                    </p>
+                  ) : null}
+                </Link>
+              </StaggerItem>
             ))}
-          </div>
+          </Stagger>
         </section>
       ) : null}
 
       <section className="space-y-3">
-        <h2 className="font-display text-lg font-semibold">Your profiles</h2>
-        <p className="text-sm text-muted">
-          Choose how you use the app — you can add more profiles later.
-        </p>
-        <div className="grid sm:grid-cols-2 gap-3">
+        <Reveal>
+          <h2 className="font-display text-lg font-semibold">Your profiles</h2>
+          <p className="text-sm text-muted">
+            Choose how you use the app — you can add more profiles later.
+          </p>
+        </Reveal>
+        <Stagger className="grid sm:grid-cols-2 gap-3">
           {PROFILES.map((profile) => (
-            <Link
-              key={profile.key}
-              href="/portal/profiles"
-              className="app-card p-4 sm:p-5 block hover:border-brand/40 transition-colors"
-            >
-              <h3 className="font-semibold">{profile.label}</h3>
-              <p className="mt-1 text-sm text-muted">{profile.description}</p>
-            </Link>
+            <StaggerItem key={profile.key}>
+              <Link
+                href="/portal/profiles"
+                className="app-card app-card-interactive p-4 sm:p-5 block"
+              >
+                <h3 className="font-semibold">{profile.label}</h3>
+                <p className="mt-1 text-sm text-muted">{profile.description}</p>
+              </Link>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       </section>
 
-      <section className="flex flex-wrap gap-2">
-        <Link href="/portal/search" className="app-btn app-btn-primary text-sm">
-          Search homes
-        </Link>
-        <Link
-          href="/portal/listings"
-          className="app-btn app-btn-secondary text-sm"
-        >
-          My listings
-        </Link>
-        <Link
-          href="/portal/credit"
-          className="app-btn app-btn-secondary text-sm"
-        >
-          Credit score
-        </Link>
-        <Link
-          href="/portal/profiles"
-          className="app-btn app-btn-secondary text-sm"
-        >
-          Manage profiles
-        </Link>
-      </section>
+      <Reveal delay={0.1}>
+        <section className="flex flex-wrap gap-2">
+          <Link href="/portal/search" className="app-btn app-btn-primary text-sm">
+            Search homes
+          </Link>
+          <Link
+            href="/portal/listings"
+            className="app-btn app-btn-secondary text-sm"
+          >
+            My listings
+          </Link>
+          <Link
+            href="/portal/credit"
+            className="app-btn app-btn-secondary text-sm"
+          >
+            Credit score
+          </Link>
+          <Link
+            href="/portal/profiles"
+            className="app-btn app-btn-secondary text-sm"
+          >
+            Manage profiles
+          </Link>
+        </section>
+      </Reveal>
 
-      <EmptyState
-        title="Getting started"
-        description="Create a profile, complete KYC when prompted, then search homes or list a property."
-      />
+      <Reveal delay={0.15}>
+        <EmptyState
+          title="Getting started"
+          description="Create a profile, complete KYC when prompted, then search homes or list a property."
+        />
+      </Reveal>
     </div>
   );
 }

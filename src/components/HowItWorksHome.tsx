@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 const steps = [
   {
@@ -22,11 +22,13 @@ const steps = [
 ];
 
 export default function HowItWorksHome() {
+  const reduce = useReducedMotion();
+
   return (
-    <section className="site-section bg-sand">
-      <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+    <section className="site-section site-ambient bg-sand">
+      <div className="relative mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={reduce ? false : { opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.7 }}
@@ -46,10 +48,11 @@ export default function HowItWorksHome() {
           {steps.map((step, i) => (
             <motion.li
               key={step.n}
-              initial={{ opacity: 0, y: 24 }}
+              initial={reduce ? false : { opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-40px" }}
               transition={{ duration: 0.6, delay: i * 0.12 }}
+              whileHover={reduce ? undefined : { y: -4 }}
               className="border-t border-navy/15 pt-6"
             >
               <span className="font-mono text-sm text-teal">{step.n}</span>
@@ -63,11 +66,17 @@ export default function HowItWorksHome() {
           ))}
         </ol>
 
-        <div className="mt-12">
+        <motion.div
+          className="mt-12"
+          initial={reduce ? false : { opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.3 }}
+        >
           <Link href="/how-it-works" className="site-btn site-btn-outline">
             Full walkthrough
           </Link>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

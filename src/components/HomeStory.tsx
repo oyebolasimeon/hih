@@ -1,35 +1,56 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 export default function HomeStory() {
+  const reduce = useReducedMotion();
+
   return (
     <section className="site-section bg-surface overflow-hidden">
       <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8">
         <motion.div
-          initial={{ opacity: 0, x: -24 }}
+          initial={reduce ? false : { opacity: 0, x: -24 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.8 }}
           className="relative"
         >
           <div className="aspect-[4/3] overflow-hidden bg-sand-deep">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <motion.img
               src="/home-interior.jpg"
               alt="A calm living space ready to call home"
               className="h-full w-full object-cover"
+              animate={
+                reduce
+                  ? undefined
+                  : { scale: [1, 1.06, 1], x: [0, -8, 0] }
+              }
+              transition={
+                reduce
+                  ? undefined
+                  : { duration: 18, repeat: Infinity, ease: "easeInOut" }
+              }
             />
           </div>
-          <div
+          <motion.div
             className="pointer-events-none absolute -bottom-6 -right-6 hidden h-32 w-32 bg-teal/20 md:block"
             aria-hidden
+            animate={
+              reduce
+                ? undefined
+                : { opacity: [0.35, 0.7, 0.35], scale: [1, 1.08, 1] }
+            }
+            transition={
+              reduce
+                ? undefined
+                : { duration: 5, repeat: Infinity, ease: "easeInOut" }
+            }
           />
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, x: 24 }}
+          initial={reduce ? false : { opacity: 0, x: 24 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.8, delay: 0.1 }}

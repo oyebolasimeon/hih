@@ -1,3 +1,7 @@
+"use client";
+
+import { MotionCard } from "@/components/motion/Motion";
+
 export default function StatCard({
   label,
   value,
@@ -8,7 +12,7 @@ export default function StatCard({
   hint?: string;
 }) {
   return (
-    <div className="app-card p-5">
+    <MotionCard className="app-card app-card-interactive p-5">
       <p className="text-xs uppercase tracking-wider text-muted font-medium">
         {label}
       </p>
@@ -16,6 +20,6 @@ export default function StatCard({
         {value}
       </p>
       {hint ? <p className="mt-1 text-xs text-muted">{hint}</p> : null}
-    </div>
+    </MotionCard>
   );
 }

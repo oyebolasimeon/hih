@@ -1,22 +1,42 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 export default function ClosingCta() {
+  const reduce = useReducedMotion();
+
   return (
     <section className="relative overflow-hidden bg-teal">
-      <div
+      <motion.div
         className="pointer-events-none absolute inset-0 opacity-30"
         style={{
           backgroundImage:
             "radial-gradient(circle at 20% 50%, #F4E9D8 0%, transparent 45%), radial-gradient(circle at 90% 10%, #0B1F3A 0%, transparent 40%)",
         }}
         aria-hidden
+        animate={
+          reduce
+            ? undefined
+            : { backgroundPosition: ["0% 0%", "12% 8%", "0% 0%"] }
+        }
+        transition={
+          reduce
+            ? undefined
+            : { duration: 16, repeat: Infinity, ease: "easeInOut" }
+        }
       />
+      {!reduce ? (
+        <motion.div
+          className="pointer-events-none absolute -left-16 top-1/3 h-48 w-48 rounded-full bg-sand/25 blur-2xl"
+          animate={{ x: [0, 40, 0], y: [0, -20, 0], opacity: [0.35, 0.55, 0.35] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+          aria-hidden
+        />
+      ) : null}
       <motion.div
         className="relative mx-auto max-w-7xl px-5 py-20 sm:px-6 sm:py-28 lg:px-8"
-        initial={{ opacity: 0, y: 16 }}
+        initial={reduce ? false : { opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.7 }}

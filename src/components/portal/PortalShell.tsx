@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
+import { motion } from "framer-motion";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import BrandMark from "@/components/BrandMark";
+import { PageMotion } from "@/components/motion/Motion";
 
 const links = [
   { href: "/portal", label: "Dashboard", exact: true },
@@ -47,12 +49,19 @@ export default function PortalShell({ children }: { children: React.ReactNode })
               <Link
                 key={link.href}
                 href={link.href}
-                className={`block rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                className={`relative block rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 ${
                   active
                     ? "bg-brand-subtle text-foreground"
                     : "text-muted hover:bg-surface-dark hover:text-foreground"
                 }`}
               >
+                {active ? (
+                  <motion.span
+                    layoutId="portal-nav-indicator"
+                    className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-brand"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
+                ) : null}
                 {link.label}
               </Link>
             );
@@ -60,7 +69,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
           {session?.user?.isAdmin ? (
             <Link
               href="/admin"
-              className="block rounded-md px-3 py-2 text-sm font-medium text-muted hover:bg-surface-dark hover:text-foreground"
+              className="block rounded-md px-3 py-2 text-sm font-medium text-muted hover:bg-surface-dark hover:text-foreground transition-colors duration-200"
             >
               Admin Console
             </Link>
@@ -112,8 +121,8 @@ export default function PortalShell({ children }: { children: React.ReactNode })
               <Link
                 key={link.href}
                 href={link.href}
-                className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium ${
-                  active ? "bg-brand text-[#0c0d0b]" : "text-muted"
+                className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors duration-200 ${
+                  active ? "bg-brand text-white" : "text-muted"
                 }`}
               >
                 {link.label}
@@ -122,7 +131,9 @@ export default function PortalShell({ children }: { children: React.ReactNode })
           })}
         </nav>
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-x-hidden">
+          <PageMotion routeKey={pathname}>{children}</PageMotion>
+        </main>
       </div>
     </div>
   );

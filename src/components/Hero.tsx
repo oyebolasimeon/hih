@@ -1,20 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useBranding } from "@/components/providers/BrandingProvider";
 
 export default function Hero() {
   const { branding } = useBranding();
   const name = branding.appName || "House In Hand";
+  const reduce = useReducedMotion();
 
   return (
     <section className="relative min-h-[100svh] overflow-hidden bg-navy">
       <motion.div
         className="absolute inset-0"
-        initial={{ scale: 1.06 }}
-        animate={{ scale: 1 }}
-        transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1] }}
+        initial={reduce ? false : { scale: 1.08 }}
+        animate={
+          reduce
+            ? { scale: 1 }
+            : { scale: [1.08, 1.02, 1.06], x: [0, -12, 0], y: [0, 8, 0] }
+        }
+        transition={
+          reduce
+            ? { duration: 0 }
+            : { duration: 28, repeat: Infinity, ease: "easeInOut" }
+        }
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -29,9 +38,9 @@ export default function Hero() {
       <div className="relative mx-auto flex min-h-[100svh] max-w-7xl flex-col justify-end px-5 pb-16 pt-28 sm:justify-center sm:px-6 sm:pb-24 lg:px-8">
         <motion.div
           className="max-w-xl"
-          initial={{ opacity: 0, y: 28 }}
+          initial={reduce ? false : { opacity: 0, y: 28 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.9, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
         >
           <p className="font-display text-3xl font-semibold tracking-tight text-sand sm:text-4xl lg:text-5xl">
             {name}
@@ -45,9 +54,9 @@ export default function Hero() {
           </p>
           <motion.div
             className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center"
-            initial={{ opacity: 0, y: 16 }}
+            initial={reduce ? false : { opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.4 }}
+            transition={{ duration: 0.7, delay: 0.35 }}
           >
             <Link href="/register" className="site-btn site-btn-teal">
               Find a home

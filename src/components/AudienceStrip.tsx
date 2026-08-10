@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 const audiences = [
   {
@@ -27,17 +27,20 @@ const audiences = [
 ];
 
 export default function AudienceStrip() {
+  const reduce = useReducedMotion();
+
   return (
     <section className="site-section bg-navy text-sand">
       <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={reduce ? false : { opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
           className="max-w-xl"
         >
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal inline-flex items-center gap-2">
+            <span className="site-live-dot" aria-hidden />
             Built for every side of the lease
           </p>
           <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-sand sm:text-4xl">
@@ -49,10 +52,15 @@ export default function AudienceStrip() {
           {audiences.map((a, i) => (
             <motion.div
               key={a.title}
-              initial={{ opacity: 0, y: 20 }}
+              initial={reduce ? false : { opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.08 }}
+              whileHover={
+                reduce
+                  ? undefined
+                  : { backgroundColor: "rgba(255,255,255,0.04)" }
+              }
               className="bg-navy p-6 sm:p-8"
             >
               <h3 className="font-display text-xl font-semibold text-sand">

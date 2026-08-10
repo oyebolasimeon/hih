@@ -5,6 +5,7 @@ import Link from "next/link";
 import Select from "@/components/ui/Select";
 import EmptyState from "@/components/ui/EmptyState";
 import { FormSkeleton } from "@/components/ui/Skeleton";
+import { Stagger, StaggerItem } from "@/components/motion/Motion";
 
 type SearchListing = {
   id: string;
@@ -202,15 +203,15 @@ export default function SearchClient() {
           description="Try broadening your filters, or check back soon for new homes."
         />
       ) : (
-        <ul className="grid sm:grid-cols-2 gap-4">
+        <Stagger className="grid sm:grid-cols-2 gap-4">
           {listings.map((l) => {
             const img =
               l.images.find((i) => i.isPrimary)?.url || l.images[0]?.url;
             return (
-              <li key={l.id}>
+              <StaggerItem key={l.id}>
                 <Link
                   href={`/portal/search/${l.id}`}
-                  className="app-card block overflow-hidden hover:border-brand/40 transition"
+                  className="app-card app-card-interactive block overflow-hidden"
                 >
                   {img ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -249,10 +250,10 @@ export default function SearchClient() {
                     )}
                   </div>
                 </Link>
-              </li>
+              </StaggerItem>
             );
           })}
-        </ul>
+        </Stagger>
       )}
     </div>
   );

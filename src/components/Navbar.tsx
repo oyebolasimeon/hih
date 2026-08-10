@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import BrandMark from "@/components/BrandMark";
 
 const navLinks = [
@@ -19,6 +20,7 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const isHome = pathname === "/";
   const solid = !isHome || scrolled || mobileOpen;
+  const reduce = useReducedMotion();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -26,6 +28,10 @@ export default function Navbar() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   return (
     <header
@@ -37,19 +43,27 @@ export default function Navbar() {
         <BrandMark invert />
 
         <nav className="hidden items-center gap-8 lg:flex">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`text-sm font-medium transition-colors ${
-                pathname === link.href
-                  ? "text-teal"
-                  : "text-sand/75 hover:text-sand"
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
+          {navLinks.map((link) => {
+            const active = pathname === link.href;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`relative text-sm font-medium transition-colors ${
+                  active ? "text-teal" : "text-sand/75 hover:text-sand"
+                }`}
+              >
+                {link.label}
+                {active && !reduce ? (
+                  <motion.span
+                    layoutId="site-nav-underline"
+                    className="absolute -bottom-1 left-0 right-0 h-px bg-teal"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
+                ) : null}
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
@@ -59,7 +73,10 @@ export default function Navbar() {
           >
             Sign in
           </Link>
-          <Link href="/register" className="site-btn site-btn-teal !py-2.5 !px-5 text-sm">
+          <Link
+            href="/register"
+            className="site-btn site-btn-teal !py-2.5 !px-5 text-sm"
+          >
             Get started
           </Link>
         </div>
@@ -72,17 +89,17 @@ export default function Navbar() {
         >
           <span className="flex h-5 w-6 flex-col justify-between">
             <span
-              className={`h-0.5 w-full bg-current transition ${
+              className={`h-0.5 w-full bg-current transition duration-300 ${
                 mobileOpen ? "translate-y-[9px] rotate-45" : ""
               }`}
             />
             <span
-              className={`h-0.5 w-full bg-current transition ${
+              className={`h-0.5 w-full bg-current transition duration-300 ${
                 mobileOpen ? "opacity-0" : ""
               }`}
             />
             <span
-              className={`h-0.5 w-full bg-current transition ${
+              className={`h-0.5 w-full bg-current transition duration-300 ${
                 mobileOpen ? "-translate-y-[9px] -rotate-45" : ""
               }`}
             />
@@ -90,38 +107,52 @@ export default function Navbar() {
         </button>
       </div>
 
-      {mobileOpen ? (
-        <div className="border-t border-white/10 bg-navy lg:hidden">
-          <div className="space-y-1 px-5 py-5">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setMobileOpen(false)}
-                className="block py-3 text-sand/90 font-medium"
-              >
-                {link.label}
-              </Link>
-            ))}
-            <div className="flex flex-col gap-2 pt-4">
-              <Link
-                href="/login"
-                onClick={() => setMobileOpen(false)}
-                className="site-btn site-btn-ghost w-full"
-              >
-                Sign in
-              </Link>
-              <Link
-                href="/register"
-                onClick={() => setMobileOpen(false)}
-                className="site-btn site-btn-teal w-full"
-              >
-                Get started
-              </Link>
+      <AnimatePresence>
+        {mobileOpen ? (
+          <motion.div
+            className="border-t border-white/10 bg-navy lg:hidden overflow-hidden"
+            initial={reduce ? false : { height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={reduce ? undefined : { height: 0, opacity: 0 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <div className="space-y-1 px-5 py-5">
+              {navLinks.map((link, i) => (
+                <motion.div
+                  key={link.href}
+                  initial={reduce ? false : { opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.04 * i }}
+                >
+                  <Link
+                    href={link.href}
+                    onClick={() => setMobileOpen(false)}
+                    className="block py-3 text-sand/90 font-medium"
+                  >
+                    {link.label}
+                  </Link>
+                </motion.div>
+              ))}
+              <div className="flex flex-col gap-2 pt-4">
+                <Link
+                  href="/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="site-btn site-btn-ghost w-full"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href="/register"
+                  onClick={() => setMobileOpen(false)}
+                  className="site-btn site-btn-teal w-full"
+                >
+                  Get started
+                </Link>
+              </div>
             </div>
-          </div>
-        </div>
-      ) : null}
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </header>
   );
 }

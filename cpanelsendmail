@@ -1,0 +1,159 @@
+# cPanel email: SMTP vs sendmail
+
+How Nova Elite Homes sends transactional email on shared cPanel when normal SMTP TCP connections time out.
+
+## Problem we hit
+
+On production (cPanel Node app), Sentry showed:
+
+```text
+Error: Connection timeout
+  … _formatError / _onError / _onConnectionError  (Nodemailer)
+```
+
+That is **SMTP socket failure**, not Redis and not Mongo.
+
+What we tried:
+
+| Setting | Result |
+|--------|--------|
+| `SMTP_HOST=mail.novaelitehomes.co.uk` + port `465` | Timeout (also unreachable from laptop) |
+| `SMTP_HOST=localhost` + `465` / `587` | Still timed out / refused on this host |
+| Gmail SMTP | Works locally; not preferred for the live domain |
+
+Shared hosts often block or isolate outbound SMTP and even local submission on 465/587. Mail still works via the system MTA (**Exim**) through **`/usr/sbin/sendmail`**.
+
+## Solution
+
+Use Nodemailer’s **sendmail** transport so Node hands the message to Exim on the same server (no TCP SMTP handshake).
+
+Implementation lives in:
+
+- [`src/lib/smtp.ts`](../src/lib/smtp.ts) — config, SMTP attempts, sendmail fallback
+- [`src/app/api/health/route.ts`](../src/app/api/health/route.ts) — optional `?smtp=1` probe
+- Env docs in [`.env.example`](../.env.example)
+
+### Forced sendmail (recommended on this cPanel)
+
+In **Setup Node.js App → Environment Variables**:
+
+```bash
+SMTP_TRANSPORT=sendmail
+SMTP_FROM=Nova Elite Homes <noreply@novaelitehomes.co.uk>
+```
+
+Optional:
+
+```bash
+SMTP_SENDMAIL_PATH=/usr/sbin/sendmail
+```
+
+Mailbox `SMTP_USER` / `SMTP_PASSWORD` are **not used** by sendmail. Keep `SMTP_FROM` as a real address on the domain so Exim/DKIM alignment stays sane.
+
+Restart the Node app after changing env.
+
+### Normal SMTP (local / Gmail / providers that allow TCP)
+
+```bash
+SMTP_TRANSPORT=smtp
+SMTP_HOST=localhost
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=noreply@novaelitehomes.co.uk
+SMTP_PASSWORD=...
+SMTP_FROM=Nova Elite Homes <noreply@novaelitehomes.co.uk>
+```
+
+Legacy `GOOGLE_SMTP_*` names still work as fallbacks if `SMTP_*` is unset.
+
+## Fallback chain (when `SMTP_TRANSPORT` is not `sendmail`)
+
+`sendMail()` / `verifySmtp()` try candidates in order and move on for **timeout / connection** errors:
+
+1. Configured host/port (authenticated)
+2. `localhost` / `127.0.0.1` same port, then `587`
+3. `127.0.0.1:25` without auth (local Exim injection)
+4. **`sendmail`** via `/usr/sbin/sendmail` (final fallback unless `SMTP_FALLBACK_SENDMAIL=false`)
+
+If the **primary** attempt fails with a non-retryable error (e.g. bad password), we do **not** mask that by silently succeeding on localhost.
+
+Force sendmail only:
+
+```bash
+SMTP_TRANSPORT=sendmail
+```
+
+Disable automatic localhost / sendmail fallbacks:
+
+```bash
+SMTP_FALLBACK_LOCALHOST=false
+SMTP_FALLBACK_SENDMAIL=false
+```
+
+TLS: by default cert verification is **lax** (cPanel/self-signed). Tighten with:
+
+```bash
+SMTP_TLS_REJECT_UNAUTHORIZED=true
+```
+
+## How sendmail works in code
+
+```ts
+nodemailer.createTransport({
+  sendmail: true,
+  newline: "unix",
+  path: process.env.SMTP_SENDMAIL_PATH || "/usr/sbin/sendmail",
+});
+```
+
+Nodemailer spawns that binary and pipes the RFC822 message. Exim then delivers (local queue, remote MX, spam filters, etc.).
+
+Auth email helpers (`sendVerificationEmail`, password reset, welcome, …) all go through `sendMail()` in `src/lib/smtp.ts`, so they pick up this transport automatically.
+
+## Health check
+
+```text
+GET /api/health
+GET /api/health?smtp=1
+```
+
+- Without `smtp=1`: Mongo + Redis + auth **token store** (Redis preferred, Mongo fallback).
+- With `smtp=1`: also reports SMTP verify / endpoint label (`sendmail`, `localhost:587`, …).
+
+Useful after deploy:
+
+```text
+https://novaelitehomes.co.uk/api/health?smtp=1
+```
+
+Expect auth flows to be viable when `mongo.ok` and `tokenStore.ok` are true. SMTP may show `endpoint: "sendmail"` when using Exim.
+
+## Related: why verify email used to “fail” even when SMTP later worked
+
+Verification / reset links need a short-lived token.
+
+- Redis from cPanel often dies (`MaxRetriesPerRequestError` / `Connection is closed`) because outbound Redis Cloud ports are blocked.
+- Tokens now use **Redis first, Mongo fallback** (`src/lib/token-store.ts`).
+- So: **token store** can work without Redis; **sendmail** can work without SMTP ports.
+
+Both were required for “register → verification email → link works” on this host.
+
+## Checklist (cPanel)
+
+1. Create mailbox (e.g. `noreply@novaelitehomes.co.uk`) used in `SMTP_FROM`.
+2. Set `SMTP_TRANSPORT=sendmail` and `SMTP_FROM=...`.
+3. Deploy build that includes current `src/lib/smtp.ts`.
+4. Restart Node app.
+5. Hit `/api/health` and `/api/health?smtp=1`.
+6. Register or use Resend verification; confirm inbox (and spam).
+7. Watch Sentry — SMTP timeout should stop once sendmail is delivering.
+
+## Files to remember
+
+| File | Role |
+|------|------|
+| `src/lib/smtp.ts` | SMTP + sendmail transports and fallbacks |
+| `src/lib/mail.ts` | High-level templated emails |
+| `src/lib/token-store.ts` | Verify/reset tokens (Redis → Mongo) |
+| `src/app/api/health/route.ts` | Connectivity probe |
+| `.env.example` | Documented env vars |
