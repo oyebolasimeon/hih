@@ -1,4 +1,14 @@
 import mongoose, { Schema, models, model } from "mongoose";
+import type { BrandingSettings } from "@/lib/branding-defaults";
+
+export type {
+  BrandFontOption,
+  BrandingSettings,
+} from "@/lib/branding-defaults";
+export {
+  BRAND_FONT_OPTIONS,
+  DEFAULT_BRANDING,
+} from "@/lib/branding-defaults";
 
 export interface ISiteSettings {
   _id: mongoose.Types.ObjectId;
@@ -8,6 +18,8 @@ export interface ISiteSettings {
   socialLinks?: Record<string, unknown>;
   footerLinkGroups?: Record<string, unknown>;
   seoDefaults?: Record<string, unknown>;
+  /** Branding — logo, auth bg, colors, fonts */
+  branding?: Partial<BrandingSettings>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -26,6 +38,7 @@ const SiteSettingsSchema = new Schema<ISiteSettings>(
     socialLinks: { type: Schema.Types.Mixed },
     footerLinkGroups: { type: Schema.Types.Mixed },
     seoDefaults: { type: Schema.Types.Mixed },
+    branding: { type: Schema.Types.Mixed },
   },
   { timestamps: true }
 );

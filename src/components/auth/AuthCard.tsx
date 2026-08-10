@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import BrandMark from "@/components/BrandMark";
+import { useBranding } from "@/components/providers/BrandingProvider";
 import { useAuthBackground } from "@/components/auth/AuthBackgroundContext";
 
 export default function AuthCard({
@@ -15,8 +16,10 @@ export default function AuthCard({
   children: React.ReactNode;
   footer?: React.ReactNode;
 }) {
-  const backgroundUrl = useAuthBackground();
-  const bg = backgroundUrl || "/hero-home.jpg";
+  const layoutBg = useAuthBackground();
+  const { branding } = useBranding();
+  const bg =
+    branding.authBackgroundUrl || layoutBg || "/hero-home.jpg";
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-navy">
@@ -45,7 +48,7 @@ export default function AuthCard({
           ) : null}
           <p className="mt-6 text-center text-xs text-muted">
             <Link href="/" className="text-teal-dark hover:underline">
-              ← Back to House In Hand
+              ← Back to {branding.appName}
             </Link>
           </p>
         </div>

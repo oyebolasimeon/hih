@@ -1,21 +1,9 @@
 import type { Metadata } from "next";
-import { Fraunces, Manrope, JetBrains_Mono } from "next/font/google";
+import { JetBrains_Mono } from "next/font/google";
 import AuthProvider from "@/components/providers/AuthProvider";
+import { BrandingProvider } from "@/components/providers/BrandingProvider";
+import { getBranding } from "@/lib/branding";
 import "./globals.css";
-
-const manrope = Manrope({
-  variable: "--font-ui",
-  subsets: ["latin"],
-  display: "swap",
-  weight: ["400", "500", "600", "700"],
-});
-
-const fraunces = Fraunces({
-  variable: "--font-display-face",
-  subsets: ["latin"],
-  display: "swap",
-  weight: ["500", "600", "700"],
-});
 
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-mono-face",
@@ -27,7 +15,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "House In Hand | Housing you can trust",
   description:
-    "Find, rent, and manage homes across Nigeria — verified listings, digital agreements, and rent tools for students, tenants, landlords, and estate managers.",
+    "Find, rent, and manage homes across Nigeria — verified listings, digital agreements, and rent tools for tenants, landlords, students, and estate managers.",
   keywords:
     "House In Hand, property rental Nigeria, student hostels, landlords, estate management, rent payments, verified housing",
   icons: {
@@ -36,15 +24,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const branding = await getBranding();
+
   return (
     <html
       lang="en"
-      className={`${manrope.variable} ${fraunces.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${jetbrainsMono.variable} h-full antialiased`}
       data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
@@ -52,7 +42,9 @@ export default function RootLayout({
         className="min-h-full flex flex-col bg-background text-foreground"
         suppressHydrationWarning
       >
-        <AuthProvider>{children}</AuthProvider>
+        <BrandingProvider initial={branding}>
+          <AuthProvider>{children}</AuthProvider>
+        </BrandingProvider>
       </body>
     </html>
   );

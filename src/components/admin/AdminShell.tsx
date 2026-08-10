@@ -19,7 +19,7 @@ const links: NavLink[] = [
   { href: "/admin/kyc", label: "KYC review", permission: "kyc:read" },
   { href: "/admin/listings", label: "Listings", permission: "listings:read" },
   { href: "/admin/fraud", label: "Fraud reports", permission: "fraud:read" },
-  { href: "/admin/content", label: "Website content", permission: "content:read" },
+  { href: "/admin/content", label: "Website & brand", permission: "content:read" },
   { href: "/admin/emails", label: "Email templates", permission: "content:read" },
   { href: "/admin/audit", label: "Audit log", permission: "audit:read" },
   { href: "/admin/team", label: "Team & RBAC", permission: "admins:manage" },

@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useBranding } from "@/components/providers/BrandingProvider";
 
 export default function Hero() {
+  const { branding } = useBranding();
+  const name = branding.appName || "House In Hand";
+
   return (
     <section className="relative min-h-[100svh] overflow-hidden bg-navy">
-      {/* Full-bleed visual plane */}
       <motion.div
         className="absolute inset-0"
         initial={{ scale: 1.06 }}
@@ -31,7 +34,7 @@ export default function Hero() {
           transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
         >
           <p className="font-display text-3xl font-semibold tracking-tight text-sand sm:text-4xl lg:text-5xl">
-            House In Hand
+            {name}
           </p>
           <h1 className="mt-4 font-display text-4xl font-semibold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
             A home you can hold onto

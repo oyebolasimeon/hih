@@ -1,18 +1,16 @@
 import { AuthBackgroundProvider } from "@/components/auth/AuthBackgroundContext";
-import { getAuthBackgroundContent } from "@/lib/site-content";
+import { getBranding } from "@/lib/branding";
 
 export default async function AuthGroupLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const bg = await getAuthBackgroundContent().catch(() => ({
-    imageUrl: "/hero-home.jpg",
-    imagePublicId: "",
-  }));
+  const branding = await getBranding().catch(() => null);
+  const bg = branding?.authBackgroundUrl || "/hero-home.jpg";
 
   return (
-    <AuthBackgroundProvider backgroundUrl={bg.imageUrl}>
+    <AuthBackgroundProvider backgroundUrl={bg}>
       {children}
     </AuthBackgroundProvider>
   );
