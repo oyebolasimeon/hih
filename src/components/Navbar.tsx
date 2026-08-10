@@ -3,141 +3,125 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import BrandMark from "@/components/BrandMark";
+
+const navLinks = [
+  { href: "/how-it-works", label: "How it works" },
+  { href: "/listings", label: "Listings" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/about", label: "About" },
+  { href: "/blog", label: "Stories" },
+];
 
 export default function Navbar() {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const isHome = pathname === "/";
-  const solid = !isHome || scrolled;
+  const solid = !isHome || scrolled || mobileOpen;
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 10);
-    handleScroll();
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const navLinks = [
-    { href: "/how-it-works", label: "How it works" },
-    { href: "/listings", label: "Listings" },
-    { href: "/blog", label: "Blog" },
-    { href: "/faq", label: "FAQ" },
-    { href: "/about", label: "About" },
-    { href: "/contact", label: "Contact" },
-  ];
-
   return (
-    <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        solid
-          ? "bg-foreground/95 backdrop-blur-xl border-b border-white/10"
-          : "bg-transparent"
+    <header
+      className={`fixed inset-x-0 top-0 z-50 transition-all duration-400 ${
+        solid ? "site-nav-solid" : "bg-transparent"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+      <div className="mx-auto flex h-[4.5rem] max-w-7xl items-center justify-between px-5 sm:px-6 lg:px-8">
+        <BrandMark invert />
+
+        <nav className="hidden items-center gap-8 lg:flex">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`text-sm font-medium transition-colors ${
+                pathname === link.href
+                  ? "text-teal"
+                  : "text-sand/75 hover:text-sand"
+              }`}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="hidden items-center gap-3 lg:flex">
           <Link
-            href="/"
-            className="inline-flex items-center gap-2 px-2.5 py-1.5 bg-brand rounded"
+            href="/login"
+            className="text-sm font-medium text-sand/80 hover:text-sand transition-colors"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/logo.png"
-              alt="House In Hand"
-              className="h-6 w-6 rounded-sm object-contain"
-            />
-            <span className="text-sm font-semibold text-foreground tracking-tight">
-              House In Hand
-            </span>
+            Sign in
           </Link>
-
-          <div className="hidden lg:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-sm text-white/80 hover:text-white transition-colors duration-200"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
-
-          <div className="hidden lg:flex items-center gap-3">
-            <Link
-              href="/login"
-              className="px-5 py-2.5 border border-white/40 text-white text-sm font-medium rounded-md hover:border-brand hover:bg-brand hover:text-foreground transition-colors duration-200"
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/register"
-              className="px-5 py-2.5 bg-brand text-foreground text-sm font-semibold rounded-md hover:bg-brand-dark transition-colors duration-200"
-            >
-              Sign up
-            </Link>
-          </div>
-
-          <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="lg:hidden p-2"
-            aria-label="Toggle menu"
-            type="button"
-          >
-            <div className="w-6 h-5 flex flex-col justify-between">
-              <span
-                className={`h-0.5 w-full bg-white transition-all duration-300 ${
-                  mobileOpen ? "rotate-45 translate-y-2" : ""
-                }`}
-              />
-              <span
-                className={`h-0.5 w-full bg-white transition-all duration-300 ${
-                  mobileOpen ? "opacity-0" : ""
-                }`}
-              />
-              <span
-                className={`h-0.5 w-full bg-white transition-all duration-300 ${
-                  mobileOpen ? "-rotate-45 -translate-y-2" : ""
-                }`}
-              />
-            </div>
-          </button>
+          <Link href="/register" className="site-btn site-btn-teal !py-2.5 !px-5 text-sm">
+            Get started
+          </Link>
         </div>
+
+        <button
+          type="button"
+          className="lg:hidden p-2 text-sand"
+          aria-label="Menu"
+          onClick={() => setMobileOpen((o) => !o)}
+        >
+          <span className="flex h-5 w-6 flex-col justify-between">
+            <span
+              className={`h-0.5 w-full bg-current transition ${
+                mobileOpen ? "translate-y-[9px] rotate-45" : ""
+              }`}
+            />
+            <span
+              className={`h-0.5 w-full bg-current transition ${
+                mobileOpen ? "opacity-0" : ""
+              }`}
+            />
+            <span
+              className={`h-0.5 w-full bg-current transition ${
+                mobileOpen ? "-translate-y-[9px] -rotate-45" : ""
+              }`}
+            />
+          </span>
+        </button>
       </div>
 
-      {mobileOpen && (
-        <div className="lg:hidden bg-white border-t border-border">
-          <div className="px-6 py-6 space-y-4">
+      {mobileOpen ? (
+        <div className="border-t border-white/10 bg-navy lg:hidden">
+          <div className="space-y-1 px-5 py-5">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileOpen(false)}
-                className="block text-foreground hover:text-brand transition-colors text-base"
+                className="block py-3 text-sand/90 font-medium"
               >
                 {link.label}
               </Link>
             ))}
-            <div className="pt-4 border-t border-border space-y-3">
+            <div className="flex flex-col gap-2 pt-4">
               <Link
                 href="/login"
                 onClick={() => setMobileOpen(false)}
-                className="block w-full text-center px-5 py-3 border border-border text-foreground font-medium rounded-md"
+                className="site-btn site-btn-ghost w-full"
               >
                 Sign in
               </Link>
               <Link
                 href="/register"
                 onClick={() => setMobileOpen(false)}
-                className="block w-full text-center px-5 py-3 bg-brand text-foreground font-semibold rounded-md"
+                className="site-btn site-btn-teal w-full"
               >
-                Sign up
+                Get started
               </Link>
             </div>
           </div>
         </div>
-      )}
-    </nav>
+      ) : null}
+    </header>
   );
 }

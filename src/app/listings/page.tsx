@@ -36,70 +36,78 @@ export default async function PublicListingsPage() {
   }
 
   return (
-    <>
+    <div className="site-page">
       <Navbar />
-      <main className="pt-28 pb-16 sm:pb-24 bg-white min-h-screen">
-        <div className="max-w-5xl mx-auto px-5 sm:px-6 lg:px-8 space-y-8">
-          <div>
-            <p className="text-brand font-medium text-sm uppercase tracking-wider">
+      <main className="pt-28">
+        <section className="bg-navy text-sand">
+          <div className="mx-auto max-w-7xl px-5 py-16 sm:px-6 lg:px-8 lg:py-20">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal">
               Listings
             </p>
-            <h1 className="mt-3 font-display text-3xl sm:text-4xl font-bold text-foreground">
-              Homes & hostels preview
+            <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight sm:text-5xl">
+              Homes worth holding
             </h1>
-            <p className="mt-4 text-muted max-w-2xl">
-              A sample of verified properties on House In Hand. Sign up to search
-              full details and apply.
+            <p className="mt-4 max-w-xl text-sand/70">
+              A preview of verified properties. Sign up for full detail and
+              applications.
             </p>
           </div>
+        </section>
 
-          {listings.length === 0 ? (
-            <EmptyState
-              title="Listings coming soon"
-              description="Verified properties will appear here. Create an account to be ready when they go live."
-            />
-          ) : (
-            <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {listings.map((l) => (
-                <li key={l.id} className="border border-border rounded-lg overflow-hidden">
-                  {l.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={l.imageUrl}
-                      alt=""
-                      className="h-40 w-full object-cover"
-                    />
-                  ) : (
-                    <div className="h-40 w-full bg-surface" />
-                  )}
-                  <div className="p-4 space-y-1">
-                    <p className="font-semibold line-clamp-1">{l.title}</p>
-                    <p className="text-sm text-muted">
-                      {l.city}
-                      {l.city && l.state ? ", " : ""}
-                      {l.state} · {l.listingType}
-                    </p>
-                    <p className="text-sm font-medium">{formatPrice(l.price)}</p>
-                    <p className="text-xs text-muted line-clamp-2">
-                      {l.description}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+        <section className="site-section">
+          <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8 space-y-10">
+            {listings.length === 0 ? (
+              <EmptyState
+                title="Listings coming online"
+                description="Verified homes will show here. Create an account to be ready."
+              >
+                <Link href="/register" className="site-btn site-btn-teal">
+                  Get started
+                </Link>
+              </EmptyState>
+            ) : (
+              <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                {listings.map((l) => (
+                  <li key={l.id} className="group">
+                    <div className="aspect-[4/3] overflow-hidden bg-surface-dark">
+                      {l.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={l.imageUrl}
+                          alt=""
+                          className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                        />
+                      ) : null}
+                    </div>
+                    <div className="mt-4 space-y-1">
+                      <p className="font-display text-lg font-semibold text-navy line-clamp-1">
+                        {l.title}
+                      </p>
+                      <p className="text-sm text-muted">
+                        {[l.city, l.state].filter(Boolean).join(", ")} ·{" "}
+                        {l.listingType}
+                      </p>
+                      <p className="text-sm font-semibold text-teal-dark">
+                        {formatPrice(l.price)}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
 
-          <div className="flex flex-wrap gap-3">
-            <Link href="/register" className="app-btn app-btn-primary inline-flex">
-              Sign up to browse & apply
-            </Link>
-            <Link href="/login" className="app-btn app-btn-secondary inline-flex">
-              Log in
-            </Link>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/register" className="site-btn site-btn-teal">
+                Sign up to apply
+              </Link>
+              <Link href="/login" className="site-btn site-btn-outline">
+                Sign in
+              </Link>
+            </div>
           </div>
-        </div>
+        </section>
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

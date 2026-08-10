@@ -6,7 +6,10 @@ export default async function AuthGroupLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const bg = await getAuthBackgroundContent();
+  const bg = await getAuthBackgroundContent().catch(() => ({
+    imageUrl: "/hero-home.jpg",
+    imagePublicId: "",
+  }));
 
   return (
     <AuthBackgroundProvider backgroundUrl={bg.imageUrl}>

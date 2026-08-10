@@ -69,7 +69,7 @@ export const BUILTIN_DEFAULT_HTML = `
   <div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0c0d0b;">
     <p>Hi {{name}},</p>
     <p>This is a message from House In Hand.</p>
-    <p><a href="{{loginUrl}}" style="color:#8FA63A;">Sign in to your account</a></p>
+    <p><a href="{{loginUrl}}" style="color:#008585;">Sign in to your account</a></p>
     <p>— House In Hand</p>
   </div>
 `.trim();
@@ -88,7 +88,7 @@ export const BUILTIN_TEMPLATES: Record<
       <div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0c0d0b;">
         <p>Hi {{name}},</p>
         <p>Welcome to House In Hand. Your account is verified and ready.</p>
-        <p><a href="{{loginUrl}}" style="color:#8FA63A;font-weight:600;">Sign in to your portal</a></p>
+        <p><a href="{{loginUrl}}" style="color:#008585;font-weight:600;">Sign in to your portal</a></p>
         <p>Our team will complete your portfolio onboarding shortly.</p>
         <p>— House In Hand</p>
       </div>
@@ -100,7 +100,7 @@ export const BUILTIN_TEMPLATES: Record<
       <div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0c0d0b;">
         <p>Hi {{name}},</p>
         <p>Thanks for creating a House In Hand account. Please verify your email to continue.</p>
-        <p><a href="{{verifyUrl}}" style="color:#8FA63A;font-weight:600;">Verify email address</a></p>
+        <p><a href="{{verifyUrl}}" style="color:#008585;font-weight:600;">Verify email address</a></p>
         <p>This link expires in 24 hours. If you did not create an account, you can ignore this email.</p>
         <p>— House In Hand</p>
       </div>
@@ -112,7 +112,7 @@ export const BUILTIN_TEMPLATES: Record<
       <div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0c0d0b;">
         <p>Hi {{name}},</p>
         <p>You requested a password reset for your House In Hand account.</p>
-        <p><a href="{{resetUrl}}" style="color:#8FA63A;font-weight:600;">Reset password</a></p>
+        <p><a href="{{resetUrl}}" style="color:#008585;font-weight:600;">Reset password</a></p>
         <p>This link expires in 1 hour. If you did not request this, you can ignore this email.</p>
         <p>— House In Hand</p>
       </div>
@@ -124,7 +124,7 @@ export const BUILTIN_TEMPLATES: Record<
       <div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0c0d0b;">
         <p>Hi {{name}},</p>
         <p>You've been granted <strong>{{role}}</strong> access to the House In Hand admin console.</p>
-        <p><a href="{{adminUrl}}" style="color:#8FA63A;font-weight:600;">Open admin console</a></p>
+        <p><a href="{{adminUrl}}" style="color:#008585;font-weight:600;">Open admin console</a></p>
         <p>— House In Hand</p>
       </div>
     `.trim(),
@@ -135,7 +135,7 @@ export const BUILTIN_TEMPLATES: Record<
       <div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0c0d0b;">
         <p>Hi {{name}},</p>
         <p>Here's an update on your House In Hand portfolio.</p>
-        <p><a href="{{portalUrl}}" style="color:#8FA63A;font-weight:600;">View your portal</a></p>
+        <p><a href="{{portalUrl}}" style="color:#008585;font-weight:600;">View your portal</a></p>
         <p>— House In Hand</p>
       </div>
     `.trim(),

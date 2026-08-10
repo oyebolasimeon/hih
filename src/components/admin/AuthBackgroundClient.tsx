@@ -17,7 +17,7 @@ export default function AuthBackgroundClient() {
   const canWrite = hasPermission(session?.user?.permissions, "content:write");
 
   const [content, setContent] = useState<Content | null>(null);
-  const [defaultUrl, setDefaultUrl] = useState("/hero-london.png");
+  const [defaultUrl, setDefaultUrl] = useState("/hero-home.jpg");
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -35,7 +35,7 @@ export default function AuthBackgroundClient() {
       return;
     }
     setContent(data.content);
-    setDefaultUrl(data.defaults?.imageUrl || "/hero-london.png");
+    setDefaultUrl(data.defaults?.imageUrl || "/hero-home.jpg");
   }, []);
 
   useEffect(() => {

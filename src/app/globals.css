@@ -1,42 +1,52 @@
 @import "tailwindcss";
 
-/* Runtime theme tokens — change with html.dark / html.light */
+/*
+  House In Hand brand tokens
+  Primary: Deep Navy #0B1F3A
+  Secondary: Teal #00A6A6
+  Tertiary: Warm Sand #F4E9D8
+*/
+
 :root {
-  --background: #f4f5f2;
-  --foreground: #0c0d0b;
-  --brand: #a8bf44;
-  --brand-light: #bfda4f;
-  --brand-dark: #8fa63a;
-  --brand-subtle: #e8efd0;
-  --surface: #eceee8;
-  --surface-dark: #e2e5dc;
-  --muted: #5c6356;
-  --border: #d5d9ce;
-  --border-dark: #c4c9bb;
+  --navy: #0b1f3a;
+  --navy-deep: #071526;
+  --teal: #00a6a6;
+  --teal-dark: #008585;
+  --teal-light: #33b8b8;
+  --sand: #f4e9d8;
+  --sand-deep: #e8d9c0;
+
+  --background: var(--sand);
+  --foreground: var(--navy);
+  --brand: var(--teal);
+  --brand-light: var(--teal-light);
+  --brand-dark: var(--teal-dark);
+  --brand-subtle: #d9f0f0;
+  --surface: #fffaf3;
+  --surface-dark: var(--sand-deep);
+  --muted: #5a6a7d;
+  --border: #e0d4c2;
+  --border-dark: #cbbfaa;
   --card: #ffffff;
   --danger: #b91c1c;
 }
 
 html.dark {
-  --background: #0a0b09;
-  --foreground: #f2f4ec;
-  --brand: #a8bf44;
-  --brand-light: #c5db5c;
-  --brand-dark: #8fa63a;
-  --brand-subtle: #151a0f;
-  --surface: #111310;
-  --surface-dark: #181c14;
-  --muted: #9aa392;
-  --border: #252a20;
-  --border-dark: #353b2e;
-  --card: #111310;
+  --background: #071526;
+  --foreground: #f4e9d8;
+  --brand: #00a6a6;
+  --brand-light: #33b8b8;
+  --brand-dark: #008585;
+  --brand-subtle: #0f2a3a;
+  --surface: #0b1f3a;
+  --surface-dark: #0e2747;
+  --muted: #a8b6c7;
+  --border: #1a3555;
+  --border-dark: #2a4a6e;
+  --card: #0b1f3a;
   --danger: #f87171;
 }
 
-/*
-  Point Tailwind color utilities at the runtime tokens above.
-  Without this, @theme hex values are inlined and ignore dark mode.
-*/
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -51,6 +61,10 @@ html.dark {
   --color-border-dark: var(--border-dark);
   --color-card: var(--card);
   --color-danger: var(--danger);
+  --color-navy: var(--navy);
+  --color-navy-deep: var(--navy-deep);
+  --color-teal: var(--teal);
+  --color-sand: var(--sand);
   --font-sans: var(--font-ui);
   --font-display: var(--font-display-face);
   --font-mono: var(--font-mono-face);
@@ -70,8 +84,8 @@ h1,
 h2,
 h3,
 .font-display {
-  font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
-  letter-spacing: -0.02em;
+  font-family: var(--font-display), Georgia, serif;
+  letter-spacing: -0.03em;
 }
 
 .font-mono,
@@ -84,8 +98,96 @@ h3,
 }
 
 ::selection {
-  background: rgba(168, 191, 68, 0.28);
-  color: inherit;
+  background: color-mix(in srgb, var(--teal) 35%, transparent);
+  color: var(--navy);
+}
+
+/* ——— Marketing site ——— */
+.site-page {
+  background: var(--sand);
+  color: var(--navy);
+}
+
+.site-nav-solid {
+  background: color-mix(in srgb, var(--navy) 94%, transparent);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid color-mix(in srgb, white 10%, transparent);
+}
+
+.site-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.site-btn:hover {
+  transform: translateY(-1px);
+}
+
+.site-btn-teal {
+  background: var(--teal);
+  color: #ffffff;
+}
+
+.site-btn-teal:hover {
+  background: var(--teal-dark);
+}
+
+.site-btn-navy {
+  background: var(--navy);
+  color: var(--sand);
+}
+
+.site-btn-navy:hover {
+  background: var(--navy-deep);
+}
+
+.site-btn-ghost {
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid color-mix(in srgb, white 45%, transparent);
+}
+
+.site-btn-ghost:hover {
+  background: color-mix(in srgb, white 12%, transparent);
+  border-color: white;
+}
+
+.site-btn-outline {
+  background: transparent;
+  color: var(--navy);
+  border: 1px solid color-mix(in srgb, var(--navy) 35%, transparent);
+}
+
+.site-btn-outline:hover {
+  border-color: var(--navy);
+  background: color-mix(in srgb, var(--navy) 4%, transparent);
+}
+
+.site-section {
+  padding: 5rem 0;
+}
+
+@media (min-width: 640px) {
+  .site-section {
+    padding: 7rem 0;
+  }
+}
+
+.site-kicker {
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--teal-dark);
 }
 
 /* App shell utilities */
@@ -98,15 +200,15 @@ h3,
 .app-card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 0.5rem;
+  border-radius: 0.25rem;
 }
 
 .app-input {
   width: 100%;
   border: 1px solid var(--border);
-  background: var(--background);
+  background: var(--surface);
   color: var(--foreground);
-  border-radius: 0.375rem;
+  border-radius: 0.25rem;
   padding: 0.625rem 0.875rem;
   font-size: 0.875rem;
   font-family: var(--font-sans), system-ui, sans-serif;
@@ -114,8 +216,8 @@ h3,
 
 .app-input:focus {
   outline: none;
-  border-color: var(--brand);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand) 40%, transparent);
+  border-color: var(--teal);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--teal) 40%, transparent);
 }
 
 .app-btn {
@@ -123,7 +225,7 @@ h3,
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: 0.375rem;
+  border-radius: 0.25rem;
   padding: 0.625rem 1rem;
   font-size: 0.875rem;
   font-weight: 600;
@@ -132,12 +234,12 @@ h3,
 }
 
 .app-btn-primary {
-  background: var(--brand);
-  color: #0c0d0b;
+  background: var(--teal);
+  color: #ffffff;
 }
 
 .app-btn-primary:hover {
-  background: var(--brand-light);
+  background: var(--teal-dark);
 }
 
 .app-btn-secondary {
@@ -169,14 +271,14 @@ h3,
 }
 .ProseMirror h2,
 .ProseMirror h3 {
-  font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
+  font-family: var(--font-display), Georgia, serif;
   font-weight: 600;
   margin: 0 0 0.5em;
 }
 .ProseMirror img {
   max-width: 100%;
   height: auto;
-  border-radius: 6px;
+  border-radius: 4px;
 }
 .ProseMirror p.is-editor-empty:first-child::before {
   color: var(--muted);
@@ -186,28 +288,26 @@ h3,
   pointer-events: none;
 }
 
-/* Auth card sits on a white surface — keep form controls light */
 .auth-card-body .app-input {
   background: #ffffff;
-  color: #0c0d0b;
-  border-color: #d5d9ce;
+  color: #0b1f3a;
+  border-color: #e0d4c2;
 }
 .auth-card-body .app-input::placeholder {
-  color: #9aa392;
+  color: #8a9aab;
 }
 .auth-card-body .app-btn-primary {
-  background: #a8bf44;
+  background: #00a6a6;
   color: #ffffff;
 }
 .auth-card-body .app-btn-primary:hover {
-  background: #8fa63a;
+  background: #008585;
 }
 .auth-card-body .app-btn-secondary {
-  background: #f4f5f2;
-  border-color: #d5d9ce;
-  color: #0c0d0b;
+  background: #f4e9d8;
+  border-color: #e0d4c2;
+  color: #0b1f3a;
 }
 .auth-card-body a.text-brand {
-  color: #8fa63a;
+  color: #008585;
 }
-

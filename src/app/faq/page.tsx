@@ -13,39 +13,44 @@ export default async function FaqPage() {
     .lean();
 
   return (
-    <>
+    <div className="site-page">
       <Navbar />
-      <main className="pt-28 pb-16 sm:pb-24 bg-white min-h-screen">
-        <div className="max-w-3xl mx-auto px-5 sm:px-6 lg:px-8">
-          <p className="text-brand font-medium text-sm uppercase tracking-wider">
-            FAQ
-          </p>
-          <h1 className="mt-3 font-display text-3xl sm:text-4xl font-bold text-foreground">
-            Frequently asked questions
-          </h1>
-
-          {faqs.length === 0 ? (
-            <div className="mt-10">
+      <main className="pt-28">
+        <section className="bg-navy text-sand">
+          <div className="mx-auto max-w-7xl px-5 py-16 sm:px-6 lg:px-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal">
+              FAQ
+            </p>
+            <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight sm:text-5xl">
+              Answers before you sign
+            </h1>
+          </div>
+        </section>
+        <section className="site-section">
+          <div className="mx-auto max-w-3xl px-5 sm:px-6 lg:px-8">
+            {faqs.length === 0 ? (
               <EmptyState
                 title="No FAQs yet"
                 description="Common questions will appear here soon."
               />
-            </div>
-          ) : (
-            <div className="mt-10 divide-y divide-border">
-              {faqs.map((item) => (
-                <div key={String(item._id)} className="py-6">
-                  <h2 className="font-semibold text-foreground">{item.question}</h2>
-                  <p className="mt-2 text-sm text-muted leading-relaxed whitespace-pre-wrap">
-                    {item.answer}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {faqs.map((item) => (
+                  <div key={String(item._id)} className="py-8">
+                    <h2 className="font-display text-xl font-semibold text-navy">
+                      {item.question}
+                    </h2>
+                    <p className="mt-3 text-muted leading-relaxed whitespace-pre-wrap">
+                      {item.answer}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

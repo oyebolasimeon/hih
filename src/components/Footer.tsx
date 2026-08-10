@@ -1,141 +1,108 @@
 "use client";
 
 import Link from "next/link";
+import BrandMark from "@/components/BrandMark";
 
 export default function Footer() {
   return (
-    <footer className="bg-foreground text-white">
-      <div className="border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-8 sm:py-12">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-3">
-              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-brand-light" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-              <span className="text-lg sm:text-xl font-semibold">Ready to get started?</span>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
-              <Link
-                href="/register"
-                className="px-6 sm:px-8 py-3 bg-brand text-foreground text-sm font-semibold rounded-md hover:bg-brand-dark transition-all text-center"
-              >
-                Create an account
-              </Link>
-              <Link
-                href="/contact"
-                className="px-6 sm:px-8 py-3 border border-white/30 text-white text-sm font-medium rounded-md hover:bg-white hover:text-foreground transition-all text-center"
-              >
-                Contact the team
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-8 sm:gap-12">
-          <div className="col-span-2 sm:col-span-2 md:col-span-1">
-            <div className="flex items-center gap-3 mb-4 sm:mb-6">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/logo.png"
-                alt="House In Hand"
-                className="h-9 w-9 sm:h-10 sm:w-10 rounded-md object-contain"
-              />
-              <span className="font-semibold text-white text-sm sm:text-base">House In Hand</span>
-            </div>
-            <p className="text-white/60 text-sm leading-relaxed">
+    <footer className="bg-navy-deep text-sand">
+      <div className="mx-auto max-w-7xl px-5 py-16 sm:px-6 lg:px-8 lg:py-20">
+        <div className="grid gap-12 md:grid-cols-12">
+          <div className="md:col-span-5">
+            <BrandMark invert href="/" />
+            <p className="mt-5 max-w-sm text-sm leading-relaxed text-sand/60">
               Property rental and housing management for Nigeria — search, list,
-              apply, pay, and manage agreements in one place.
+              apply, sign, and pay rent with trust at the centre.
             </p>
-            <div className="mt-4 sm:mt-6 space-y-1 text-xs sm:text-sm text-white/50">
-              <p>Lagos · Abuja · Nationwide</p>
-              <a href="mailto:hello@houseinhand.com" className="hover:text-white transition-colors">
+            <p className="mt-6 text-sm text-sand/45">
+              Lagos · Abuja · Nationwide
+              <br />
+              <a
+                href="mailto:hello@houseinhand.com"
+                className="text-teal hover:text-teal-light transition-colors"
+              >
                 hello@houseinhand.com
               </a>
-            </div>
+            </p>
           </div>
 
-          <div>
-            <h4 className="text-xs sm:text-sm font-semibold text-white uppercase tracking-wider mb-3 sm:mb-4">
-              Explore
-            </h4>
-            <ul className="space-y-2 sm:space-y-3">
-              {[
-                { label: "How it works", href: "/how-it-works" },
-                { label: "Listings", href: "/listings" },
-                { label: "Blog", href: "/blog" },
-                { label: "FAQ", href: "/faq" },
-                { label: "About", href: "/about" },
-                { label: "Contact", href: "/contact" },
-              ].map((link) => (
-                <li key={link.label}>
-                  <Link href={link.href} className="text-xs sm:text-sm text-white/60 hover:text-white transition-colors">
-                    {link.label}
+          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 md:col-span-7">
+            <div>
+              <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-sand/40">
+                Explore
+              </h4>
+              <ul className="mt-4 space-y-2.5">
+                {[
+                  { label: "How it works", href: "/how-it-works" },
+                  { label: "Listings", href: "/listings" },
+                  { label: "Pricing", href: "/pricing" },
+                  { label: "Stories", href: "/blog" },
+                ].map((l) => (
+                  <li key={l.href}>
+                    <Link
+                      href={l.href}
+                      className="text-sm text-sand/70 hover:text-sand transition-colors"
+                    >
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-sand/40">
+                Company
+              </h4>
+              <ul className="mt-4 space-y-2.5">
+                {[
+                  { label: "About", href: "/about" },
+                  { label: "Contact", href: "/contact" },
+                  { label: "FAQ", href: "/faq" },
+                ].map((l) => (
+                  <li key={l.href}>
+                    <Link
+                      href={l.href}
+                      className="text-sm text-sand/70 hover:text-sand transition-colors"
+                    >
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-sand/40">
+                Legal
+              </h4>
+              <ul className="mt-4 space-y-2.5">
+                <li>
+                  <Link
+                    href="/legal/privacy"
+                    className="text-sm text-sand/70 hover:text-sand transition-colors"
+                  >
+                    Privacy
                   </Link>
                 </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-xs sm:text-sm font-semibold text-white uppercase tracking-wider mb-3 sm:mb-4">
-              For you
-            </h4>
-            <ul className="space-y-2 sm:space-y-3">
-              {[
-                "Students",
-                "Tenants",
-                "Landlords",
-                "Estate managers",
-              ].map((item) => (
-                <li key={item}>
-                  <span className="text-xs sm:text-sm text-white/60">{item}</span>
+                <li>
+                  <Link
+                    href="/legal/terms"
+                    className="text-sm text-sand/70 hover:text-sand transition-colors"
+                  >
+                    Terms
+                  </Link>
                 </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-xs sm:text-sm font-semibold text-white uppercase tracking-wider mb-3 sm:mb-4">
-              Legal
-            </h4>
-            <ul className="space-y-2 sm:space-y-3">
-              <li>
-                <Link href="/legal/privacy" className="text-xs sm:text-sm text-white/60 hover:text-white transition-colors">
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link href="/legal/terms" className="text-xs sm:text-sm text-white/60 hover:text-white transition-colors">
-                  Terms of Service
-                </Link>
-              </li>
-              <li>
-                <Link href="/pricing" className="text-xs sm:text-sm text-white/60 hover:text-white transition-colors">
-                  Pricing
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <div className="border-t border-white/10">
-        <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-8 sm:py-10">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
-            <p className="text-xs sm:text-sm text-white/50">
-              &copy; 2026 House In Hand. All rights reserved.
-            </p>
-            <div className="flex items-center gap-6">
-              <Link href="/legal/privacy" className="text-sm text-white/60 hover:text-white transition-colors">
-                Privacy
-              </Link>
-              <Link href="/legal/terms" className="text-sm text-white/60 hover:text-white transition-colors">
-                Terms
-              </Link>
+              </ul>
             </div>
           </div>
+        </div>
+
+        <div className="mt-16 flex flex-col gap-3 border-t border-white/10 pt-8 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-sand/40">
+            © {new Date().getFullYear()} House In Hand. All rights reserved.
+          </p>
+          <p className="text-xs text-sand/35">
+            Navy · Teal · Sand — trust, proptech, home.
+          </p>
         </div>
       </div>
     </footer>

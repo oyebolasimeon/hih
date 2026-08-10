@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import BrandMark from "@/components/BrandMark";
 
 const links = [
   { href: "/portal", label: "Dashboard", exact: true },
@@ -34,19 +35,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
     <div className="app-shell flex min-h-screen">
       <aside className="hidden lg:flex w-64 flex-col border-r border-border bg-surface">
         <div className="px-5 py-5 border-b border-border">
-          <Link href="/portal" className="inline-flex items-center gap-2">
-            <span className="inline-flex items-center gap-2 px-2 py-1.5 bg-brand rounded">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/logo.png"
-                alt="House In Hand"
-                className="h-5 w-5 rounded-sm object-contain"
-              />
-              <span className="text-sm font-semibold text-foreground tracking-tight">
-                House In Hand
-              </span>
-            </span>
-          </Link>
+          <BrandMark href="/portal" size="sm" />
           <p className="text-xs text-muted mt-2">App</p>
         </div>
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
@@ -97,15 +86,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
       <div className="flex-1 flex flex-col min-w-0">
         <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
           <div className="lg:hidden">
-            <Link href="/portal" className="inline-flex items-center gap-2 px-2 py-1 bg-brand rounded">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/logo.png"
-                alt="House In Hand"
-                className="h-5 w-5 rounded-sm object-contain"
-              />
-              <span className="text-sm font-semibold text-foreground">House In Hand</span>
-            </Link>
+            <BrandMark href="/portal" size="sm" />
           </div>
           <div className="hidden lg:block text-sm text-muted">
             Welcome back{session?.user?.name ? `, ${session.user.name}` : ""}

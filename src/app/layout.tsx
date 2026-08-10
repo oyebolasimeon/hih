@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
-import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
+import { Fraunces, Manrope, JetBrains_Mono } from "next/font/google";
 import AuthProvider from "@/components/providers/AuthProvider";
 import "./globals.css";
 
-const inter = Inter({
+const manrope = Manrope({
   variable: "--font-ui",
   subsets: ["latin"],
   display: "swap",
+  weight: ["400", "500", "600", "700"],
 });
 
-const spaceGrotesk = Space_Grotesk({
+const fraunces = Fraunces({
   variable: "--font-display-face",
   subsets: ["latin"],
   display: "swap",
@@ -24,13 +25,13 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "House In Hand | Property Rental & Management Platform",
+  title: "House In Hand | Housing you can trust",
   description:
-    "Discover, rent, and manage housing in one place — listings, digital agreements, rent payments, and estate tools for tenants, landlords, students, and estate managers.",
+    "Find, rent, and manage homes across Nigeria — verified listings, digital agreements, and rent tools for students, tenants, landlords, and estate managers.",
   keywords:
-    "House In Hand, property rental Nigeria, student hostels, landlords, estate management, rent payments, KYC verified housing",
+    "House In Hand, property rental Nigeria, student hostels, landlords, estate management, rent payments, verified housing",
   icons: {
-    icon: "/favicon.ico",
+    icon: [{ url: "/favicon.png", type: "image/png" }],
     apple: "/favicon.png",
   },
 };
@@ -43,7 +44,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${manrope.variable} ${fraunces.variable} ${jetbrainsMono.variable} h-full antialiased`}
       data-scroll-behavior="smooth"
       suppressHydrationWarning
     >

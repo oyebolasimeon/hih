@@ -1,64 +1,97 @@
+import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import Link from "next/link";
+import ClosingCta from "@/components/ClosingCta";
+
+const pillars = [
+  {
+    title: "Students",
+    steps: [
+      "Create a Student profile",
+      "Complete KYC + student ID review",
+      "Search hostels and term-friendly homes",
+      "Apply, sign, and settle rent",
+    ],
+  },
+  {
+    title: "Tenants",
+    steps: [
+      "Verify your identity",
+      "Filter by city, price, and type",
+      "Apply with a clear timeline",
+      "Sign digitally and pay on schedule",
+    ],
+  },
+  {
+    title: "Landlords",
+    steps: [
+      "List with photos and terms",
+      "Get verified before going live",
+      "Review applicants with KYC context",
+      "Collect rent and track occupancy",
+    ],
+  },
+  {
+    title: "Estate managers",
+    steps: [
+      "Onboard the portfolio",
+      "Assign units and lease cycles",
+      "Message residents at scale",
+      "Read analytics on collection & vacancy",
+    ],
+  },
+];
 
 export default function HowItWorksPage() {
   return (
-    <>
+    <div className="site-page">
       <Navbar />
-      <main className="pt-28 pb-16 sm:pb-24 bg-white min-h-screen">
-        <div className="max-w-3xl mx-auto px-5 sm:px-6 lg:px-8">
-          <p className="text-brand font-medium text-sm uppercase tracking-wider">
-            How it works
-          </p>
-          <h1 className="mt-3 font-display text-3xl sm:text-4xl font-bold text-foreground">
-            From search to tenancy in a few steps
-          </h1>
-          <p className="mt-4 text-muted leading-relaxed">
-            House In Hand helps students, tenants, landlords, and estate managers
-            handle housing in one place.
-          </p>
-          <ol className="mt-10 space-y-6">
-            {[
-              {
-                title: "Create an account & profile",
-                body: "Sign up, then choose Student, Tenant, Landlord, or Estate Manager.",
-              },
-              {
-                title: "Complete KYC when asked",
-                body: "Verified profiles unlock applications, listings, and trust on both sides.",
-              },
-              {
-                title: "Search or list",
-                body: "Find homes in search, or publish listings for review before they go live.",
-              },
-              {
-                title: "Apply, agree, pay",
-                body: "Manage applications, digital agreements, and rent payments in the app.",
-              },
-            ].map((step, i) => (
-              <li key={step.title} className="flex gap-4">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand text-foreground text-sm font-semibold">
-                  {i + 1}
-                </span>
-                <div>
-                  <h2 className="font-semibold text-foreground">{step.title}</h2>
-                  <p className="mt-1 text-sm text-muted">{step.body}</p>
-                </div>
-              </li>
+      <main className="pt-28">
+        <section className="bg-navy text-sand">
+          <div className="mx-auto max-w-7xl px-5 py-20 sm:px-6 lg:px-8 lg:py-28">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal">
+              How it works
+            </p>
+            <h1 className="mt-4 max-w-3xl font-display text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
+              From first search to an active lease
+            </h1>
+            <p className="mt-5 max-w-xl text-sand/70 text-lg leading-relaxed">
+              Every role follows a short, verified path — so housing moves
+              forward without chaos.
+            </p>
+          </div>
+        </section>
+
+        <section className="site-section">
+          <div className="mx-auto grid max-w-7xl gap-12 px-5 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8">
+            {pillars.map((p) => (
+              <div key={p.title} className="border-t border-navy/15 pt-8">
+                <h2 className="font-display text-2xl font-semibold text-navy sm:text-3xl">
+                  {p.title}
+                </h2>
+                <ol className="mt-6 space-y-4">
+                  {p.steps.map((step, i) => (
+                    <li key={step} className="flex gap-4 text-muted">
+                      <span className="font-mono text-sm text-teal">
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                      <span className="text-base text-navy/80">{step}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
             ))}
-          </ol>
-          <div className="mt-10 flex flex-wrap gap-3">
-            <Link href="/register" className="app-btn app-btn-primary">
-              Get started
-            </Link>
-            <Link href="/listings" className="app-btn app-btn-secondary">
-              Browse listings
+          </div>
+          <div className="mx-auto mt-14 max-w-7xl px-5 sm:px-6 lg:px-8">
+            <Link href="/register" className="site-btn site-btn-teal">
+              Create your account
             </Link>
           </div>
-        </div>
+        </section>
+
+        <ClosingCta />
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

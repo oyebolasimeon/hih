@@ -5,62 +5,55 @@ import { motion } from "framer-motion";
 
 export default function Hero() {
   return (
-    <section className="relative">
-      <div className="relative h-[100svh] min-h-[500px] sm:min-h-[600px] sm:h-[85vh] overflow-hidden">
-        <motion.img
-          src="/hero-london.png"
-          alt="Housing across Nigeria"
-          className="absolute inset-0 w-full h-full object-cover"
-          initial={{ scale: 1.08, opacity: 0.7 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 1.4, ease: "easeOut" }}
+    <section className="relative min-h-[100svh] overflow-hidden bg-navy">
+      {/* Full-bleed visual plane */}
+      <motion.div
+        className="absolute inset-0"
+        initial={{ scale: 1.06 }}
+        animate={{ scale: 1 }}
+        transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1] }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/hero-home.jpg"
+          alt=""
+          className="h-full w-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t sm:bg-gradient-to-r from-black/75 via-black/55 to-black/25 sm:to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/75 to-navy/35" />
+        <div className="absolute inset-0 bg-gradient-to-r from-navy/90 via-navy/40 to-transparent" />
+      </motion.div>
 
-        <div className="relative h-full max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 flex items-end sm:items-center pb-24 sm:pb-0 pt-20">
+      <div className="relative mx-auto flex min-h-[100svh] max-w-7xl flex-col justify-end px-5 pb-16 pt-28 sm:justify-center sm:px-6 sm:pb-24 lg:px-8">
+        <motion.div
+          className="max-w-xl"
+          initial={{ opacity: 0, y: 28 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <p className="font-display text-3xl font-semibold tracking-tight text-sand sm:text-4xl lg:text-5xl">
+            House In Hand
+          </p>
+          <h1 className="mt-4 font-display text-4xl font-semibold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
+            A home you can hold onto
+          </h1>
+          <p className="mt-5 max-w-md text-base leading-relaxed text-sand/80 sm:text-lg">
+            Verified housing across Nigeria — find, rent, and manage with clarity
+            from the first viewing to rent day.
+          </p>
           <motion.div
-            className="max-w-2xl"
-            initial={{ opacity: 0, y: 24 }}
+            className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center"
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+            transition={{ duration: 0.7, delay: 0.4 }}
           >
-            <motion.p
-              className="font-display text-brand text-lg sm:text-xl font-semibold tracking-tight mb-3 sm:mb-4"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.35 }}
-            >
-              House In Hand
-            </motion.p>
-            <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight tracking-tight">
-              Housing in one place
-            </h1>
-            <p className="mt-4 sm:mt-6 text-base sm:text-lg text-white/85 leading-relaxed max-w-xl">
-              Discover, rent, and manage homes across Nigeria — verified
-              listings, digital agreements, and rent tools for students,
-              tenants, landlords, and estate managers.
-            </p>
-            <motion.div
-              className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-            >
-              <Link
-                href="/register"
-                className="inline-flex items-center justify-center px-6 sm:px-7 py-3 sm:py-3.5 bg-brand text-foreground font-semibold rounded-md hover:bg-brand-dark transition-colors text-sm sm:text-base"
-              >
-                Find a home
-              </Link>
-              <Link
-                href="/register"
-                className="inline-flex items-center justify-center px-6 sm:px-7 py-3 sm:py-3.5 bg-white text-foreground font-medium rounded-md hover:bg-gray-50 transition-colors text-sm sm:text-base"
-              >
-                List a property
-              </Link>
-            </motion.div>
+            <Link href="/register" className="site-btn site-btn-teal">
+              Find a home
+            </Link>
+            <Link href="/how-it-works" className="site-btn site-btn-ghost">
+              See how it works
+            </Link>
           </motion.div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

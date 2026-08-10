@@ -2,7 +2,7 @@
 
 import { createContext, useContext } from "react";
 
-const AuthBackgroundContext = createContext("/hero-london.png");
+const AuthBackgroundContext = createContext("/hero-home.jpg");
 
 export function AuthBackgroundProvider({
   backgroundUrl,
@@ -12,7 +12,7 @@ export function AuthBackgroundProvider({
   children: React.ReactNode;
 }) {
   return (
-    <AuthBackgroundContext.Provider value={backgroundUrl || "/hero-london.png"}>
+    <AuthBackgroundContext.Provider value={backgroundUrl || "/hero-home.jpg"}>
       {children}
     </AuthBackgroundContext.Provider>
   );

@@ -25,19 +25,19 @@ function wrapEmailHtml(body: string): string {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
-<body style="margin:0;padding:0;background:#f4f5f2;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f5f2;padding:24px 12px;">
+<body style="margin:0;padding:0;background:#F4E9D8;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#F4E9D8;padding:24px 12px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" style="max-width:560px;background:#ffffff;border:1px solid #d5d9ce;border-radius:8px;overflow:hidden;">
+        <table role="presentation" width="100%" style="max-width:560px;background:#ffffff;border:1px solid #E0D4C2;overflow:hidden;">
           <tr>
-            <td style="background:#A8BF44;padding:14px 20px;">
+            <td style="background:#0B1F3A;padding:16px 20px;">
               <table role="presentation" cellspacing="0" cellpadding="0">
                 <tr>
                   <td style="vertical-align:middle;padding-right:10px;">
-                    <img src="{{logoUrl}}" width="28" height="28" alt="House In Hand" style="display:block;border:0;border-radius:4px;width:28px;height:28px;object-fit:contain;" />
+                    <img src="{{logoUrl}}" width="28" height="28" alt="House In Hand" style="display:block;border:0;border-radius:2px;width:28px;height:28px;object-fit:contain;" />
                   </td>
-                  <td style="vertical-align:middle;font-family:Inter,Arial,sans-serif;font-weight:700;color:#0c0d0b;font-size:15px;">
+                  <td style="vertical-align:middle;font-family:Georgia,serif;font-weight:600;color:#F4E9D8;font-size:16px;">
                     House In Hand
                   </td>
                 </tr>
@@ -45,23 +45,14 @@ function wrapEmailHtml(body: string): string {
             </td>
           </tr>
           <tr>
-            <td style="padding:24px 20px;font-family:Inter,Arial,sans-serif;font-size:15px;line-height:1.6;color:#0c0d0b;">
+            <td style="padding:24px 20px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#0B1F3A;">
               ${body}
             </td>
           </tr>
           <tr>
-            <td style="padding:18px 20px;border-top:1px solid #eceee8;font-family:Inter,Arial,sans-serif;font-size:12px;color:#5c6356;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-                <tr>
-                  <td style="vertical-align:middle;padding-right:12px;width:36px;">
-                    <img src="{{logoUrl}}" width="32" height="32" alt="House In Hand" style="display:block;border:0;border-radius:4px;width:32px;height:32px;object-fit:contain;background:#A8BF44;padding:2px;" />
-                  </td>
-                  <td style="vertical-align:middle;">
-                    <div style="font-weight:600;color:#0c0d0b;font-size:13px;">House In Hand</div>
-                    <div style="margin-top:2px;">© {{year}} House In Hand</div>
-                  </td>
-                </tr>
-              </table>
+            <td style="padding:18px 20px;border-top:1px solid #E0D4C2;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#5A6A7D;background:#FFFaf3;">
+              <div style="font-weight:600;color:#0B1F3A;font-size:13px;">House In Hand</div>
+              <div style="margin-top:4px;">© {{year}} House In Hand</div>
             </td>
           </tr>
         </table>

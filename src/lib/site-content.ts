@@ -7,7 +7,7 @@ import {
 } from "@/models/SiteContent";
 
 export const DEFAULT_AUTH_BACKGROUND = {
-  imageUrl: "/hero-london.png",
+  imageUrl: "/hero-home.jpg",
   imagePublicId: "",
 } as const;
 
@@ -17,35 +17,13 @@ export type AuthBackgroundContent = {
 };
 
 export const DEFAULT_INVESTOR_MODAL = {
-  title: "Your Investor Portal",
-  ctaLabel: "Continue to Login",
-  body: `Welcome to House In Hand.
+  title: "Welcome to House In Hand",
+  ctaLabel: "Continue to sign in",
+  body: `House In Hand is the housing platform for Nigeria.
 
-As a Nova investor, you unlock a private command centre for capital placed with us — you never list or create properties yourself.
+Create a Tenant, Student, Landlord, or Estate Manager profile, complete KYC, then search listings or publish properties — with digital agreements and rent tools in one place.
 
-How you hold assets with Nova:
-
-• Outright — Nova assigns a property into your portfolio after purchase / onboarding
-• Open investments — browse Opportunities, review ROI terms, and express interest on Nova-listed assets
-
-Even when you buy outright, Nova can manage the property for you: long-term lease, short let, or Airbnb-style stays. We handle guests, operations, and return reporting — you see results in your portal.
-
-Inside the portal you can:
-
-• See invested capital, portfolio value, and returns at a glance
-• Browse properties Nova has assigned to you (photos, status, valuations)
-• Track Nova-managed stays, channels (Airbnb, Booking.com, direct), and revenue
-• Review monthly analytics: revenue, commission, occupancy, and channel mix
-• Explore open investment opportunities Nova is raising for
-• Switch light or dark mode for comfortable late-evening reviews
-
-What we manage for you:
-
-• Letting & hospitality operations on your behalf
-• Guest experience, compliance, and day-to-day property care
-• Clear reporting so you always know how your capital is performing
-
-Continue to sign in or create your account. Your data is private to you — only your portfolio, never someone else's.`,
+Continue to sign in or create your account.`,
   imageUrl: "",
   imagePublicId: "",
 } as const;
@@ -124,9 +102,14 @@ export function serializeAuthBackground(
 }
 
 export async function getAuthBackgroundContent(): Promise<AuthBackgroundContent> {
-  await connectDB();
-  const doc = await SiteContent.findOne({ key: AUTH_BACKGROUND_KEY }).lean();
-  return serializeAuthBackground(doc as ISiteContent | null);
+  try {
+    await connectDB();
+    const doc = await SiteContent.findOne({ key: AUTH_BACKGROUND_KEY }).lean();
+    return serializeAuthBackground(doc as ISiteContent | null);
+  } catch (err) {
+    console.error("Auth background fetch failed:", err);
+    return { ...DEFAULT_AUTH_BACKGROUND };
+  }
 }
 
 export async function upsertAuthBackgroundContent(

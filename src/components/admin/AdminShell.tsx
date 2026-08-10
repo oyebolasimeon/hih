@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { hasPermission, type Permission } from "@/lib/rbac";
+import BrandMark from "@/components/BrandMark";
 
 type NavLink = {
   href: string;
@@ -38,22 +39,10 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     <div className="app-shell flex min-h-screen">
       <aside className="hidden lg:flex w-64 flex-col border-r border-border bg-surface">
         <div className="px-5 py-5 border-b border-border">
-          <Link href="/admin" className="inline-flex items-center gap-2">
-            <span className="inline-flex items-center gap-2 px-2 py-1.5 bg-brand rounded">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/logo.png"
-                alt="House In Hand"
-                className="h-5 w-5 rounded-sm object-contain"
-              />
-              <span className="text-sm font-semibold text-foreground tracking-tight">
-                House In Hand
-              </span>
-            </span>
-          </Link>
+          <BrandMark href="/admin" size="sm" />
           <p className="text-xs text-muted mt-2">Admin Console</p>
           {session?.user?.role ? (
-            <p className="mt-1 text-[11px] uppercase tracking-wider text-brand font-semibold">
+            <p className="mt-1 text-[11px] uppercase tracking-wider text-teal font-semibold">
               {session.user.role}
             </p>
           ) : null}
@@ -103,15 +92,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
       <div className="flex-1 flex flex-col min-w-0">
         <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
-          <Link href="/admin" className="inline-flex items-center gap-2 px-2 py-1 bg-brand rounded lg:hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/logo.png"
-              alt="House In Hand"
-              className="h-5 w-5 rounded-sm object-contain"
-            />
-            <span className="text-sm font-semibold text-foreground">Admin</span>
-          </Link>
+          <div className="lg:hidden">
+            <BrandMark href="/admin" size="sm" />
+          </div>
           <p className="hidden lg:block text-sm text-muted">Admin Console</p>
           <div className="flex items-center gap-3 ml-auto">
             <ThemeToggle />
