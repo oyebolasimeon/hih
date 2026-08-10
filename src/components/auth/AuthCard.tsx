@@ -42,12 +42,12 @@ export default function AuthCard({
       <Link
         href="/"
         className="absolute bottom-5 left-5 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full bg-black/60 p-1.5 backdrop-blur-sm hover:bg-black/75 transition-colors"
-        aria-label="Nova Elite Homes home"
+        aria-label="House In Hand home"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/logo.png"
-          alt="Nova Elite Homes"
+          alt="House In Hand"
           className="h-full w-full rounded-full object-contain"
         />
       </Link>

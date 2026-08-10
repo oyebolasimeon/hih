@@ -1,48 +1,38 @@
 import { NextResponse } from "next/server";
-import { assertInvestor } from "@/lib/api-auth";
-import { Investor } from "@/models/Investor";
-import { Property } from "@/models/Property";
-import { Booking } from "@/models/Booking";
+import { assertUser } from "@/lib/api-auth";
+import { connectDB } from "@/lib/db";
+import { Profile } from "@/models/Profile";
+import { User } from "@/models/User";
 
 export async function GET() {
-  const { user, response } = await assertInvestor();
+  const { user, response } = await assertUser();
   if (response || !user) return response!;
 
-  const investor = await Investor.findById(user.id).lean();
-  if (!investor) {
-    return NextResponse.json({ error: "Investor profile not found." }, { status: 404 });
-  }
-
-  const [propertyCount, bookings] = await Promise.all([
-    Property.countDocuments({ investorId: user.id }),
-    Booking.find({
-      investorId: user.id,
-      status: { $ne: "cancelled" },
-    })
-      .select("revenue startDate endDate")
-      .lean(),
-  ]);
-
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-  const periodRevenue = bookings
-    .filter((b) => {
-      const start = new Date(b.startDate);
-      return start >= monthStart && start <= monthEnd;
-    })
-    .reduce((sum, b) => sum + (b.revenue || 0), 0);
+  await connectDB();
+  const dbUser = await User.findById(user.id)
+    .select("name email phone phoneVerified activeProfileId")
+    .lean();
+  const profiles = await Profile.find({ userId: user.id })
+    .select("type status displayName verifiedAt")
+    .lean();
 
   return NextResponse.json({
-    investor: {
-      id: String(investor._id),
-      name: investor.name,
-      email: investor.email,
-      totalInvested: investor.totalInvested,
-      totalReturns: investor.totalReturns,
-      portfolioValue: investor.portfolioValue,
-      propertyCount,
-      periodRevenue,
+    user: {
+      id: user.id,
+      name: dbUser?.name || user.name,
+      email: dbUser?.email || user.email,
+      phone: dbUser?.phone || "",
+      phoneVerified: !!dbUser?.phoneVerified,
+      activeProfileId: dbUser?.activeProfileId
+        ? String(dbUser.activeProfileId)
+        : null,
     },
+    profiles: profiles.map((p) => ({
+      id: String(p._id),
+      type: p.type,
+      status: p.status,
+      displayName: p.displayName,
+      verifiedAt: p.verifiedAt || null,
+    })),
   });
 }

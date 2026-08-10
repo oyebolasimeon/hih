@@ -27,28 +27,24 @@ export default function Excellence() {
               </h2>
               <div className="mt-5 sm:mt-6 space-y-4 text-muted leading-relaxed text-sm sm:text-base">
                 <p>
-                  At Nova Elite Homes Ltd, our commitment to excellence is not
-                  just a promise; it&apos;s the foundation of everything we do. We
-                  believe that exceptional accommodation services require more
-                  than just providing a place to stay; they demand attention to
-                  detail, genuine care for our clients, and an unwavering
-                  dedication to quality.
+                  At House In Hand, quality means safer housing decisions —
+                  clearer listings, verified profiles, and tools that reduce
+                  disputes between renters and landlords.
                 </p>
                 <p>
-                  Our team is highly motivated and brings innovative ideas to
-                  every aspect of our service. We continuously seek ways to
-                  improve, adapt, and enhance the experience we provide to
-                  professionals and students in London.
+                  We keep improving the product for how Nigerians actually rent
+                  and manage property: multi-role profiles, KYC, applications,
+                  agreements, and payments under one roof.
                 </p>
               </div>
 
               {/* Key points */}
               <div className="mt-6 sm:mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {[
-                  "Single point of contact",
-                  "Comprehensive support",
-                  "Attention to detail",
-                  "Lasting relationships",
+                  "Multi-role profiles",
+                  "KYC & listing checks",
+                  "Agreements & payments",
+                  "Fraud reporting",
                 ].map((point) => (
                   <div key={point} className="flex items-start gap-2">
                     <svg

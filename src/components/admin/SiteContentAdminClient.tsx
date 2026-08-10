@@ -11,16 +11,6 @@ export default function SiteContentAdminClient() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-display font-semibold">
-          Site content
-        </h1>
-        <p className="mt-1 text-sm text-muted max-w-2xl">
-          Control the investor login modal on the marketing site and the
-          background image on all auth pages.
-        </p>
-      </div>
-
       <div
         className="inline-flex rounded-md border border-border p-0.5 bg-surface gap-0.5"
         role="tablist"

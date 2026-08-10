@@ -1,14 +1,19 @@
+import type { ReactNode } from "react";
+
 export default function EmptyState({
   title,
   description,
+  children,
 }: {
   title: string;
   description: string;
+  children?: ReactNode;
 }) {
   return (
     <div className="app-card p-8 text-center">
       <h3 className="text-lg font-semibold text-foreground">{title}</h3>
       <p className="mt-2 text-sm text-muted max-w-md mx-auto">{description}</p>
+      {children ? <div className="mt-4 flex justify-center">{children}</div> : null}
     </div>
   );
 }

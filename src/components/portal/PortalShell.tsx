@@ -7,11 +7,14 @@ import ThemeToggle from "@/components/ui/ThemeToggle";
 
 const links = [
   { href: "/portal", label: "Dashboard", exact: true },
-  { href: "/portal/analytics", label: "Analytics" },
-  { href: "/portal/calendar", label: "Calendar" },
-  { href: "/portal/properties", label: "My properties" },
-  { href: "/portal/opportunities", label: "Opportunities" },
-  { href: "/portal/activity", label: "Activity" },
+  { href: "/portal/search", label: "Search" },
+  { href: "/portal/listings", label: "My listings" },
+  { href: "/portal/applications", label: "Applications" },
+  { href: "/portal/payments", label: "Payments" },
+  { href: "/portal/agreements", label: "Agreements" },
+  { href: "/portal/kyc", label: "KYC" },
+  { href: "/portal/notifications", label: "Notifications" },
+  { href: "/portal/profiles", label: "Profiles" },
   { href: "/portal/account", label: "Account" },
 ];
 
@@ -28,15 +31,15 @@ export default function PortalShell({ children }: { children: React.ReactNode })
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/logo.png"
-                alt="Nova Elite Homes"
+                alt="House In Hand"
                 className="h-5 w-5 rounded-sm object-contain"
               />
               <span className="text-sm font-semibold text-foreground tracking-tight">
-                Nova Elite Homes
+                House In Hand
               </span>
             </span>
           </Link>
-          <p className="text-xs text-muted mt-2">Investor Portal</p>
+          <p className="text-xs text-muted mt-2">App</p>
         </div>
         <nav className="flex-1 p-3 space-y-1">
           {links.map((link) => {
@@ -90,10 +93,10 @@ export default function PortalShell({ children }: { children: React.ReactNode })
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/logo.png"
-                alt="Nova Elite Homes"
+                alt="House In Hand"
                 className="h-5 w-5 rounded-sm object-contain"
               />
-              <span className="text-sm font-semibold text-foreground">Nova Elite</span>
+              <span className="text-sm font-semibold text-foreground">House In Hand</span>
             </Link>
           </div>
           <div className="hidden lg:block text-sm text-muted">

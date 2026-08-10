@@ -53,7 +53,7 @@ export async function assertAdmin(required?: Permission | Permission[]) {
   };
 }
 
-export async function assertInvestor() {
+export async function assertUser() {
   await connectDB();
   const user = await getAuthUser();
   if (!user) {
@@ -64,3 +64,6 @@ export async function assertInvestor() {
   }
   return { user, response: null };
 }
+
+/** @deprecated use assertUser */
+export const assertInvestor = assertUser;

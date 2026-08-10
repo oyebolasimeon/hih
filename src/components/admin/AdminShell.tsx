@@ -14,11 +14,11 @@ type NavLink = {
 };
 
 const links: NavLink[] = [
-  { href: "/admin", label: "Investors", permission: "investors:read", exact: true },
-  { href: "/admin/properties", label: "Properties", permission: "properties:read" },
-  { href: "/admin/interests", label: "Interests", permission: "investors:read" },
-  { href: "/admin/investors/new", label: "Invite investor", permission: "investors:write" },
-  { href: "/admin/content", label: "Site content", permission: "content:read" },
+  { href: "/admin", label: "Dashboard", permission: "users:read", exact: true },
+  { href: "/admin/kyc", label: "KYC review", permission: "kyc:read" },
+  { href: "/admin/listings", label: "Listings", permission: "listings:read" },
+  { href: "/admin/fraud", label: "Fraud reports", permission: "fraud:read" },
+  { href: "/admin/content", label: "Website content", permission: "content:read" },
   { href: "/admin/emails", label: "Email templates", permission: "content:read" },
   { href: "/admin/audit", label: "Audit log", permission: "audit:read" },
   { href: "/admin/team", label: "Team & RBAC", permission: "admins:manage" },
@@ -43,11 +43,11 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/logo.png"
-                alt="Nova Elite Homes"
+                alt="House In Hand"
                 className="h-5 w-5 rounded-sm object-contain"
               />
               <span className="text-sm font-semibold text-foreground tracking-tight">
-                Nova Elite Homes
+                House In Hand
               </span>
             </span>
           </Link>
@@ -81,7 +81,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             href="/portal"
             className="block rounded-md px-3 py-2 text-sm font-medium text-muted hover:bg-surface-dark"
           >
-            Investor view
+            App view
           </Link>
         </nav>
         <div className="p-4 border-t border-border space-y-3">
@@ -107,7 +107,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/logo.png"
-              alt="Nova Elite Homes"
+              alt="House In Hand"
               className="h-5 w-5 rounded-sm object-contain"
             />
             <span className="text-sm font-semibold text-foreground">Admin</span>

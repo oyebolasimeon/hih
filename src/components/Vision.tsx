@@ -12,13 +12,12 @@ export default function Vision() {
               Our Vision
             </p>
             <h2 className="mt-3 text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground leading-tight">
-              The trusted choice for accommodation in London
+              The trusted housing platform for Nigeria
             </h2>
             <p className="mt-4 sm:mt-6 text-base sm:text-lg text-muted leading-relaxed">
-              Our vision is to be the trusted choice for accommodation in London,
-              offering living spaces that allow individuals and teams to thrive
-              while carrying forward the determination, passion, and excellence on
-              which Nova Elite Homes Ltd was built.
+              We aim to be the place people turn to when they need a home or need
+              to house others — with verification, transparent listings, and tools
+              that make tenancy safer for everyone involved.
             </p>
           </div>
         </AnimatedSection>
@@ -29,23 +28,23 @@ export default function Vision() {
               {
                 image:
                   "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&q=80",
-                title: "Quality Living Spaces",
+                title: "Verified discovery",
                 description:
-                  "Thoughtfully designed environments that balance community with privacy, making London feel like home.",
+                  "Listings and profiles reviewed so students and families can search with more confidence.",
               },
               {
                 image:
                   "https://images.unsplash.com/photo-1573497620053-ea5300f94f21?w=600&q=80",
-                title: "Professional Community",
+                title: "Built for every role",
                 description:
-                  "Creating environments where professionals and students can thrive, connect, and succeed together.",
+                  "Separate workflows for students, tenants, landlords, and estate managers on one account.",
               },
               {
                 image:
                   "https://images.unsplash.com/photo-1449844908441-8829872d2607?w=600&q=80",
-                title: "Excellence in Everything",
+                title: "End-to-end tenancy",
                 description:
-                  "Unwavering dedication to the highest standards, from property maintenance to client relationships.",
+                  "From application to agreement and rent payments — fewer handoffs, clearer history.",
               },
             ].map((item, index) => (
               <div

@@ -1,57 +1,56 @@
 export const PERMISSIONS = [
-  "investors:read",
-  "investors:write",
-  "properties:read",
-  "properties:write",
-  "bookings:read",
-  "bookings:write",
-  "analytics:read",
-  "analytics:write",
+  "users:read",
+  "users:write",
+  "kyc:read",
+  "kyc:write",
+  "listings:read",
+  "listings:verify",
   "content:read",
   "content:write",
+  "fraud:read",
+  "fraud:write",
   "audit:read",
   "admins:manage",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
-export type AdminRole = "superadmin" | "admin" | "viewer";
+
+/** Internal staff roles (Admin Console) — not KYC profiles */
+export type AdminRole = "superadmin" | "content_editor" | "ops_kyc";
 
 export const ROLE_PERMISSIONS: Record<AdminRole, Permission[]> = {
   superadmin: [...PERMISSIONS],
-  admin: [
-    "investors:read",
-    "investors:write",
-    "properties:read",
-    "properties:write",
-    "bookings:read",
-    "bookings:write",
-    "analytics:read",
-    "analytics:write",
-    "content:read",
-    "content:write",
-    "audit:read",
-  ],
-  viewer: [
-    "investors:read",
-    "properties:read",
-    "bookings:read",
-    "analytics:read",
-    "content:read",
+  content_editor: ["content:read", "content:write", "audit:read"],
+  ops_kyc: [
+    "users:read",
+    "users:write",
+    "kyc:read",
+    "kyc:write",
+    "listings:read",
+    "listings:verify",
+    "fraud:read",
+    "fraud:write",
     "audit:read",
   ],
 };
 
+export const ROLE_LABELS: Record<AdminRole, string> = {
+  superadmin: "Super Admin",
+  content_editor: "Content Editor",
+  ops_kyc: "Ops / KYC Reviewer",
+};
+
 export const PERMISSION_LABELS: Record<Permission, string> = {
-  "investors:read": "View investors",
-  "investors:write": "Edit investors",
-  "properties:read": "View properties",
-  "properties:write": "Edit properties",
-  "bookings:read": "View bookings",
-  "bookings:write": "Edit bookings",
-  "analytics:read": "View analytics",
-  "analytics:write": "Edit analytics",
-  "content:read": "View site content",
-  "content:write": "Edit site content",
+  "users:read": "View users",
+  "users:write": "Edit users",
+  "kyc:read": "View KYC submissions",
+  "kyc:write": "Approve / reject KYC",
+  "listings:read": "View listings",
+  "listings:verify": "Verify listings",
+  "content:read": "View website content",
+  "content:write": "Edit & publish website content",
+  "fraud:read": "View fraud reports",
+  "fraud:write": "Manage fraud reports",
   "audit:read": "View audit logs",
   "admins:manage": "Manage admins & RBAC",
 };

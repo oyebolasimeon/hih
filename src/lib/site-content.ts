@@ -19,7 +19,7 @@ export type AuthBackgroundContent = {
 export const DEFAULT_INVESTOR_MODAL = {
   title: "Your Investor Portal",
   ctaLabel: "Continue to Login",
-  body: `Welcome to Nova Elite Homes.
+  body: `Welcome to House In Hand.
 
 As a Nova investor, you unlock a private command centre for capital placed with us — you never list or create properties yourself.
 
@@ -45,7 +45,7 @@ What we manage for you:
 • Guest experience, compliance, and day-to-day property care
 • Clear reporting so you always know how your capital is performing
 
-Continue to sign in or create your investor account. Your data is private to you — only your portfolio, never someone else's.`,
+Continue to sign in or create your account. Your data is private to you — only your portfolio, never someone else's.`,
   imageUrl: "",
   imagePublicId: "",
 } as const;

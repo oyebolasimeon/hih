@@ -1,0 +1,548 @@
+# House In Hand — Product Requirements Document (PRD)
+*Full platform + Public Website + Admin-Managed CMS*
+
+---
+
+## 1. Product Overview
+
+To build a secure, scalable, and user-friendly digital property management and rental platform that centralizes the full housing lifecycle — from property discovery to rental management, payments, legal agreements, and utility billing.
+
+House In Hand replaces fragmented, manual rental processes with a unified digital ecosystem that improves transparency, trust, and efficiency for all stakeholders.
+
+The platform enables:
+
+- Seamless property discovery and rental execution
+- Structured and automated rent payments
+- Digitized legal agreements with e-signatures
+- Transparent landlord–tenant relationships
+- Centralized estate and portfolio management
+- A public marketing website that converts visitors into registered users, with all content editable by admins without a code deploy
+
+**Two front-facing surfaces:**
+
+| Surface | Audience | Auth required |
+|---|---|---|
+| **Public Website** (marketing site) | Anonymous visitors, prospective tenants/landlords, SEO/organic traffic | No |
+| **App / Platform** (web + mobile) | Registered users (Student, Tenant, Landlord, Estate Manager) | Yes |
+| **Admin Console** | Internal staff (Content Editors, Ops/KYC reviewers, Super Admins) | Yes (internal roles) |
+
+---
+
+## 2. Objectives
+
+| Objective | Description |
+|---|---|
+| Simplify rental workflows | Remove manual processes in search, onboarding, rent collection, and management |
+| Enhance transparency | Provide visibility into payments, agreements, and responsibilities |
+| Enable structured payments | Automate rent schedules, reminders, and tracking |
+| Digitize legal agreements | Replace physical contracts with secure e-signatures |
+| Integrate utility payments | Enable electricity, water, and waste bill payments |
+| Support scalability | Serve individuals and large estate managers |
+| **Convert visitors into users** | Public website communicates trust, value, and product clearly enough to drive signups |
+| **Let non-technical staff own site content** | Admins update homepage, blog, FAQs, and testimonials without engineering involvement |
+
+---
+
+## 3. Target Users
+
+House In Hand adopts a **Single Account, Multi-Profile Architecture** for platform users, plus an internal-only **Admin/Staff Role System** for the Admin Console.
+
+### 3.1 Public / Unauthenticated
+
+| Type | Description |
+|---|---|
+| Website Visitor | Anonymous browser of the public marketing site — landing page, listings preview, blog, FAQs. Not authenticated. Primary conversion target for signup. |
+
+### 3.2 Platform Users (registered, KYC-verified)
+
+Users register once and may create multiple profile types under a single account. Each profile is independently verified and activated through KYC verification.
+
+| Profile Type | Description |
+|---|---|
+| Student Profile | Users seeking hostel accommodation |
+| Tenant Profile | Users renting residential properties |
+| Landlord Profile | Property owners managing rentals |
+| Estate Manager Profile | Organizations or individuals managing multiple properties |
+
+**Key user notes:**
+
+| Rule | Description |
+|---|---|
+| Single Account | One user account per individual |
+| Multiple Profiles | Users may create multiple profile types |
+| One Profile Per Type | Users cannot create two profiles of the same type |
+| KYC Mandatory | Every profile requires KYC verification |
+| Profile Switching | Users can switch between verified profiles |
+
+### 3.3 Internal Staff (Admin Console)
+
+Admin is **not** a KYC profile type — it's a separate, internal authentication system with its own RBAC.
+
+| Role | Description | Scope |
+|---|---|---|
+| Content Editor | Manages public website content only | Landing page sections, blog, FAQs, testimonials, media library |
+| Ops/KYC Reviewer | Reviews and approves/rejects user KYC and listings | Identity verification, listing verification, fraud reports |
+| Super Admin | Full access | All of the above + user management, RBAC config, audit logs |
+
+---
+
+## 4. Core Platform Modules
+
+### 4.1 Identity & Profile Management Module
+
+A foundational system enabling users to operate multiple roles under a single account with full KYC verification and profile-level access control: **Single Account → Multiple Profiles System**.
+
+| Feature | Description |
+|---|---|
+| Account Registration | Email + phone onboarding |
+| Profile Creation | Create role-based profiles |
+| KYC Verification | Identity verification per profile |
+| Profile Switching | Seamless switching between roles |
+| Role-Based Access | Features depend on active profile |
+| Duplicate Prevention | Block duplicate profile types |
+| Verification Tracking | KYC status monitoring |
+
+**KYC requirements by profile:**
+
+- **Student:** Government ID, Student ID, Institution details, Phone verification
+- **Tenant:** Government ID, Selfie/liveness check, Phone verification
+- **Landlord:** Government ID, Bank verification, Proof of address, Selfie verification
+- **Estate Manager:** Government ID, CAC documents, Business address, Authorized rep details
+
+### 4.2 Student Hostel Rental Module
+
+| Feature | Description |
+|---|---|
+| Hostel Search | Search by location, price, proximity to schools |
+| Hostel Details | Photos, amenities, availability |
+| Booking System | Reserve rooms and make payments |
+| Reviews | Ratings and tenant feedback |
+
+### 4.3 Regular House Rental Module
+
+| Feature | Description |
+|---|---|
+| Listings | Landlords/agents list properties |
+| Search & Filters | Location, price, property type |
+| Applications | Tenant rental applications |
+| Lease Management | Track rental lifecycle |
+| Payment Tracking | Rent status and history |
+
+### 4.4 Estate Management Module
+
+Enables landlords, estate owners, developers, and property managers to remotely manage residential and commercial properties from a centralized dashboard.
+
+| Feature | Description |
+|---|---|
+| Multi-Property Dashboard | Centralized property control |
+| Tenant Assignment | Assign tenants to units |
+| Occupancy Tracking | Vacancy monitoring |
+| Analytics | Revenue, arrears, insights |
+| Bulk Messaging | Tenant communication at scale |
+| Tenant Management | Complete tenant records, lease history, move-in/move-out history, documents, KYC records |
+| Lease Management | Create, renew, terminate and monitor lease agreements |
+| Rent Management | Due dates, outstanding balances, automatic reminders, payment history, receipt generation |
+| Occupancy Management | Occupied/vacant units, lease expiry dates, occupancy trends |
+| Maintenance Management | Log requests, assign technicians, track status and history |
+| Staff Management | Assign caretakers, facility managers, maintenance staff |
+| Property Performance Dashboard | Revenue, occupancy rate, rent collection, maintenance costs, profitability |
+
+### 4.5 Scheduled Payment System
+
+| Feature | Description |
+|---|---|
+| Rent Scheduling | Monthly/quarterly/yearly plans |
+| Automated Reminders | SMS, email, in-app |
+| Payment Tracking | Paid / pending / overdue |
+| Partial Payments | Flexible payment support |
+| Receipts | Auto-generated receipts |
+
+### 4.6 Legal Agreement System
+
+| Feature | Description |
+|---|---|
+| Templates | Standard contracts |
+| Custom Clauses | Editable terms |
+| E-Signature | Digital signing |
+| Secure Storage | Encrypted document storage |
+| Audit Trail | Version history tracking |
+
+### 4.7 Utility Bill Payment Module
+
+| Feature | Description |
+|---|---|
+| Electricity Bills | Electricity payment |
+| Water Bills | Water payment |
+| Waste Disposal | Waste management payment |
+| Estate Dues | Estate levy payments |
+| Internet Subscription | ISP payments (e.g., Fibre providers) |
+| Cable TV Payments | DStv, GOtv and others |
+| Automated Recurring Payments | Automatic monthly bill payment |
+| Utility Dashboard | Monthly spending analysis |
+
+### 4.8 Targeted Savings Module
+
+| Feature | Description |
+|---|---|
+| Savings Goals | Rent saving targets |
+| Automated Savings | Scheduled deposits |
+| Progress Tracking | Visual progress bars |
+| Reminders | Nudges & alerts |
+
+### 4.9 Fintech Services Module
+
+House In Hand becomes the financial infrastructure powering housing transactions — managing how money flows between tenants, landlords and service providers.
+
+| Feature | Description |
+|---|---|
+| Online Rent Payments | Secure digital rent payments |
+| Escrow Services | Hold funds until tenancy conditions are fulfilled |
+| Flexible Rent Payments | Monthly, quarterly or customized installment plans |
+| Rent Financing | Enable eligible tenants to access rent financing partners |
+| Digital Wallet | Wallet for tenants and landlords |
+| Wallet Transfers | Internal transfers between wallets |
+| Automatic Disbursement | Auto-transfer rent to landlords after successful payment |
+| Transaction History | Complete payment ledger |
+| Refund Management | Refunds for cancelled bookings or disputes |
+
+### 4.10 Real Estate Intelligence & Analytics Platform
+
+Aggregates and anonymizes listing, transaction, payment, vacancy, and tenant-interaction data into actionable market insights.
+
+**Analytics products:** Rental Index, Occupancy Dashboard, Demand Heatmaps, Property Price Trends, Tenant Behaviour Analytics, Market Forecasts, Investment Insights
+
+**Target customers:** Property Developers, Investors, Banks, Insurance Companies, Construction Companies, Government Agencies, Research Institutions, Real Estate Firms
+
+**Revenue streams:** Free Listings, Premium Listings, Property Promotion, Subscription Plans, Property Verification Fee, Transaction Fees, Payment Processing Fees, Escrow Fees, SaaS Subscription, Enterprise Licenses, Utility Commissions, Data Subscription, API Licensing, Consulting Services
+
+### 4.11 Public Website / Landing Page Module *(new)*
+
+The public marketing site — the first thing prospective users see. Fully responsive, SEO-optimized, fast-loading, and **entirely content-editable by admins** (no code deploy needed to change copy, images, or add a blog post).
+
+**Pages:**
+
+| Page | Purpose | Content source |
+|---|---|---|
+| Homepage | Hero, value props, how-it-works, featured listings, stats, testimonials, FAQ, CTA | Admin CMS |
+| How It Works | Step-by-step explainer per user type (Tenant / Landlord / Estate Manager / Student) | Admin CMS |
+| Listings Preview | Public-facing subset of live listings (read-only teaser; full detail requires signup) | Live app data |
+| Pricing / Plans | Fees, subscription tiers, if applicable | Admin CMS |
+| Blog / Resources | Articles, guides, market insights | Admin CMS |
+| Blog Post Detail | Single article view | Admin CMS |
+| About | Company story, team, mission | Admin CMS |
+| Contact / Support | Contact form, support channels | Admin CMS |
+| FAQ | Searchable Q&A | Admin CMS |
+| Legal | Terms of Service, Privacy Policy, NDPR notice | Admin CMS |
+| Sign Up / Download | Conversion page — app store links / web registration | Admin CMS (links) + static |
+
+**Homepage section components (each independently editable):**
+
+| Section | Editable fields |
+|---|---|
+| Hero | Headline, subheading, background image/video, primary + secondary CTA buttons |
+| Trust/Stats bar | Configurable counters (e.g. "X verified listings", "Y cities covered") |
+| How It Works | Ordered steps, each with icon, title, description |
+| Featured Listings | Curated or auto-pulled from live listings (admin toggle) |
+| Testimonials | Name, role, photo, quote, rating |
+| Blog Preview | Latest N published posts (auto) |
+| FAQ Preview | Top N FAQ items (admin-ordered) |
+| CTA Banner | Headline, button text/link |
+| Footer | Nav links, social links, contact info, legal links |
+
+**Non-functional:** SEO metadata (title/description/OG image) per page and per blog post; sitemap.xml + robots.txt auto-generated; Core Web Vitals target (LCP < 2.5s); analytics tracking (page views, CTA clicks, signup conversion funnel).
+
+### 4.12 Admin Content Management (CMS) Module *(new)*
+
+Lets non-technical staff (Content Editor role) manage everything in §4.11 through the Admin Console, with a Draft → Preview → Publish workflow.
+
+| Feature | Description |
+|---|---|
+| Section Editor | Edit homepage sections (hero, stats, how-it-works, CTA, footer) via structured forms — not raw code |
+| Blog Management | Create/edit/publish/unpublish/schedule posts; categories & tags; featured image; author byline |
+| Testimonials Manager | Add/edit/remove/reorder testimonials |
+| FAQ Manager | Add/edit/remove/reorder FAQ items; group by category |
+| Media Library | Upload, browse, search, and reuse images/assets across the site |
+| SEO Fields | Per-page and per-post meta title, meta description, OG image, slug |
+| Draft/Preview/Publish | Edits save as drafts; preview against a staging URL before going live |
+| Version History | See prior versions of a page/post; rollback (Phase 2 if not MVP) |
+| Site Settings | Global contact info, social links, footer link groups |
+| Admin RBAC | Content Editor vs Super Admin permission scoping |
+
+**Architecture recommendation:** rather than a separate headless CMS vendor, model content as tables in the existing PostgreSQL database (`pages`, `sections`, `blog_posts`, `testimonials`, `faqs`, `media_assets`) and expose them through the same backend API, editable via the Admin Console. This keeps content, listings, and app data in one system, avoids an extra vendor dependency, and lets the public site and app share the same data layer where relevant (e.g., featured listings).
+
+---
+
+## 5. User Flows
+
+### 5.1 Account Registration Flow
+Register account → Verify email → Verify phone → Create profile → Complete KYC → Profile activation → Access system
+
+### 5.2 Profile Creation Flow
+Select profile type → Submit documents → Complete KYC → Verification review → Activation
+
+### 5.3 Profile Switching Flow
+Login → Dashboard access → Select active profile → Switch context → Load role-based UI
+
+### 5.4 Tenant Flow
+Login → Tenant profile → Search → Apply → Approve → Sign → Pay → Manage
+
+### 5.5 Landlord Flow
+Login → Landlord profile → List → Review → Approve → Contract → Monitor
+
+### 5.6 Estate Manager Flow
+Login → Manager profile → Manage → Assign → Track → Analyze
+
+### 5.7 Website Visitor Flow *(new)*
+Land on homepage (organic/ad/referral) → Browse how-it-works / listings preview / blog → Build trust (testimonials, stats) → Click CTA → Sign up or download app
+
+### 5.8 Admin Content Management Flow *(new)*
+Login to Admin Console → Select page or section → Edit content in structured form → Preview against staging → Publish → Change reflected live immediately
+
+---
+
+## 6. Non-Functional Requirements
+
+| Category | Requirement |
+|---|---|
+| Performance | <2s search response; public site LCP <2.5s |
+| Scalability | High growth support |
+| Usability | Mobile-first (Nigeria optimized) |
+| Availability | 99.5% uptime |
+
+---
+
+## 7. Security & Compliance
+
+**Identity Security:** Email/phone verification, KYC per profile, RBAC access control, profile-level audit logs
+
+**Fraud Prevention:** Duplicate profile prevention, device monitoring, identity validation checks, suspicious activity detection
+
+**Data Security:** AES-256 encryption (data at rest), TLS encryption (data in transit), secure document storage, encrypted payments
+
+**Compliance:** NDPR compliance, digital signature legality, audit logging for regulators, secure retention of agreements
+
+**Admin Console Security:** Separate auth realm from customer accounts, mandatory MFA for Super Admin, all content publishes logged with admin ID + timestamp for audit trail
+
+---
+
+## 8. Key Performance Indicators (KPIs)
+
+**Marketplace:** Active listings, Monthly active users, Conversion rate, Vacancy fill time
+
+**Financial:** Payment success rate, Rent default rate, Utility payment completion, Savings participation
+
+**Trust:** KYC completion rate, Verified profiles %, Fraud incidents, Agreement completion rate
+
+**Engagement:** Active tenants, Active landlords, Active managers, Messaging usage
+
+**Website (new):** Visitor → Signup conversion rate, Bounce rate, Avg. session duration, Blog organic traffic, Time-to-publish for content edits
+
+---
+
+## 9. Success Criteria
+
+**Onboarding:** Email/phone registration, Profile creation, KYC upload, Profile switcher UI
+
+**Rental Flow:** Search → Apply → Approve → Sign → Pay
+
+**Payments:** Scheduling, Reminders, Tracking dashboard
+
+**Trust Layer:** Verified badges, Ratings & reviews, Secure agreements
+
+**Website & CMS (new):** Public site live with editable homepage, blog, and FAQs; Content Editor can publish a change without engineering support; visitor-to-signup funnel is trackable end to end
+
+The platform is successful when:
+- End-to-end rentals are completed digitally; listings convert into active leases
+- Rent defaults reduce significantly; utility payments are processed digitally
+- Verified landlords actively list properties; verified tenants actively transact
+- 90%+ KYC completion rate; fraud remains minimal; agreements are fully digital and stored securely
+
+---
+
+## 10. Assumptions & Risks
+
+**Assumptions:** Users accept KYC onboarding; digital payments are widely adopted; landlords adopt digital workflows; utility APIs are available; content editors can operate the CMS without engineering support
+
+**Risks:** Low trust in digital listings; KYC friction; fraudulent listings; regulatory changes; payment failures; slow landlord adoption; stale/unmanaged website content if no one owns CMS updates
+
+---
+
+## 11. Application Navigation
+
+**App (authenticated):** Home, Search, Payments, Agreements, Messages, Notifications, Profile (Switcher + KYC + Settings)
+
+**Public Website:** Home, How It Works, Listings, Blog, Pricing, About, Contact, FAQ, Sign Up / Download
+
+**Admin Console:** Dashboard, KYC Review, Listing Verification, Users, Website Content (Sections / Blog / Testimonials / FAQ / Media), Site Settings, Audit Logs
+
+---
+
+## 12. System Architecture
+
+| Layer | Tech |
+|---|---|
+| Frontend (app) | React / React Native |
+| Frontend (public website) | React (SSR/SSG recommended for SEO — e.g. Next.js) |
+| Backend | Node.js (Express/NestJS) |
+| DB | PostgreSQL |
+| Storage | AWS S3 |
+| Cache | Redis |
+| Auth | JWT + OAuth2 (separate admin auth realm) |
+| Payments | Paystack / Flutterwave |
+| Notifications | SMS / Email / Push |
+| KYC | Smile Identity / Dojah |
+| Monitoring | CloudWatch / Sentry |
+| CMS | Custom — content tables in PostgreSQL, managed via Admin Console (see §4.12) |
+
+---
+
+## 13. Development Roadmap
+
+| Phase | Focus |
+|---|---|
+| Phase 1 | Identity, Listings, Applications, Payments, Agreements, **Public Website + CMS (parallel track)** |
+| Phase 2 | Utilities, Savings, Messaging |
+| Phase 3 | Estate analytics |
+| Phase 4 | AI recommendations, credit scoring |
+| Phase 5 | IoT integrations |
+| Phase 6 | Smart Property Integrations |
+
+---
+
+## 14. Sprint Backlog — MVP Scope
+
+### A. Identity & Profile Management
+Single Account Registration; Email Verification; Phone Verification; Multi-Profile Creation (Student, Tenant, Landlord, Estate Manager); KYC Verification; Profile Switching; Duplicate Profile Prevention; RBAC
+
+### B. Property Marketplace
+Property Listing Creation; Hostel Listings; House Listings; Property Search; Property Filters; Property Details Page; Property Image Uploads
+
+### C. Rental Lifecycle
+Rental Applications; Application Review & Approval; Tenant Assignment; Digital Agreements; Agreement Storage; Agreement Status Tracking
+
+### D. Payments
+Rent Payment; Payment History; Payment Receipts; Payment Status Tracking; Basic Payment Reminders
+
+### E. Communication
+In-App Notifications; Email Notifications; SMS Notifications (critical events only)
+
+### F. Trust & Compliance
+Verified Profile Badge; Verified Property Badge; Audit Logs; Fraud Reporting
+
+### G. Public Website & CMS *(new)*
+Homepage (all sections above); How It Works page; Listings Preview page; Blog listing + detail pages; FAQ page; About & Contact pages; Legal pages (Terms/Privacy); Admin: Section Editor; Admin: Blog Management; Admin: Testimonials Manager; Admin: FAQ Manager; Admin: Media Library; Admin: SEO fields; Draft/Preview/Publish workflow; Sitemap/robots.txt generation
+
+### Deferred to Phase 2+
+
+- **Phase 2:** Utility Bill Payments, Target Savings, In-App Messaging, Reviews & Ratings
+- **Phase 3:** Estate Analytics, Revenue Reports, Occupancy Insights
+- **Phase 4:** AI Recommendations, Credit Scoring
+- **Phase 5:** Smart Locks, Smart Meters, IoT Integrations
+- **Phase 6:** Predictive maintenance, AI-powered property operations
+- **CMS Phase 2:** Version history/rollback, multi-language content, A/B testing of homepage sections
+
+---
+
+## 15. Agile Delivery Structure
+
+*Existing sprints (1–6) unchanged — see below. A parallel Website & CMS track runs alongside Sprint 1–2 since it has no dependency on KYC/payment logic.*
+
+### Sprint 1 — Identity & Access Management
+| Ticket | User Story | Acceptance Criteria |
+|---|---|---|
+| HI-IAM-001 | As a user, I want to create an account using email and phone number so that I can access the platform. | Email registration available; Phone registration available; Email verification sent; Verification status stored |
+| HI-IAM-002 | As a user, I want to verify my phone number using OTP. | OTP generated; OTP expires after 5 minutes; Resend OTP supported |
+| HI-IAM-003 | As a user, I want to create a profile after registration. | Student/Tenant/Landlord/Estate Manager profiles supported |
+| HI-IAM-004 | As a user, I want the system to prevent duplicate profile creation. | One profile per type enforced for all four types |
+| HI-IAM-005 | As an admin, I want RBAC configured. | Roles created; Permissions mapped; Unauthorized access blocked |
+
+### Sprint 2 — Identity Verification
+| Ticket | User Story | Acceptance Criteria |
+|---|---|---|
+| HI-KYC-001 | As a tenant, I want to submit verification documents. | Government ID upload; Selfie upload; Verification status visible |
+| HI-KYC-002 | As a landlord, I want to verify my identity and bank account. | ID uploaded; Bank verification completed; Proof of address uploaded |
+| HI-KYC-003 | As an estate manager, I want to submit business documents. | CAC upload; Business address provided; Representative details captured |
+| HI-KYC-004 | As an admin, I want to review KYC submissions. | Approve profile; Reject profile; Add comments |
+| HI-KYC-005 | As a verified user, I want to switch between profiles. | Profile switcher visible; Active profile changes permissions; Session updates immediately |
+
+### Sprint 3 — Property Marketplace
+| Ticket | User Story | Acceptance Criteria |
+|---|---|---|
+| HI-PROP-001 | As a landlord, I want to create a property listing. | Property details captured; Images uploaded; Listing status visible |
+| HI-PROP-002 | As a tenant, I want to search properties. | Search by location; Search by keyword; Search results displayed |
+| HI-PROP-003 | As a tenant, I want to filter properties. | Filter by price; Filter by property type; Filter by availability |
+| HI-PROP-004 | As a tenant, I want to view property details. | Images displayed; Amenities displayed; Availability displayed |
+| HI-PROP-005 | As an admin, I want to verify listings. | Approve listing; Reject listing; Verified badge displayed |
+
+### Sprint 4 — Applications & Leasing
+| Ticket | User Story | Acceptance Criteria |
+|---|---|---|
+| HI-LEASE-001 | As a tenant, I want to apply for a property. | Application submitted; Landlord notified; Status tracked |
+| HI-LEASE-002 | As a landlord, I want to review applications. | Approve application; Reject application; Add comments |
+| HI-LEASE-003 | As a landlord, I want to assign a tenant to a unit. | Tenant linked to property; Occupancy updated |
+| HI-LEASE-004 | As a landlord, I want to generate agreements. | Template selected; Agreement generated; Agreement stored |
+| HI-LEASE-005 | As a tenant, I want to sign agreements digitally. | Agreement preview; E-signature supported; Signed copy stored |
+
+### Sprint 5 — Rent Collection
+| Ticket | User Story | Acceptance Criteria |
+|---|---|---|
+| HI-PAY-001 | As a tenant, I want to pay rent online. | Paystack integrated; Flutterwave integrated; Payment confirmation received |
+| HI-PAY-002 | As a tenant, I want to view payment history. | Transaction list available; Search history available |
+| HI-PAY-003 | As a landlord, I want to view rent payments. | Payment dashboard available; Status visible |
+| HI-PAY-004 | As a system, I want to generate receipts automatically. | Receipt generated; Download available |
+| HI-PAY-005 | As a tenant, I want payment reminders. | Email reminder sent; SMS reminder sent; Due date tracked |
+
+### Sprint 6 — Trust, Compliance & Go-Live
+| Ticket | User Story | Acceptance Criteria |
+|---|---|---|
+| HI-TRUST-001 | As a user, I want verified profiles displayed. | Verification badge shown; Badge only appears after approval |
+| HI-TRUST-002 | As a user, I want to report suspicious listings. | Report button available; Ticket created; Admin notified |
+| HI-TRUST-003 | As an administrator, I want audit logs maintained. | User actions logged; Logs searchable |
+| HI-NOTIF-001 | As a user, I want platform notifications. | Application updates; Payment updates; Agreement updates |
+| HI-UAT-001 | As a product owner, I want MVP UAT completed. | Test cases executed; Critical defects resolved; Sign-off completed |
+
+### Sprint W — Website & CMS *(new, parallel to Sprints 1–2)*
+| Ticket | User Story | Acceptance Criteria |
+|---|---|---|
+| HI-WEB-001 | As a visitor, I want to see a homepage that explains the product. | Hero, how-it-works, stats, testimonials, FAQ preview, CTA sections render; mobile-responsive |
+| HI-WEB-002 | As a visitor, I want to browse a blog for guides and market info. | Blog list page; Blog detail page; SEO meta tags render per post |
+| HI-WEB-003 | As a visitor, I want to see FAQs and contact options. | FAQ page searchable; Contact form submits and notifies support |
+| HI-WEB-004 | As a visitor, I want to preview listings before signing up. | Public listings preview page; CTA to sign up for full details |
+| HI-CMS-001 | As a content editor, I want to edit homepage sections without code. | Section Editor in Admin Console; Draft saves; Preview renders staging version |
+| HI-CMS-002 | As a content editor, I want to publish/unpublish blog posts. | Create/edit/publish/unpublish; categories/tags; featured image; scheduled publish |
+| HI-CMS-003 | As a content editor, I want to manage testimonials and FAQs. | Add/edit/remove/reorder for both; changes reflect live after publish |
+| HI-CMS-004 | As a content editor, I want a media library. | Upload, browse, search, reuse images across pages/posts |
+| HI-CMS-005 | As a content editor, I want to set SEO fields per page/post. | Meta title, description, slug, OG image editable; sitemap.xml auto-updates |
+| HI-CMS-006 | As a super admin, I want content-role permissions enforced. | Content Editor scoped to website content only; Super Admin has full access; actions logged |
+
+---
+
+## 16. MVP Deliverables at Go-Live
+
+### Tenant Capabilities
+Register account; Create Tenant Profile; Complete KYC; Search properties; Apply for rentals; Sign agreements; Pay rent; Receive notifications
+
+### Landlord Capabilities
+Create Landlord Profile; Complete KYC; List properties; Review applications; Approve tenants; Generate agreements; Track payments
+
+### Estate Manager Capabilities
+Create Estate Manager Profile; Manage properties; Assign tenants; Monitor occupancy
+
+### Website Visitor Capabilities *(new)*
+Browse homepage, how-it-works, listings preview, blog, FAQ; Submit contact form; Sign up / download app from any page
+
+### Administration Capabilities
+Review KYC; Verify listings; Manage users; Monitor fraud reports; Access audit logs; **Edit and publish all public website content (homepage sections, blog, testimonials, FAQs, media, SEO) without engineering support**
+
+---
+
+## Ticket Fields Reference
+
+| Field | Values |
+|---|---|
+| Priority | High / Medium / Low |
+| Story Points | Fibonacci (1, 2, 3, 5, 8, 13) |
+| Status | To Do / In Progress / Done |
+| Assignee | Team Member |
+| Dependency | Blocking Ticket (if any) |
+| Release | MVP v1 |

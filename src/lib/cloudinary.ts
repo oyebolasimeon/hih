@@ -12,12 +12,13 @@ export function configureCloudinary() {
 
 export async function uploadImageBuffer(
   buffer: Buffer,
-  folder = "nova-elite/properties"
+  folder = "house-in-hand/properties",
+  resourceType: "image" | "auto" | "raw" = "image"
 ) {
   const client = configureCloudinary();
   return new Promise<{ url: string; publicId: string }>((resolve, reject) => {
     const stream = client.uploader.upload_stream(
-      { folder, resource_type: "image" },
+      { folder, resource_type: resourceType },
       (error, result) => {
         if (error || !result) {
           reject(error || new Error("Cloudinary upload failed"));

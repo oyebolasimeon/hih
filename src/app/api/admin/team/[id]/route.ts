@@ -18,7 +18,7 @@ import {
 } from "@/lib/audit";
 
 const updateSchema = z.object({
-  role: z.enum(["superadmin", "admin", "viewer"]).optional(),
+  role: z.enum(["superadmin", "content_editor", "ops_kyc"]).optional(),
   permissions: z.array(z.string()).optional(),
   active: z.boolean().optional(),
 });

@@ -13,6 +13,8 @@ export interface IUser {
   emailNotifications: boolean;
   /** false = must verify email before sign-in; missing/true = allowed */
   emailVerified: boolean;
+  phoneVerified: boolean;
+  activeProfileId?: mongoose.Types.ObjectId;
   theme: ThemePreference;
   starredImageUrls: string[];
   bookmarkedImageUrls: string[];
@@ -35,6 +37,8 @@ const UserSchema = new Schema<IUser>(
     phone: { type: String, default: "", trim: true },
     emailNotifications: { type: Boolean, default: true },
     emailVerified: { type: Boolean, default: true },
+    phoneVerified: { type: Boolean, default: false },
+    activeProfileId: { type: Schema.Types.ObjectId, ref: "Profile" },
     theme: { type: String, enum: ["light", "dark"], default: "dark" },
     starredImageUrls: { type: [String], default: [] },
     bookmarkedImageUrls: { type: [String], default: [] },

@@ -136,7 +136,7 @@ export async function writeAudit(input: WriteAuditInput): Promise<void> {
       (input.actor?.isAdmin
         ? "admin"
         : input.actor?.id
-          ? "investor"
+          ? "user"
           : "anonymous");
 
     await AuditLog.create({
@@ -185,7 +185,7 @@ export function actorFromUser(
     email: user.email,
     name: user.name,
     isAdmin: Boolean(user.isAdmin),
-    kind: user.isAdmin ? "admin" : "investor",
+    kind: user.isAdmin ? "admin" : "user",
   };
 }
 

@@ -6,6 +6,7 @@ import Checkbox from "@/components/ui/Checkbox";
 import {
   PERMISSION_LABELS,
   PERMISSIONS,
+  ROLE_LABELS,
   ROLE_PERMISSIONS,
   type AdminRole,
   type Permission,
@@ -30,8 +31,8 @@ export default function TeamClient() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<AdminRole>("admin");
-  const [perms, setPerms] = useState<Permission[]>([...ROLE_PERMISSIONS.admin]);
+  const [role, setRole] = useState<AdminRole>("ops_kyc");
+  const [perms, setPerms] = useState<Permission[]>([...ROLE_PERMISSIONS.ops_kyc]);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -54,7 +55,7 @@ export default function TeamClient() {
   useEffect(() => {
     if (role === "superadmin") {
       setPerms([...PERMISSIONS]);
-    } else if (role === "viewer" || role === "admin") {
+    } else {
       setPerms([...ROLE_PERMISSIONS[role]]);
     }
   }, [role]);
@@ -183,9 +184,9 @@ export default function TeamClient() {
             value={role}
             onChange={(v) => setRole(v as AdminRole)}
             options={[
-              { value: "viewer", label: "Viewer (read-only)" },
-              { value: "admin", label: "Admin (manage data)" },
-              { value: "superadmin", label: "Superadmin (full)" },
+              { value: "content_editor", label: ROLE_LABELS.content_editor },
+              { value: "ops_kyc", label: ROLE_LABELS.ops_kyc },
+              { value: "superadmin", label: ROLE_LABELS.superadmin },
             ]}
           />
           <div className="sm:col-span-2 space-y-3">
@@ -288,9 +289,9 @@ export default function TeamClient() {
                         )
                       }
                       options={[
-                        { value: "viewer", label: "Viewer" },
-                        { value: "admin", label: "Admin" },
-                        { value: "superadmin", label: "Superadmin" },
+                        { value: "content_editor", label: ROLE_LABELS.content_editor },
+                        { value: "ops_kyc", label: ROLE_LABELS.ops_kyc },
+                        { value: "superadmin", label: ROLE_LABELS.superadmin },
                       ]}
                     />
                     <div className="space-y-2">

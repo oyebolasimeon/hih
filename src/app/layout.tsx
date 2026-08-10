@@ -24,11 +24,11 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Nova Elite Homes | Premium Accommodation in London",
+  title: "House In Hand | Property Rental & Management Platform",
   description:
-    "Discover premium accommodation services for working professionals and students in London. Nova Elite Homes provides comfortable, convenient living spaces across the city.",
+    "Discover, rent, and manage housing in one place — listings, digital agreements, rent payments, and estate tools for tenants, landlords, students, and estate managers.",
   keywords:
-    "London accommodation, professional housing, student accommodation, premium living, Nova Elite Homes",
+    "House In Hand, property rental Nigeria, student hostels, landlords, estate management, rent payments, KYC verified housing",
   icons: {
     icon: "/favicon.ico",
     apple: "/favicon.png",

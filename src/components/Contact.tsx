@@ -8,7 +8,7 @@ type FormStatus = "idle" | "sending" | "success" | "error";
 
 const MIN_SUBMIT_MS = 3000;
 const RATE_LIMIT_MS = 60_000;
-const RATE_LIMIT_KEY = "nova_contact_last_submit";
+const RATE_LIMIT_KEY = "hih_contact_last_submit";
 
 function getLastSubmitAt(): number {
   try {
@@ -97,7 +97,7 @@ export default function Contact() {
     if (!accessKey) {
       setStatus("error");
       setErrorMessage(
-        "Form is not configured yet. Please email us directly at admin@novaelitehomes.co.uk."
+        "Form is not configured yet. Please email us directly at hello@houseinhand.com."
       );
       return;
     }
@@ -158,7 +158,7 @@ export default function Contact() {
           phone: formData.phone.trim(),
           message: formData.message.trim(),
           subject: `New enquiry from ${formData.name.trim()}`,
-          from_name: "Nova Elite Homes",
+          from_name: "House In Hand",
           botcheck: false,
         }),
       });
@@ -185,7 +185,7 @@ export default function Contact() {
     } catch {
       setStatus("error");
       setErrorMessage(
-        "Unable to send your message. Please try again or email admin@novaelitehomes.co.uk."
+        "Unable to send your message. Please try again or email hello@houseinhand.com."
       );
       resetTurnstile();
     }
@@ -200,11 +200,11 @@ export default function Contact() {
               Contact Us
             </p>
             <h2 className="mt-3 text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground leading-tight">
-              Ready to find your perfect accommodation?
+              Ready to find or list a home?
             </h2>
             <p className="mt-3 sm:mt-4 text-muted text-sm sm:text-base">
-              Get in touch with our team to discuss your requirements. We&apos;re
-              here to help.
+              Questions about House In Hand? Reach the team — we&apos;re here to
+              help.
             </p>
           </div>
         </AnimatedSection>
@@ -219,8 +219,8 @@ export default function Contact() {
                   </svg>
                 </div>
                 <h4 className="font-semibold text-foreground text-sm sm:text-base">Phone</h4>
-                <a href="tel:03302296964" className="text-muted hover:text-brand transition-colors text-sm">
-                  0330 229 6964
+                <a href="tel:+2348000000000" className="text-muted hover:text-brand transition-colors text-sm">
+                  +234 (0) 800 000 0000
                 </a>
               </div>
 
@@ -231,8 +231,8 @@ export default function Contact() {
                   </svg>
                 </div>
                 <h4 className="font-semibold text-foreground text-sm sm:text-base">Email</h4>
-                <a href="mailto:admin@novaelitehomes.co.uk" className="text-muted hover:text-brand transition-colors text-xs sm:text-sm break-all">
-                  admin@novaelitehomes.co.uk
+                <a href="mailto:hello@houseinhand.com" className="text-muted hover:text-brand transition-colors text-xs sm:text-sm break-all">
+                  hello@houseinhand.com
                 </a>
               </div>
 
@@ -242,10 +242,10 @@ export default function Contact() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4h16v16H4V4zm4 0v16m8-16v16M4 8h16M4 16h16" />
                   </svg>
                 </div>
-                <h4 className="font-semibold text-foreground text-sm sm:text-base">Instagram</h4>
-                <a href="https://instagram.com/novaelitehomes" target="_blank" rel="noopener noreferrer" className="text-muted hover:text-brand transition-colors text-sm">
-                  @novaelitehomes
-                </a>
+                <h4 className="font-semibold text-foreground text-sm sm:text-base">Location</h4>
+                <span className="text-muted text-sm">
+                  Lagos · Abuja · Nationwide
+                </span>
               </div>
             </div>
           </AnimatedSection>

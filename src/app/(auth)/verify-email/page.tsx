@@ -73,7 +73,7 @@ function VerifyEmailInner() {
   return (
     <AuthCard
       title="Verify email"
-      subtitle="Confirming your Nova Elite Homes account."
+      subtitle="Confirming your House In Hand account."
       footer={
         <p>
           <Link href="/login" className="text-brand font-medium hover:underline">

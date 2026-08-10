@@ -34,7 +34,7 @@ type Variable = { key: string; label: string };
 const blank = (): Omit<Template, "id"> => ({
   name: "",
   subject: "",
-  html: "<p>Hi {{name}},</p><p></p><p>— Nova Elite Homes</p>",
+  html: "<p>Hi {{name}},</p><p></p><p>— House In Hand</p>",
   isDefault: false,
   actions: [],
   active: true,
@@ -137,8 +137,8 @@ export default function EmailTemplatesClient() {
     setEditingId(null);
     setDraft({
       name: "Fallback (default)",
-      subject: "Message from Nova Elite Homes",
-      html: "<p>Hi {{name}},</p><p>This is a message from Nova Elite Homes.</p><p><a href=\"{{loginUrl}}\">Sign in to your account</a></p><p>— Nova Elite Homes</p>",
+      subject: "Message from House In Hand",
+      html: "<p>Hi {{name}},</p><p>This is a message from House In Hand.</p><p><a href=\"{{loginUrl}}\">Sign in to your account</a></p><p>— House In Hand</p>",
       isDefault: true,
       actions: [],
       active: true,
@@ -389,7 +389,7 @@ export default function EmailTemplatesClient() {
                   onChange={(e) =>
                     setDraft({ ...draft, subject: e.target.value })
                   }
-                  placeholder="Welcome to Nova Elite Homes"
+                  placeholder="Welcome to House In Hand"
                 />
               </div>
 

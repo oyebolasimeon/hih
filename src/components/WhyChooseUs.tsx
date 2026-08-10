@@ -4,34 +4,34 @@ import AnimatedSection from "./AnimatedSection";
 
 const features = [
   {
-    title: "Tailored Services",
+    title: "Profiles that fit you",
     description:
-      "We understand that every client's needs are unique. Whether you're a student looking for a comfortable place near your university or a company seeking accommodation for staff, we adapt our services to suit you.",
+      "Use House In Hand as a student, tenant, landlord, or estate manager — switch profiles without creating new accounts.",
   },
   {
-    title: "Prime London Locations",
+    title: "Verified listings",
     description:
-      "Our growing selection of properties is located across London, giving you access to well connected, convenient, and safe areas of the city.",
+      "Search homes and hostels with clearer details and verification checkpoints before a listing goes live.",
   },
   {
-    title: "Shared Living with Comfort",
+    title: "Safer applications",
     description:
-      "Our properties are designed to provide a balance between community and privacy, giving clients the chance to enjoy affordable, practical accommodation while still feeling at home.",
+      "Apply or review applications in-app instead of relying only on informal chats and cash deposits.",
   },
   {
-    title: "Quality and Care",
+    title: "Digital agreements",
     description:
-      "We treat every property as if it were our own. From upkeep to comfort, we make sure each space is ready for you to feel at home from the moment you move in.",
+      "Keep tenancy terms in one place so both sides can review and sign without losing documents.",
   },
   {
-    title: "Professional Support",
+    title: "Rent & payments",
     description:
-      "Our friendly and experienced team is always on hand to assist you before, during, and after your stay. We believe in building lasting relationships, not just short-term bookings.",
+      "Track rent and related payments with a history you can return to when questions come up.",
   },
   {
-    title: "Flexible Options",
+    title: "Built for Nigeria",
     description:
-      "Whether you need short-term or long-term accommodation, we provide flexible arrangements to match your schedule and requirements.",
+      "Designed for how housing works here — estates, student hostels, landlords, and city mobility.",
   },
 ];
 
@@ -40,29 +40,27 @@ export default function WhyChooseUs() {
     <section id="why-us" className="py-16 sm:py-24 bg-surface">
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-16">
-          {/* Left column - heading & image */}
           <div className="lg:col-span-5">
             <AnimatedSection>
               <p className="text-brand font-medium text-sm uppercase tracking-wider">
                 Why Choose Us
               </p>
               <h2 className="mt-3 text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground leading-tight">
-                Why choose our relocation services
+                Why house hunters and landlords choose House In Hand
               </h2>
               <p className="mt-4 text-muted leading-relaxed text-sm sm:text-base">
-                Choosing where to stay in London can be overwhelming, but with
-                Nova Elite Homes Ltd, you can be confident that your
-                accommodation needs are in safe hands.
+                Finding or letting a home should not mean gambling on unverified
+                contacts. We connect search, KYC, listings, and tenancy tools in
+                one platform.
               </p>
               <img
                 src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&q=80"
-                alt="Luxury living room interior"
+                alt="Comfortable living space"
                 className="mt-6 sm:mt-8 w-full h-48 sm:h-72 object-cover rounded-lg"
               />
             </AnimatedSection>
           </div>
 
-          {/* Right column - features list */}
           <div className="lg:col-span-7">
             <div className="space-y-0 divide-y divide-border">
               {features.map((feature, index) => (
@@ -82,12 +80,10 @@ export default function WhyChooseUs() {
             <AnimatedSection delay={0.5}>
               <div className="mt-6 sm:mt-8 p-4 sm:p-6 bg-brand-subtle border border-brand/10 rounded-lg">
                 <p className="text-sm text-foreground leading-relaxed">
-                  <span className="font-semibold">Trusted by Businesses and Individuals</span>{" "}
-                  — Companies rely on us to house their staff, and individuals
-                  trust us with one of their most important needs: a home while in
-                  London. With Nova Elite Homes Ltd, accommodation isn&apos;t just
-                  about a place to stay. It&apos;s about peace of mind, reliability,
-                  and a service you can count on.
+                  <span className="font-semibold">One platform, clearer housing</span>{" "}
+                  — whether you are searching near campus or managing units
+                  across an estate, House In Hand keeps the process organised
+                  from first enquiry to active tenancy.
                 </p>
               </div>
             </AnimatedSection>

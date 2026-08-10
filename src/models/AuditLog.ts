@@ -1,6 +1,11 @@
 import mongoose, { Schema, models, model } from "mongoose";
 
-export type AuditActorKind = "investor" | "admin" | "system" | "anonymous";
+export type AuditActorKind =
+  | "user"
+  | "investor"
+  | "admin"
+  | "system"
+  | "anonymous";
 
 export type AuditChange = {
   field: string;
@@ -54,7 +59,7 @@ const AuditLogSchema = new Schema<IAuditLog>(
     actorName: { type: String, default: "" },
     actorKind: {
       type: String,
-      enum: ["investor", "admin", "system", "anonymous"],
+      enum: ["user", "investor", "admin", "system", "anonymous"],
       default: "anonymous",
       index: true,
     },

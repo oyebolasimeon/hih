@@ -35,10 +35,10 @@ function wrapEmailHtml(body: string): string {
               <table role="presentation" cellspacing="0" cellpadding="0">
                 <tr>
                   <td style="vertical-align:middle;padding-right:10px;">
-                    <img src="{{logoUrl}}" width="28" height="28" alt="Nova Elite Homes" style="display:block;border:0;border-radius:4px;width:28px;height:28px;object-fit:contain;" />
+                    <img src="{{logoUrl}}" width="28" height="28" alt="House In Hand" style="display:block;border:0;border-radius:4px;width:28px;height:28px;object-fit:contain;" />
                   </td>
                   <td style="vertical-align:middle;font-family:Inter,Arial,sans-serif;font-weight:700;color:#0c0d0b;font-size:15px;">
-                    Nova Elite Homes
+                    House In Hand
                   </td>
                 </tr>
               </table>
@@ -54,11 +54,11 @@ function wrapEmailHtml(body: string): string {
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
                   <td style="vertical-align:middle;padding-right:12px;width:36px;">
-                    <img src="{{logoUrl}}" width="32" height="32" alt="Nova Elite Homes" style="display:block;border:0;border-radius:4px;width:32px;height:32px;object-fit:contain;background:#A8BF44;padding:2px;" />
+                    <img src="{{logoUrl}}" width="32" height="32" alt="House In Hand" style="display:block;border:0;border-radius:4px;width:32px;height:32px;object-fit:contain;background:#A8BF44;padding:2px;" />
                   </td>
                   <td style="vertical-align:middle;">
-                    <div style="font-weight:600;color:#0c0d0b;font-size:13px;">Nova Elite Homes</div>
-                    <div style="margin-top:2px;">© {{year}} Nova Elite Homes</div>
+                    <div style="font-weight:600;color:#0c0d0b;font-size:13px;">House In Hand</div>
+                    <div style="margin-top:2px;">© {{year}} House In Hand</div>
                   </td>
                 </tr>
               </table>

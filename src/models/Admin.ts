@@ -34,8 +34,8 @@ const AdminSchema = new Schema<IAdmin>(
     name: { type: String, required: true, trim: true },
     role: {
       type: String,
-      enum: ["superadmin", "admin", "viewer"],
-      default: "admin",
+      enum: ["superadmin", "content_editor", "ops_kyc"],
+      default: "ops_kyc",
     },
     permissions: { type: [String], default: [] },
     source: { type: String, enum: ["env", "invite"], default: "invite" },

@@ -18,6 +18,14 @@ export type AdminAccess = {
   source: "env" | "invite" | null;
 };
 
+/** Map legacy Nova roles stored in Mongo to HIH roles */
+export function normalizeAdminRole(role: string | null | undefined): AdminRole {
+  if (role === "superadmin") return "superadmin";
+  if (role === "content_editor" || role === "viewer") return "content_editor";
+  if (role === "ops_kyc" || role === "admin") return "ops_kyc";
+  return "ops_kyc";
+}
+
 export async function resolveAdminAccess(
   userId: string,
   email: string
@@ -74,14 +82,24 @@ export async function resolveAdminAccess(
     };
   }
 
+  const role = normalizeAdminRole(admin.role);
+  if (admin.role !== role) {
+    admin.role = role;
+    admin.permissions = resolvePermissions(
+      role,
+      admin.permissions as Permission[]
+    );
+    await admin.save().catch(() => undefined);
+  }
+
   const permissions = resolvePermissions(
-    admin.role,
+    role,
     admin.permissions as Permission[]
   );
 
   return {
     isAdmin: true,
-    role: admin.role,
+    role,
     permissions,
     adminId: String(admin._id),
     source: admin.source,
