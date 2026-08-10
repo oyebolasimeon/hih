@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { FormSkeleton, PageHeaderSkeleton } from "@/components/ui/Skeleton";
+import PhoneVerifyClient from "@/components/portal/PhoneVerifyClient";
 
 type Profile = {
   name: string;
@@ -214,6 +215,14 @@ export default function AccountSettings({
           {saving ? "Saving…" : "Save profile"}
         </button>
       </form>
+
+      <PhoneVerifyClient
+        initialPhone={profile.phone}
+        onVerified={(phone) => {
+          setProfile({ ...profile, phone });
+          setMessage("Phone verified.");
+        }}
+      />
 
       <form onSubmit={changePassword} className="app-card p-5 space-y-4">
         <h2 className="font-semibold">Change password</h2>

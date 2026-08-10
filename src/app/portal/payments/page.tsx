@@ -1,4 +1,6 @@
-import EmptyState from "@/components/ui/EmptyState";
+import { Suspense } from "react";
+import PaymentsClient from "@/components/portal/PaymentsClient";
+import { TableSkeleton } from "@/components/ui/Skeleton";
 
 export default function PortalPaymentsPage() {
   return (
@@ -11,7 +13,9 @@ export default function PortalPaymentsPage() {
           View rent payments, deposits, and payout history.
         </p>
       </div>
-      <EmptyState title="Payments" description="Coming online for MVP" />
+      <Suspense fallback={<TableSkeleton rows={4} />}>
+        <PaymentsClient />
+      </Suspense>
     </div>
   );
 }

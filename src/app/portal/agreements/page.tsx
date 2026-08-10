@@ -1,4 +1,4 @@
-import EmptyState from "@/components/ui/EmptyState";
+import AgreementsClient from "@/components/portal/AgreementsClient";
 
 export default function PortalAgreementsPage() {
   return (
@@ -11,7 +11,7 @@ export default function PortalAgreementsPage() {
           Digital tenancy agreements and signatures in one place.
         </p>
       </div>
-      <EmptyState title="Agreements" description="Coming online for MVP" />
+      <AgreementsClient />
     </div>
   );
 }

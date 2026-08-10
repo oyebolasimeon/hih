@@ -1,4 +1,4 @@
-import EmptyState from "@/components/ui/EmptyState";
+import NotificationsClient from "@/components/portal/NotificationsClient";
 
 export default function PortalNotificationsPage() {
   return (
@@ -11,7 +11,7 @@ export default function PortalNotificationsPage() {
           Application updates, payment reminders, and KYC status alerts.
         </p>
       </div>
-      <EmptyState title="Notifications" description="Coming online for MVP" />
+      <NotificationsClient />
     </div>
   );
 }

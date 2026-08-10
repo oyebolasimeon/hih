@@ -1,6 +1,15 @@
-import EmptyState from "@/components/ui/EmptyState";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { hasPermission } from "@/lib/rbac";
+import AdminFraudClient from "@/components/admin/AdminFraudClient";
 
-export default function AdminFraudPage() {
+export default async function AdminFraudPage() {
+  const session = await auth();
+  if (!session?.user?.isAdmin) redirect("/portal");
+  if (!hasPermission(session.user.permissions, "fraud:read")) {
+    redirect("/admin");
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -12,10 +21,7 @@ export default function AdminFraudPage() {
           profiles.
         </p>
       </div>
-      <EmptyState
-        title="No fraud reports"
-        description="Coming online for MVP"
-      />
+      <AdminFraudClient />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import EmptyState from "@/components/ui/EmptyState";
+import ApplicationsClient from "@/components/portal/ApplicationsClient";
 
 export default function PortalApplicationsPage() {
   return (
@@ -11,7 +11,7 @@ export default function PortalApplicationsPage() {
           Track rental applications you send or receive.
         </p>
       </div>
-      <EmptyState title="Applications" description="Coming online for MVP" />
+      <ApplicationsClient />
     </div>
   );
 }
