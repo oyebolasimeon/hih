@@ -25,15 +25,34 @@ const cached: MongooseCache = global.mongooseCache ?? {
 global.mongooseCache = cached;
 
 export async function connectDB() {
-  if (cached.conn) return cached.conn;
+  if (cached.conn) {
+    const state = cached.conn.connection.readyState;
+    // 1 = connected, 2 = connecting
+    if (state === 1) return cached.conn;
+    if (state === 0 || state === 3) {
+      cached.conn = null;
+      cached.promise = null;
+    }
+  }
+
   if (!MONGODB_URI) {
     throw new Error("MONGODB_URI is not configured");
   }
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI, {
-      bufferCommands: false,
-    });
+    cached.promise = mongoose
+      .connect(MONGODB_URI, {
+        bufferCommands: false,
+        serverSelectionTimeoutMS: 5_000,
+        connectTimeoutMS: 5_000,
+      })
+      .then((conn) => conn)
+      .catch((err) => {
+        // Allow later retries after IP whitelist / network recovery
+        cached.promise = null;
+        cached.conn = null;
+        throw err;
+      });
   }
 
   cached.conn = await cached.promise;

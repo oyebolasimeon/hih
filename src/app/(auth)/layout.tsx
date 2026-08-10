@@ -1,16 +1,13 @@
 import { AuthBackgroundProvider } from "@/components/auth/AuthBackgroundContext";
-import { getBranding } from "@/lib/branding";
 
-export default async function AuthGroupLayout({
+export default function AuthGroupLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const branding = await getBranding().catch(() => null);
-  const bg = branding?.authBackgroundUrl || "/hero-home.jpg";
-
+  // Avoid Mongo on the auth shell — BrandingProvider / AuthCard supply live assets.
   return (
-    <AuthBackgroundProvider backgroundUrl={bg}>
+    <AuthBackgroundProvider backgroundUrl="/hero-home.jpg">
       {children}
     </AuthBackgroundProvider>
   );

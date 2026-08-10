@@ -45,7 +45,8 @@ export async function getBranding(): Promise<BrandingSettings> {
     }
     return merged;
   } catch (err) {
-    console.error("getBranding failed:", err);
+    const message = err instanceof Error ? err.message : String(err);
+    console.warn(`getBranding unavailable, using defaults: ${message}`);
     return { ...DEFAULT_BRANDING };
   }
 }

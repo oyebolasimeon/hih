@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { JetBrains_Mono } from "next/font/google";
 import AuthProvider from "@/components/providers/AuthProvider";
 import { BrandingProvider } from "@/components/providers/BrandingProvider";
-import { getBranding } from "@/lib/branding";
+import { DEFAULT_BRANDING } from "@/lib/branding-defaults";
 import "./globals.css";
 
 const jetbrainsMono = JetBrains_Mono({
@@ -24,13 +24,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const branding = await getBranding();
-
+  // Never block the shell on Mongo — BrandingProvider hydrates from /api/public/branding.
   return (
     <html
       lang="en"
@@ -42,7 +41,7 @@ export default async function RootLayout({
         className="min-h-full flex flex-col bg-background text-foreground"
         suppressHydrationWarning
       >
-        <BrandingProvider initial={branding}>
+        <BrandingProvider initial={DEFAULT_BRANDING}>
           <AuthProvider>{children}</AuthProvider>
         </BrandingProvider>
       </body>
