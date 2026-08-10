@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import EmptyState from "@/components/ui/EmptyState";
 
 const PROFILES = [
@@ -26,11 +27,36 @@ const PROFILES = [
   },
 ] as const;
 
+type RecListing = {
+  id: string;
+  title: string;
+  address?: { city?: string; state?: string };
+  price?: { amount: number; currency: string; period: string };
+};
+
 type Props = {
   name: string;
 };
 
 export default function DashboardClient({ name }: Props) {
+  const [recs, setRecs] = useState<RecListing[]>([]);
+  const [recReason, setRecReason] = useState("");
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await fetch("/api/portal/recommendations");
+        const data = await res.json();
+        if (res.ok) {
+          setRecs(data.recommendations || []);
+          setRecReason(data.reason || "");
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, []);
+
   return (
     <div className="space-y-6">
       <div>
@@ -42,6 +68,47 @@ export default function DashboardClient({ name }: Props) {
           and agreements together. Create or select a profile to get started.
         </p>
       </div>
+
+      {recs.length > 0 ? (
+        <section className="space-y-3">
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <h2 className="font-display text-lg font-semibold">
+                Recommended for you
+              </h2>
+              {recReason ? (
+                <p className="text-sm text-muted">{recReason}</p>
+              ) : null}
+            </div>
+            <Link
+              href="/portal/search"
+              className="text-sm text-brand-dark hover:underline"
+            >
+              Browse all
+            </Link>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {recs.slice(0, 4).map((l) => (
+              <Link
+                key={l.id}
+                href={`/portal/search/${l.id}`}
+                className="app-card p-4 block hover:border-brand/40 transition-colors"
+              >
+                <h3 className="font-semibold text-sm line-clamp-2">{l.title}</h3>
+                <p className="mt-1 text-xs text-muted">
+                  {[l.address?.city, l.address?.state].filter(Boolean).join(", ")}
+                </p>
+                {l.price ? (
+                  <p className="mt-2 text-sm font-medium">
+                    {l.price.currency} {l.price.amount.toLocaleString()} /{" "}
+                    {l.price.period}
+                  </p>
+                ) : null}
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="space-y-3">
         <h2 className="font-display text-lg font-semibold">Your profiles</h2>
@@ -71,6 +138,12 @@ export default function DashboardClient({ name }: Props) {
           className="app-btn app-btn-secondary text-sm"
         >
           My listings
+        </Link>
+        <Link
+          href="/portal/credit"
+          className="app-btn app-btn-secondary text-sm"
+        >
+          Credit score
         </Link>
         <Link
           href="/portal/profiles"

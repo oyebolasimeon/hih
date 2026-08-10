@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import EmptyState from "@/components/ui/EmptyState";
+import ReviewsClient from "@/components/portal/ReviewsClient";
 import { FormSkeleton } from "@/components/ui/Skeleton";
 
 type ListingDetail = {
@@ -177,6 +178,11 @@ export default function ListingDetailClient({ id }: { id: string }) {
           Apply for this home
         </Link>
       </div>
+
+      <section className="space-y-3">
+        <h2 className="font-display text-lg font-semibold">Reviews</h2>
+        <ReviewsClient listingId={listing.id} compact />
+      </section>
     </div>
   );
 }

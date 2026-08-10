@@ -10,9 +10,17 @@ const links = [
   { href: "/portal/search", label: "Search" },
   { href: "/portal/listings", label: "My listings" },
   { href: "/portal/applications", label: "Applications" },
-  { href: "/portal/payments", label: "Payments" },
   { href: "/portal/agreements", label: "Agreements" },
+  { href: "/portal/payments", label: "Payments" },
+  { href: "/portal/messages", label: "Messages" },
+  { href: "/portal/utilities", label: "Utilities" },
+  { href: "/portal/savings", label: "Savings" },
+  { href: "/portal/analytics", label: "Analytics" },
   { href: "/portal/kyc", label: "KYC" },
+  { href: "/portal/credit", label: "Credit" },
+  { href: "/portal/iot", label: "IoT" },
+  { href: "/portal/maintenance", label: "Maintenance" },
+  { href: "/portal/reviews", label: "Reviews" },
   { href: "/portal/notifications", label: "Notifications" },
   { href: "/portal/profiles", label: "Profiles" },
   { href: "/portal/account", label: "Account" },
@@ -41,7 +49,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
           </Link>
           <p className="text-xs text-muted mt-2">App</p>
         </div>
-        <nav className="flex-1 p-3 space-y-1">
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {links.map((link) => {
             const active = link.exact
               ? pathname === link.href

@@ -11,6 +11,7 @@ type Profile = {
   name: string;
   email: string;
   phone: string;
+  phoneVerified?: boolean;
   emailNotifications: boolean;
 };
 
@@ -166,6 +167,13 @@ export default function AccountSettings({
             onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
             autoComplete="tel"
           />
+          {profile.phoneVerified ? (
+            <p className="mt-1 text-xs text-muted">Phone verified</p>
+          ) : (
+            <p className="mt-1 text-xs text-muted">
+              Not verified — use the section below to confirm by OTP.
+            </p>
+          )}
         </div>
         <div className="flex items-center justify-between gap-4 rounded-md border border-border px-3 py-3">
           <div>
@@ -219,7 +227,7 @@ export default function AccountSettings({
       <PhoneVerifyClient
         initialPhone={profile.phone}
         onVerified={(phone) => {
-          setProfile({ ...profile, phone });
+          setProfile({ ...profile, phone, phoneVerified: true });
           setMessage("Phone verified.");
         }}
       />

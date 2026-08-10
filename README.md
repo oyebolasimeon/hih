@@ -1,41 +1,59 @@
 # House In Hand
 
-Property rental and management platform — public website, authenticated app, and admin console.
-
-Built on the Nova Elite codebase shell (Next.js App Router, MongoDB, NextAuth, Cloudinary, Redis, admin RBAC). Domain models and product flows are House In Hand.
+Property rental and management platform — public site, authenticated app, admin console.
 
 ## Stack
 
-- **Frontend:** Next.js 16, React 19, Tailwind 4
-- **DB:** MongoDB + Mongoose
-- **Auth:** NextAuth v5 (JWT) + admin RBAC
-- **Media:** Cloudinary
-- **Email:** Nodemailer / Google SMTP
-- **Cache:** Redis (OTP / reset tokens)
+Next.js 16 · React 19 · MongoDB/Mongoose · NextAuth · Cloudinary · Redis · Prembly KYC · Paystack
 
 ## Surfaces
 
 | Surface | Path |
 |---|---|
-| Public website | `/`, `/how-it-works`, `/listings`, `/blog`, `/faq`, … |
-| App (authenticated) | `/portal` |
-| Admin console | `/admin` |
+| Public website | `/` |
+| App | `/portal` |
+| Admin | `/admin` |
 
-## Getting started
+## Setup
 
 ```bash
 npm install
 cp .env.example .env.local
-# set MONGODB_URI, AUTH_SECRET, ADMIN_EMAILS, SMTP, Cloudinary, etc.
+# MongoDB, AUTH_SECRET, ADMIN_EMAILS required
+# Prembly: PREMBLY_APP_ID + PREMBLY_API_KEY (or PREMBLY_MOCK=true)
+# Paystack: PAYSTACK_SECRET_KEY (or PAYSTACK_MOCK=true)
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+## Feature map (PRD phases)
 
-## MVP directions (see `hihPRD`)
+### Phase 1 — MVP
+- Identity: register, email verify, phone OTP, multi-profile, Prembly KYC, RBAC
+- Marketplace: listings CRUD, search/filters, admin verify, public teaser
+- Lifecycle: applications → agreements/e-sign → occupancy
+- Payments: Paystack rent init/verify (mock supported)
+- Trust: notifications, fraud reports, audit logs, verified badges
+- Website + CMS: pages, blog/FAQ/testimonials admin
 
-1. Identity — multi-profile + KYC
-2. Listings marketplace
-3. Applications & digital leases
-4. Rent payments (Paystack / Flutterwave)
-5. Public website + CMS (in progress under `/admin/content`)
+### Phase 2
+- Utilities bills + pay · Savings goals · In-app messaging · Reviews/ratings
+
+### Phase 3
+- Estate/landlord analytics dashboard
+
+### Phase 4
+- Heuristic credit score · Listing recommendations
+
+### Phase 5–6
+- IoT devices (lock/meter mock commands) · Maintenance requests + insights
+
+## Typical renter flow
+
+1. Register → create Tenant/Student profile → `/portal/kyc`
+2. Search → apply → landlord approves → both sign agreement
+3. Pay rent via `/portal/payments`
+
+## Typical landlord flow
+
+1. Landlord profile + KYC → create listing → submit for verification
+2. Review applications → sign lease → track payments / analytics
