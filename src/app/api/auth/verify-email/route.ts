@@ -4,7 +4,8 @@ import { z } from "zod";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
 import { sendVerificationEmail, sendWelcomeEmail } from "@/lib/mail";
-import { rateLimit, redisDel, redisGet, redisSet } from "@/lib/redis";
+import { rateLimit } from "@/lib/redis";
+import { tokenDel, tokenGet, tokenSet } from "@/lib/token-store";
 import { writeAudit } from "@/lib/audit";
 
 const verifySchema = z.object({
@@ -23,7 +24,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const userId = await redisGet(`emailverify:${parsed.data.token}`);
+    const userId = await tokenGet(`emailverify:${parsed.data.token}`);
     if (!userId) {
       return NextResponse.json(
         { error: "This verification link is invalid or has expired." },
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
     await connectDB();
     const user = await User.findById(userId);
     if (!user) {
-      await redisDel(`emailverify:${parsed.data.token}`);
+      await tokenDel(`emailverify:${parsed.data.token}`);
       return NextResponse.json(
         { error: "This verification link is invalid or has expired." },
         { status: 400 }
@@ -68,10 +69,10 @@ export async function POST(request: Request) {
       });
     }
 
-    await redisDel(`emailverify:${parsed.data.token}`);
+    await tokenDel(`emailverify:${parsed.data.token}`);
 
     const autoLoginToken = randomBytes(32).toString("hex");
-    await redisSet(`autologin:${autoLoginToken}`, String(user._id), 120);
+    await tokenSet(`autologin:${autoLoginToken}`, String(user._id), 120);
 
     return NextResponse.json({
       success: true,
@@ -127,7 +128,7 @@ export async function PUT(request: Request) {
     // Always succeed outwardly to avoid enumeration, but only email if needed
     if (user && user.emailVerified === false) {
       const token = randomBytes(32).toString("hex");
-      await redisSet(`emailverify:${token}`, String(user._id), 86400);
+      await tokenSet(`emailverify:${token}`, String(user._id), 86400);
       try {
         await sendVerificationEmail(email, token, user.name);
       } catch (err) {

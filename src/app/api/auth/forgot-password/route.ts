@@ -4,7 +4,8 @@ import { z } from "zod";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
 import { sendPasswordResetEmail } from "@/lib/mail";
-import { rateLimit, redisSet } from "@/lib/redis";
+import { rateLimit } from "@/lib/redis";
+import { tokenSet } from "@/lib/token-store";
 import { writeAudit } from "@/lib/audit";
 
 const schema = z.object({
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
     // Always return success to avoid email enumeration
     if (user) {
       const token = randomBytes(32).toString("hex");
-      await redisSet(`pwdreset:${token}`, String(user._id), 3600);
+      await tokenSet(`pwdreset:${token}`, String(user._id), 3600);
       try {
         await sendPasswordResetEmail(email, token, user.name);
       } catch (err) {

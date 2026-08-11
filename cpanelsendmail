@@ -1,10 +1,10 @@
 # cPanel email: SMTP vs sendmail
 
-How Nova Elite Homes sends transactional email on shared cPanel when normal SMTP TCP connections time out.
+How House In Hand sends transactional email on shared cPanel when normal SMTP TCP connections time out.
 
 ## Problem we hit
 
-On production (cPanel Node app), Sentry showed:
+On production (cPanel Node app), delivery often fails with:
 
 ```text
 Error: Connection timeout
@@ -17,7 +17,7 @@ What we tried:
 
 | Setting | Result |
 |--------|--------|
-| `SMTP_HOST=mail.novaelitehomes.co.uk` + port `465` | Timeout (also unreachable from laptop) |
+| `SMTP_HOST=mail.yourdomain.com` + port `465` | Timeout (also unreachable from laptop) |
 | `SMTP_HOST=localhost` + `465` / `587` | Still timed out / refused on this host |
 | Gmail SMTP | Works locally; not preferred for the live domain |
 
@@ -29,9 +29,9 @@ Use Nodemailer’s **sendmail** transport so Node hands the message to Exim on t
 
 Implementation lives in:
 
-- [`src/lib/smtp.ts`](../src/lib/smtp.ts) — config, SMTP attempts, sendmail fallback
-- [`src/app/api/health/route.ts`](../src/app/api/health/route.ts) — optional `?smtp=1` probe
-- Env docs in [`.env.example`](../.env.example)
+- [`src/lib/smtp.ts`](src/lib/smtp.ts) — config, SMTP attempts, sendmail fallback
+- [`src/app/api/health/route.ts`](src/app/api/health/route.ts) — optional `?smtp=1` probe
+- Env docs in [`.env.example`](.env.example)
 
 ### Forced sendmail (recommended on this cPanel)
 
@@ -39,7 +39,7 @@ In **Setup Node.js App → Environment Variables**:
 
 ```bash
 SMTP_TRANSPORT=sendmail
-SMTP_FROM=Nova Elite Homes <noreply@novaelitehomes.co.uk>
+SMTP_FROM=House In Hand <noreply@yourdomain.com>
 ```
 
 Optional:
@@ -59,9 +59,9 @@ SMTP_TRANSPORT=smtp
 SMTP_HOST=localhost
 SMTP_PORT=465
 SMTP_SECURE=true
-SMTP_USER=noreply@novaelitehomes.co.uk
+SMTP_USER=noreply@yourdomain.com
 SMTP_PASSWORD=...
-SMTP_FROM=Nova Elite Homes <noreply@novaelitehomes.co.uk>
+SMTP_FROM=House In Hand <noreply@yourdomain.com>
 ```
 
 Legacy `GOOGLE_SMTP_*` names still work as fallbacks if `SMTP_*` is unset.
@@ -123,7 +123,7 @@ GET /api/health?smtp=1
 Useful after deploy:
 
 ```text
-https://novaelitehomes.co.uk/api/health?smtp=1
+https://yourdomain.com/api/health?smtp=1
 ```
 
 Expect auth flows to be viable when `mongo.ok` and `tokenStore.ok` are true. SMTP may show `endpoint: "sendmail"` when using Exim.
@@ -140,13 +140,13 @@ Both were required for “register → verification email → link works” on t
 
 ## Checklist (cPanel)
 
-1. Create mailbox (e.g. `noreply@novaelitehomes.co.uk`) used in `SMTP_FROM`.
+1. Create mailbox (e.g. `noreply@yourdomain.com`) used in `SMTP_FROM`.
 2. Set `SMTP_TRANSPORT=sendmail` and `SMTP_FROM=...`.
 3. Deploy build that includes current `src/lib/smtp.ts`.
 4. Restart Node app.
 5. Hit `/api/health` and `/api/health?smtp=1`.
 6. Register or use Resend verification; confirm inbox (and spam).
-7. Watch Sentry — SMTP timeout should stop once sendmail is delivering.
+7. Watch logs/Sentry — SMTP timeout should stop once sendmail is delivering.
 
 ## Files to remember
 
@@ -155,5 +155,6 @@ Both were required for “register → verification email → link works” on t
 | `src/lib/smtp.ts` | SMTP + sendmail transports and fallbacks |
 | `src/lib/mail.ts` | High-level templated emails |
 | `src/lib/token-store.ts` | Verify/reset tokens (Redis → Mongo) |
+| `src/models/AuthToken.ts` | Mongo TTL collection for tokens |
 | `src/app/api/health/route.ts` | Connectivity probe |
 | `.env.example` | Documented env vars |

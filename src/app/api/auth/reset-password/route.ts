@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
-import { redisDel, redisGet } from "@/lib/redis";
+import { tokenDel, tokenGet } from "@/lib/token-store";
 import { writeAudit } from "@/lib/audit";
 
 const schema = z.object({
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const userId = await redisGet(`pwdreset:${parsed.data.token}`);
+    const userId = await tokenGet(`pwdreset:${parsed.data.token}`);
     if (!userId) {
       return NextResponse.json(
         { error: "This reset link is invalid or has expired." },
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     user.passwordHash = await bcrypt.hash(parsed.data.password, 12);
     user.emailVerified = true;
     await user.save();
-    await redisDel(`pwdreset:${parsed.data.token}`);
+    await tokenDel(`pwdreset:${parsed.data.token}`);
 
     const accountId = String(user._id);
     await writeAudit({

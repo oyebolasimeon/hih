@@ -11,7 +11,7 @@ import { resolveAdminAccess } from "@/lib/admin";
 import { authConfig } from "@/lib/auth.config";
 import { actorFromUser, sanitizeAuditValue, writeAudit } from "@/lib/audit";
 import { sendWelcomeEmail } from "@/lib/mail";
-import { redisDel, redisGet } from "@/lib/redis";
+import { tokenDel, tokenGet } from "@/lib/token-store";
 import type { AdminRole, Permission } from "@/lib/rbac";
 
 class EmailNotVerifiedError extends CredentialsSignin {
@@ -82,10 +82,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         await connectDB();
 
         if (autoLoginToken) {
-          const userId = await redisGet(`autologin:${autoLoginToken}`);
+          const userId = await tokenGet(`autologin:${autoLoginToken}`);
           if (!userId) return null;
           const user = await User.findById(userId);
-          await redisDel(`autologin:${autoLoginToken}`);
+          await tokenDel(`autologin:${autoLoginToken}`);
           if (!user || user.emailVerified === false) return null;
 
           const access = await resolveAdminAccess(String(user._id), user.email);

@@ -6,7 +6,8 @@ import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
 import { Investor } from "@/models/Investor";
 import { sendVerificationEmail } from "@/lib/mail";
-import { rateLimit, redisSet } from "@/lib/redis";
+import { rateLimit } from "@/lib/redis";
+import { tokenSet } from "@/lib/token-store";
 import { sanitizeAuditValue, writeAudit } from "@/lib/audit";
 
 const schema = z.object({
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
     if (existing) {
       if (existing.emailVerified === false) {
         const token = randomBytes(32).toString("hex");
-        await redisSet(`emailverify:${token}`, String(existing._id), 86400);
+        await tokenSet(`emailverify:${token}`, String(existing._id), 86400);
         try {
           await sendVerificationEmail(email, token, existing.name);
         } catch (err) {
@@ -91,7 +92,7 @@ export async function POST(request: Request) {
 
     const userId = String(user._id);
     const token = randomBytes(32).toString("hex");
-    await redisSet(`emailverify:${token}`, userId, 86400);
+    await tokenSet(`emailverify:${token}`, userId, 86400);
 
     let emailSent = true;
     try {
