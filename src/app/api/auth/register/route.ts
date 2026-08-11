@@ -142,9 +142,18 @@ export async function POST(request: Request) {
     });
   } catch (err) {
     console.error("Register error:", err);
+    const msg = err instanceof Error ? err.message : String(err);
+    const dbDown =
+      /MongoServerSelectionError|Could not connect|whitelist|ECONNREFUSED|MONGODB_URI/i.test(
+        msg
+      );
     return NextResponse.json(
-      { error: "Unable to create account. Please try again." },
-      { status: 500 }
+      {
+        error: dbDown
+          ? "Database is unreachable. On MongoDB Atlas, Network Access → add your current IP (or 0.0.0.0/0 for temporary local/dev), then try again."
+          : "Unable to create account. Please try again.",
+      },
+      { status: 503 }
     );
   }
 }
