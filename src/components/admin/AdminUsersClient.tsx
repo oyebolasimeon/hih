@@ -31,6 +31,10 @@ export default function AdminUsersClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busyKey, setBusyKey] = useState("");
+  const [success, setSuccess] = useState("");
+  const [emailTarget, setEmailTarget] = useState<UserRow | null>(null);
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailMessage, setEmailMessage] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -53,6 +57,7 @@ export default function AdminUsersClient() {
   async function act(body: Record<string, string>) {
     setBusyKey(JSON.stringify(body));
     setError("");
+    setSuccess("");
     const res = await fetch("/api/admin/users", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -62,9 +67,40 @@ export default function AdminUsersClient() {
     setBusyKey("");
     if (!res.ok) {
       setError(data.error || "Action failed.");
-      return;
+      return false;
+    }
+    if (body.action === "send_email" && data.deliveredTo) {
+      setSuccess(`Email delivered to ${data.deliveredTo}.`);
+      setEmailTarget(null);
+      setEmailSubject("");
+      setEmailMessage("");
     }
     await load();
+    return true;
+  }
+
+  function openEmailModal(user: UserRow) {
+    setEmailTarget(user);
+    setEmailSubject("");
+    setEmailMessage("");
+    setError("");
+    setSuccess("");
+  }
+
+  async function sendEmail() {
+    if (!emailTarget) return;
+    const subject = emailSubject.trim();
+    const message = emailMessage.trim();
+    if (subject.length < 2 || message.length < 1) {
+      setError("Subject and message are required.");
+      return;
+    }
+    await act({
+      action: "send_email",
+      userId: emailTarget.id,
+      subject,
+      message,
+    });
   }
 
   return (
@@ -74,8 +110,8 @@ export default function AdminUsersClient() {
           Users
         </h1>
         <p className="mt-1 text-sm text-muted max-w-2xl">
-          Verify emails and profiles manually — including users who have not
-          uploaded KYC documents yet.
+          Verify emails and profiles manually, or send a message directly to a
+          user&apos;s inbox.
         </p>
       </Reveal>
 
@@ -101,6 +137,12 @@ export default function AdminUsersClient() {
       {error ? (
         <p className="text-sm text-danger" role="alert">
           {error}
+        </p>
+      ) : null}
+
+      {success ? (
+        <p className="text-sm text-brand" role="status">
+          {success}
         </p>
       ) : null}
 
@@ -139,6 +181,14 @@ export default function AdminUsersClient() {
 
               {canWrite ? (
                 <div className="flex flex-wrap gap-2 border-t border-border pt-3">
+                  <button
+                    type="button"
+                    disabled={busyKey !== ""}
+                    className="app-btn app-btn-secondary text-xs"
+                    onClick={() => openEmailModal(u)}
+                  >
+                    Send email
+                  </button>
                   {u.emailVerified ? (
                     <button
                       type="button"
@@ -222,6 +272,89 @@ export default function AdminUsersClient() {
           ))}
         </ul>
       )}
+
+      {emailTarget ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-navy/50 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="send-email-title"
+        >
+          <div className="app-card w-full max-w-lg p-5 sm:p-6 space-y-4 shadow-xl">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2
+                  id="send-email-title"
+                  className="text-lg font-display font-semibold"
+                >
+                  Send email
+                </h2>
+                <p className="text-sm text-muted mt-1">
+                  To {emailTarget.name} · {emailTarget.email}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="rounded-md p-2 text-muted hover:bg-surface-dark hover:text-foreground"
+                aria-label="Close"
+                onClick={() => setEmailTarget(null)}
+              >
+                <svg
+                  className="h-5 w-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <label className="block text-sm">
+                <span className="font-medium">Subject</span>
+                <input
+                  className="app-input mt-1.5 w-full"
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                  placeholder="Account update"
+                  maxLength={200}
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="font-medium">Message</span>
+                <textarea
+                  className="app-input mt-1.5 w-full min-h-[140px] resize-y"
+                  value={emailMessage}
+                  onChange={(e) => setEmailMessage(e.target.value)}
+                  placeholder="Write your message to the user…"
+                  maxLength={5000}
+                />
+              </label>
+            </div>
+
+            <div className="flex flex-wrap gap-2 justify-end pt-1">
+              <button
+                type="button"
+                className="app-btn app-btn-secondary text-sm"
+                onClick={() => setEmailTarget(null)}
+                disabled={busyKey !== ""}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="app-btn app-btn-primary text-sm"
+                onClick={() => void sendEmail()}
+                disabled={busyKey !== ""}
+              >
+                {busyKey.includes("send_email") ? "Sending…" : "Send email"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

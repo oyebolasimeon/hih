@@ -9,7 +9,7 @@ export default function Footer() {
       <div className="mx-auto max-w-7xl px-5 py-16 sm:px-6 lg:px-8 lg:py-20">
         <div className="grid gap-12 md:grid-cols-12">
           <div className="md:col-span-5">
-            <BrandMark invert href="/" />
+            <BrandMark invert href="/" showLabel />
             <p className="mt-5 max-w-sm text-sm leading-relaxed text-sand/60">
               Property rental and housing management for Nigeria — search, list,
               apply, sign, and pay rent with trust at the centre.

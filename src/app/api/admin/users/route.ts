@@ -7,6 +7,7 @@ import { Profile } from "@/models/Profile";
 import { KycSubmission } from "@/models/KycSubmission";
 import { actorFromUser, writeAudit } from "@/lib/audit";
 import { notifyUser } from "@/lib/profile-context";
+import { sendAdminMessageEmail } from "@/lib/mail";
 
 export async function GET(req: Request) {
   const { response } = await assertAdmin("users:read");
@@ -89,6 +90,12 @@ const patchSchema = z.discriminatedUnion("action", [
     profileId: z.string().min(1),
     notes: z.string().trim().max(2000).optional(),
   }),
+  z.object({
+    action: z.literal("send_email"),
+    userId: z.string().min(1),
+    subject: z.string().trim().min(2).max(200),
+    message: z.string().trim().min(1).max(5000),
+  }),
 ]);
 
 export async function PATCH(req: Request) {
@@ -102,6 +109,55 @@ export async function PATCH(req: Request) {
   }
 
   await connectDB();
+
+  if (parsed.data.action === "send_email") {
+    const target = await User.findById(parsed.data.userId);
+    if (!target) {
+      return NextResponse.json({ error: "User not found." }, { status: 404 });
+    }
+
+    try {
+      await sendAdminMessageEmail({
+        to: target.email,
+        name: target.name,
+        subject: parsed.data.subject,
+        message: parsed.data.message,
+      });
+    } catch (err) {
+      console.error("admin send_email failed:", err);
+      return NextResponse.json(
+        {
+          error:
+            err instanceof Error
+              ? `Email could not be delivered: ${err.message}`
+              : "Email could not be delivered. Check SMTP settings.",
+        },
+        { status: 502 }
+      );
+    }
+
+    await notifyUser({
+      userId: String(target._id),
+      type: "admin.message",
+      title: parsed.data.subject,
+      body: parsed.data.message,
+      link: "/portal",
+    }).catch(() => undefined);
+
+    await writeAudit({
+      action: "admin.user.send_email",
+      summary: `Sent email to ${target.email}: ${parsed.data.subject}`,
+      actor: actorFromUser({ ...user, isAdmin: true }),
+      entityType: "User",
+      entityId: String(target._id),
+      metadata: {
+        email: target.email,
+        subject: parsed.data.subject,
+      },
+    });
+
+    return NextResponse.json({ ok: true, deliveredTo: target.email });
+  }
 
   if (
     parsed.data.action === "verify_email" ||

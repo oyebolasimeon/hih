@@ -138,7 +138,7 @@ export default function Navbar() {
               transition={{ type: "spring", stiffness: 380, damping: 34 }}
             >
               <div className="border-b border-white/10 px-5 py-5">
-                <BrandMark invert href="/" size="sm" />
+                <BrandMark invert href="/" size="sm" showLabel />
                 <p className="mt-2 text-xs text-sand/60">Menu</p>
               </div>
               <nav className="flex-1 overflow-y-auto p-4 space-y-1">

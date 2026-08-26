@@ -1,4 +1,5 @@
 import { sendTemplatedEmail } from "@/lib/email-send";
+import { escapeHtml } from "@/lib/email-templates";
 export { sendMail } from "@/lib/smtp";
 
 export async function sendWelcomeEmail(to: string, name: string) {
@@ -75,4 +76,23 @@ export async function sendPortfolioUpdateEmail(options: {
 
 export function shouldSendAccountEmail(emailNotifications?: boolean | null) {
   return emailNotifications !== false;
+}
+
+export async function sendAdminMessageEmail(options: {
+  to: string;
+  name: string;
+  subject: string;
+  message: string;
+}) {
+  const messageBody = escapeHtml(options.message).replace(/\n/g, "<br>");
+  return sendTemplatedEmail({
+    action: "admin_message",
+    to: options.to,
+    vars: {
+      name: options.name,
+      email: options.to,
+      messageSubject: options.subject,
+      messageBody,
+    },
+  });
 }

@@ -8,6 +8,8 @@ type Props = {
   className?: string;
   invert?: boolean;
   size?: "sm" | "md" | "lg";
+  /** When true, always show the app name. When false, icon only. Default: hide name below lg. */
+  showLabel?: boolean;
 };
 
 export default function BrandMark({
@@ -15,6 +17,7 @@ export default function BrandMark({
   className = "",
   invert = false,
   size = "md",
+  showLabel,
 }: Props) {
   const { branding } = useBranding();
   const sizes = {
@@ -29,7 +32,7 @@ export default function BrandMark({
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={branding.logoUrl}
-      alt=""
+      alt={name}
       className={`${sizes.mark} rounded-sm object-contain bg-white/10`}
     />
   ) : (
@@ -63,11 +66,18 @@ export default function BrandMark({
     </span>
   );
 
+  const labelClass =
+    showLabel === true
+      ? ""
+      : showLabel === false
+        ? "hidden"
+        : "hidden lg:inline";
+
   const content = (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
       {mark}
       <span
-        className={`font-display font-semibold tracking-tight ${sizes.text} ${
+        className={`font-display font-semibold tracking-tight ${sizes.text} ${labelClass} ${
           invert ? "text-sand" : "text-navy"
         }`}
       >
@@ -78,7 +88,11 @@ export default function BrandMark({
 
   if (!href) return content;
   return (
-    <Link href={href} className="inline-flex hover:opacity-90 transition-opacity">
+    <Link
+      href={href}
+      aria-label={showLabel === true ? undefined : name}
+      className="inline-flex hover:opacity-90 transition-opacity"
+    >
       {content}
     </Link>
   );
