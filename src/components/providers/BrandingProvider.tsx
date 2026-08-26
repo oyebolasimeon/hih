@@ -10,6 +10,8 @@ import {
   type ReactNode,
 } from "react";
 import {
+  brandingDarkSemanticVars,
+  brandingLightSemanticVars,
   brandingToCssVars,
   cssVarsToInlineStyle,
   googleFontsHref,
@@ -33,11 +35,21 @@ export function useBranding() {
   return useContext(BrandingContext);
 }
 
-function applyDom(branding: BrandingSettings) {
+function readTheme(): "light" | "dark" {
+  if (typeof document === "undefined") return "light";
+  return document.documentElement.classList.contains("dark") ? "dark" : "light";
+}
+
+function applyDom(branding: BrandingSettings, theme: "light" | "dark") {
   if (typeof document === "undefined") return;
-  const vars = brandingToCssVars(branding);
   const root = document.documentElement;
-  for (const [k, v] of Object.entries(vars)) {
+  const brandVars = brandingToCssVars(branding);
+  const semanticVars =
+    theme === "dark"
+      ? brandingDarkSemanticVars(branding)
+      : brandingLightSemanticVars(branding);
+
+  for (const [k, v] of Object.entries({ ...brandVars, ...semanticVars })) {
     root.style.setProperty(k, v);
   }
 
@@ -62,10 +74,11 @@ export function BrandingProvider({
   children: ReactNode;
 }) {
   const [branding, setBranding] = useState<BrandingSettings>(initial);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
 
   const refresh = useCallback(async () => {
     try {
-      const res = await fetch("/api/public/branding", { cache: "no-store" });
+      const res = await fetch("/api/public/branding");
       const data = await res.json();
       if (res.ok && data.branding) {
         setBranding(data.branding);
@@ -76,22 +89,36 @@ export function BrandingProvider({
   }, []);
 
   useEffect(() => {
-    applyDom(branding);
-  }, [branding]);
+    setTheme(readTheme());
+    const onTheme = (e: Event) => {
+      const detail = (e as CustomEvent<"light" | "dark">).detail;
+      if (detail === "light" || detail === "dark") setTheme(detail);
+    };
+    window.addEventListener("hih-theme-change", onTheme);
+    return () => window.removeEventListener("hih-theme-change", onTheme);
+  }, []);
 
   useEffect(() => {
-    void refresh();
+    applyDom(branding, theme);
+  }, [branding, theme]);
+
+  // Refresh branding in the background after first paint — avoids blocking navigation
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      void refresh();
+    }, 100);
+    return () => window.clearTimeout(id);
   }, [refresh]);
 
   const value = useMemo(() => ({ branding, refresh }), [branding, refresh]);
-  const inline = cssVarsToInlineStyle(brandingToCssVars(branding));
+  const brandOnly = cssVarsToInlineStyle(brandingToCssVars(branding));
 
   return (
     <BrandingContext.Provider value={value}>
       <style
         id="hih-branding-ssr"
         dangerouslySetInnerHTML={{
-          __html: `html{${inline}}`,
+          __html: `html{${brandOnly}}`,
         }}
       />
       {children}

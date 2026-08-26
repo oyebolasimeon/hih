@@ -18,12 +18,14 @@ type ThemeContextValue = {
 };
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
+const STORAGE_KEY = "hih-theme";
 
 function applyThemeClass(theme: Theme) {
   const root = document.documentElement;
   root.classList.toggle("dark", theme === "dark");
   root.classList.toggle("light", theme === "light");
   root.dataset.theme = theme;
+  root.style.colorScheme = theme;
 }
 
 export function ThemeProvider({
@@ -34,32 +36,49 @@ export function ThemeProvider({
   initialTheme?: Theme;
 }) {
   const { data: session, update } = useSession();
-  const [theme, setThemeState] = useState<Theme>(
-    session?.user?.theme || initialTheme
-  );
+  const [theme, setThemeState] = useState<Theme>(initialTheme);
+  const [hydrated, setHydrated] = useState(false);
 
+  // Hydrate from session, then localStorage, then server default
   useEffect(() => {
-    if (session?.user?.theme) {
-      setThemeState(session.user.theme);
+    const fromSession = session?.user?.theme;
+    if (fromSession === "light" || fromSession === "dark") {
+      setThemeState(fromSession);
+      setHydrated(true);
+      return;
     }
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored === "light" || stored === "dark") {
+        setThemeState(stored);
+      }
+    } catch {
+      /* ignore */
+    }
+    setHydrated(true);
   }, [session?.user?.theme]);
 
   useEffect(() => {
+    if (!hydrated) return;
     applyThemeClass(theme);
-  }, [theme]);
-
-  // Restore marketing/light tokens when leaving portal/admin (unmount only)
-  useEffect(() => {
-    return () => {
-      document.documentElement.classList.remove("dark", "light");
-      delete document.documentElement.dataset.theme;
-    };
-  }, []);
+    try {
+      localStorage.setItem(STORAGE_KEY, theme);
+    } catch {
+      /* ignore */
+    }
+    window.dispatchEvent(new CustomEvent("hih-theme-change", { detail: theme }));
+  }, [theme, hydrated]);
 
   const setTheme = useCallback(
     async (next: Theme) => {
       setThemeState(next);
       applyThemeClass(next);
+      try {
+        localStorage.setItem(STORAGE_KEY, next);
+      } catch {
+        /* ignore */
+      }
+      window.dispatchEvent(new CustomEvent("hih-theme-change", { detail: next }));
       try {
         await fetch("/api/account/theme", {
           method: "PATCH",
@@ -68,7 +87,7 @@ export function ThemeProvider({
         });
         await update({ theme: next });
       } catch {
-        // Keep local preference even if persistence fails
+        /* keep local preference */
       }
     },
     [update]

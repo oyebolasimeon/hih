@@ -4,6 +4,13 @@ import AdminHomeClient from "@/components/admin/AdminHomeClient";
 
 const cards = [
   {
+    href: "/admin/users",
+    title: "Users",
+    description:
+      "Verify emails and profiles manually — even without uploaded KYC documents.",
+    permission: "users:read" as const,
+  },
+  {
     href: "/admin/kyc",
     title: "KYC review",
     description: "Review identity and profile verification submissions.",

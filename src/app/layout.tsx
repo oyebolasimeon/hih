@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono } from "next/font/google";
+import Script from "next/script";
 import AuthProvider from "@/components/providers/AuthProvider";
 import { BrandingProvider } from "@/components/providers/BrandingProvider";
 import { DEFAULT_BRANDING } from "@/lib/branding-defaults";
@@ -24,12 +25,28 @@ export const metadata: Metadata = {
   },
 };
 
+const themeInitScript = `
+(function () {
+  try {
+    var t = localStorage.getItem('hih-theme');
+    if (t === 'dark') {
+      document.documentElement.classList.add('dark');
+      document.documentElement.dataset.theme = 'dark';
+      document.documentElement.style.colorScheme = 'dark';
+    } else if (t === 'light') {
+      document.documentElement.classList.add('light');
+      document.documentElement.dataset.theme = 'light';
+      document.documentElement.style.colorScheme = 'light';
+    }
+  } catch (e) {}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Never block the shell on Mongo — BrandingProvider hydrates from /api/public/branding.
   return (
     <html
       lang="en"
@@ -37,6 +54,11 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
+      <head>
+        <Script id="hih-theme-init" strategy="beforeInteractive">
+          {themeInitScript}
+        </Script>
+      </head>
       <body
         className="min-h-full flex flex-col bg-background text-foreground"
         suppressHydrationWarning

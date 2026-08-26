@@ -3,6 +3,7 @@ import nodemailer, { type Transporter } from "nodemailer";
 type SmtpCandidate = {
   label: string;
   transport: () => Transporter;
+  from?: string;
 };
 
 function envFlag(name: string, defaultTrue = true): boolean {
@@ -11,13 +12,15 @@ function envFlag(name: string, defaultTrue = true): boolean {
   return !(v === "0" || v.toLowerCase() === "false");
 }
 
-function fromAddress(): string {
+function defaultFrom(): string {
   return (
     process.env.SMTP_FROM ||
     process.env.GOOGLE_SMTP_FROM ||
-    process.env.SMTP_USER ||
-    process.env.GOOGLE_SMTP_USER ||
-    "House In Hand <noreply@houseinhand.com>"
+    (process.env.SMTP_USER
+      ? `House In Hand <${process.env.SMTP_USER}>`
+      : process.env.GOOGLE_SMTP_USER
+        ? `House In Hand <${process.env.GOOGLE_SMTP_USER}>`
+        : "House In Hand <noreply@houseinhand.com>")
   );
 }
 
@@ -82,6 +85,33 @@ function primaryHostPort() {
   return { host, port, secure };
 }
 
+function gmailCandidate(): SmtpCandidate | null {
+  const user = process.env.GOOGLE_SMTP_USER;
+  const rawPass =
+    process.env.GOOGLE_SMTP_PASSWORD || process.env.GOOGLE_SMTP_PASS;
+  const pass = rawPass?.replace(/\s+/g, "");
+  if (!user || !pass) return null;
+
+  const host = process.env.GOOGLE_SMTP_HOST || "smtp.gmail.com";
+  const port = Number(process.env.GOOGLE_SMTP_PORT || 587);
+  const secureEnv = process.env.GOOGLE_SMTP_SECURE;
+  const secure =
+    secureEnv != null
+      ? secureEnv === "true" || secureEnv === "1"
+      : port === 465;
+
+  const from =
+    process.env.GOOGLE_SMTP_FROM ||
+    `House In Hand <${user}>`;
+
+  return {
+    label: `gmail:${host}:${port}`,
+    from,
+    transport: () =>
+      createSmtpTransport({ host, port, secure, user, pass }),
+  };
+}
+
 function isRetryableSmtpError(err: unknown): boolean {
   const msg = err instanceof Error ? err.message : String(err);
   const code =
@@ -89,10 +119,10 @@ function isRetryableSmtpError(err: unknown): boolean {
       ? String((err as { code?: string }).code || "")
       : "";
   return (
-    /timeout|timed out|ECONNREFUSED|ECONNRESET|ETIMEDOUT|ESOCKET|ENOTFOUND|connection/i.test(
+    /timeout|timed out|ECONNREFUSED|ECONNRESET|ETIMEDOUT|ESOCKET|ENOTFOUND|connection|getaddrinfo|command failed/i.test(
       msg
     ) ||
-    /ECONNECTION|ETIMEDOUT|ECONNREFUSED|ESOCKET|EENVELOPE/i.test(code)
+    /ECONNECTION|ETIMEDOUT|ECONNREFUSED|ESOCKET|EENVELOPE|EDNS/i.test(code)
   );
 }
 
@@ -111,18 +141,43 @@ function buildCandidates(): SmtpCandidate[] {
   const { host, port, secure } = primaryHostPort();
   const { user, pass } = primaryCredentials();
   const candidates: SmtpCandidate[] = [];
+  const gmail = gmailCandidate();
 
-  candidates.push({
-    label: `${host}:${port}`,
-    transport: () =>
-      createSmtpTransport({
-        host,
-        port,
-        secure,
-        user: user || undefined,
-        pass: pass || undefined,
-      }),
-  });
+  const primaryUsesGmail =
+    gmail &&
+    (host === (process.env.GOOGLE_SMTP_HOST || "smtp.gmail.com") ||
+      user === process.env.GOOGLE_SMTP_USER);
+
+  if (!primaryUsesGmail && user && pass) {
+    candidates.push({
+      label: `${host}:${port}`,
+      transport: () =>
+        createSmtpTransport({
+          host,
+          port,
+          secure,
+          user,
+          pass,
+        }),
+    });
+  }
+
+  // Gmail app password — reliable local/dev fallback when cPanel SMTP times out
+  if (gmail) {
+    candidates.push(gmail);
+  } else if (!candidates.length && user && pass) {
+    candidates.push({
+      label: `${host}:${port}`,
+      transport: () =>
+        createSmtpTransport({
+          host,
+          port,
+          secure,
+          user,
+          pass,
+        }),
+    });
+  }
 
   if (envFlag("SMTP_FALLBACK_LOCALHOST", true)) {
     const localHosts = ["localhost", "127.0.0.1"];
@@ -192,17 +247,14 @@ export async function verifySmtp(): Promise<{
   for (const candidate of candidates) {
     try {
       const transport = candidate.transport();
-      await withTimeout(transport.verify(), 12_000, `SMTP verify (${candidate.label})`);
+      await withTimeout(
+        transport.verify(),
+        12_000,
+        `SMTP verify (${candidate.label})`
+      );
       return { ok: true, endpoint: candidate.label };
     } catch (err) {
       lastError = err instanceof Error ? err.message : String(err);
-      if (!isRetryableSmtpError(err) && candidate.label !== "sendmail") {
-        // Auth/config failures on primary — don't pretend localhost fixed it
-        const isPrimary = candidate === candidates[0];
-        if (isPrimary) {
-          return { ok: false, endpoint: candidate.label, error: lastError };
-        }
-      }
     }
   }
 
@@ -215,12 +267,18 @@ export async function sendMail(options: {
   html: string;
   text?: string;
 }) {
-  const from = fromAddress();
   const candidates = buildCandidates();
+  if (!candidates.length) {
+    throw new Error(
+      "Email is not configured. Set SMTP_* or GOOGLE_SMTP_USER/PASSWORD."
+    );
+  }
+
   let lastError: unknown = new Error("No SMTP candidates configured");
 
   for (let i = 0; i < candidates.length; i++) {
     const candidate = candidates[i];
+    const from = candidate.from || defaultFrom();
     try {
       const transport = candidate.transport();
       await withTimeout(
@@ -240,10 +298,6 @@ export async function sendMail(options: {
       return;
     } catch (err) {
       lastError = err;
-      const isPrimary = i === 0;
-      if (isPrimary && !isRetryableSmtpError(err)) {
-        throw err;
-      }
       console.warn(
         `SMTP candidate failed (${candidate.label}):`,
         err instanceof Error ? err.message : err

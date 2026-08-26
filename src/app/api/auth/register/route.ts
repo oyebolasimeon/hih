@@ -52,16 +52,20 @@ export async function POST(request: Request) {
       if (existing.emailVerified === false) {
         const token = randomBytes(32).toString("hex");
         await tokenSet(`emailverify:${token}`, String(existing._id), 86400);
+        let emailSent = true;
         try {
           await sendVerificationEmail(email, token, existing.name);
         } catch (err) {
+          emailSent = false;
           console.error("Resend verification email failed:", err);
         }
         return NextResponse.json({
           success: true,
           needsVerification: true,
-          message:
-            "Account pending verification. We sent a new verification link to your email.",
+          emailSent,
+          message: emailSent
+            ? "Account pending verification. We sent a new verification link to your email."
+            : "Account pending verification, but email could not be sent. Use Resend or ask an admin to verify your email.",
         });
       }
       return NextResponse.json(

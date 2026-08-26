@@ -35,6 +35,11 @@ export default function RegisterPage() {
       }
 
       setPendingVerify(true);
+      if (data.emailSent === false) {
+        setError(
+          "Account created, but we could not send the verification email. Use Resend below or ask an admin to verify your email."
+        );
+      }
       setStatusMessage(
         data.message ||
           "Check your email for a verification link to finish signing up."
@@ -127,7 +132,7 @@ export default function RegisterPage() {
   return (
     <AuthCard
       title="Create account"
-      subtitle="Sign up to access your investor dashboard"
+      subtitle="Sign up to search homes, manage rentals, and verify your profile."
       footer={
         <p>
           Already have an account?{" "}

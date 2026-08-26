@@ -8,7 +8,7 @@ export async function GET() {
     { branding },
     {
       headers: {
-        "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120",
+        "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
       },
     }
   );

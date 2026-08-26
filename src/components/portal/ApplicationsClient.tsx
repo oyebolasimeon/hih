@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import EmptyState from "@/components/ui/EmptyState";
 import { TableSkeleton } from "@/components/ui/Skeleton";
 
@@ -24,11 +25,14 @@ type ApplicationRow = {
 };
 
 export default function ApplicationsClient() {
+  const searchParams = useSearchParams();
   const [rows, setRows] = useState<ApplicationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [listingId, setListingId] = useState("");
+  const [listingId, setListingId] = useState(
+    () => searchParams.get("listingId") || ""
+  );
   const [applyMessage, setApplyMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [busyId, setBusyId] = useState("");
@@ -50,6 +54,11 @@ export default function ApplicationsClient() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    const id = searchParams.get("listingId");
+    if (id) setListingId(id);
+  }, [searchParams]);
 
   async function onApply(e: FormEvent) {
     e.preventDefault();

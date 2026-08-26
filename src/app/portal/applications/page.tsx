@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import ApplicationsClient from "@/components/portal/ApplicationsClient";
+import { TableSkeleton } from "@/components/ui/Skeleton";
 
 export default function PortalApplicationsPage() {
   return (
@@ -11,7 +13,9 @@ export default function PortalApplicationsPage() {
           Track rental applications you send or receive.
         </p>
       </div>
-      <ApplicationsClient />
+      <Suspense fallback={<TableSkeleton />}>
+        <ApplicationsClient />
+      </Suspense>
     </div>
   );
 }

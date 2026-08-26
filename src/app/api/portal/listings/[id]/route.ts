@@ -6,6 +6,10 @@ import { connectDB } from "@/lib/db";
 import { Listing } from "@/models/Listing";
 import { serializeListing } from "@/lib/listing-serialize";
 import { actorFromUser, writeAudit } from "@/lib/audit";
+import {
+  requireActiveProfile,
+  requireVerifiedProfile,
+} from "@/lib/profile-context";
 
 const imageSchema = z.object({
   url: z.string().url(),
@@ -76,6 +80,18 @@ export async function PATCH(
 ) {
   const { user, response } = await assertUser();
   if (response || !user) return response!;
+
+  const gate = await requireActiveProfile(user.id, [
+    "landlord",
+    "estate_manager",
+  ]);
+  if (!gate.ok) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+  const verified = requireVerifiedProfile(gate.profile);
+  if (!verified.ok) {
+    return NextResponse.json({ error: verified.error }, { status: verified.status });
+  }
 
   const { id } = await context.params;
   const listing = await loadOwnedListing(id, user.id);
@@ -160,6 +176,18 @@ export async function DELETE(
 ) {
   const { user, response } = await assertUser();
   if (response || !user) return response!;
+
+  const gate = await requireActiveProfile(user.id, [
+    "landlord",
+    "estate_manager",
+  ]);
+  if (!gate.ok) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+  const verified = requireVerifiedProfile(gate.profile);
+  if (!verified.ok) {
+    return NextResponse.json({ error: verified.error }, { status: verified.status });
+  }
 
   const { id } = await context.params;
   const listing = await loadOwnedListing(id, user.id);

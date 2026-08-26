@@ -33,6 +33,13 @@ export async function requireActiveProfile(
       status: 400,
     };
   }
+  if (profile.status === "suspended") {
+    return {
+      ok: false,
+      error: "This profile is suspended. Contact support or switch profiles.",
+      status: 403,
+    };
+  }
   if (allowed && !allowed.includes(profile.type)) {
     return {
       ok: false,
@@ -47,7 +54,7 @@ export async function requireActiveProfile(
   };
 }
 
-export async function requireVerifiedProfile(profile: IProfile) {
+export function requireVerifiedProfile(profile: IProfile) {
   if (profile.status !== "verified") {
     return {
       ok: false as const,

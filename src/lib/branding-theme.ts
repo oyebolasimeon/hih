@@ -53,7 +53,7 @@ export function mergeBranding(
   };
 }
 
-/** CSS custom properties for light theme rooted on admin colors */
+/** Brand palette + fonts only — semantic tokens (--background, etc.) live in globals.css */
 export function brandingToCssVars(b: BrandingSettings): Record<string, string> {
   const primary = b.primaryColor;
   const secondary = b.secondaryColor;
@@ -67,11 +67,26 @@ export function brandingToCssVars(b: BrandingSettings): Record<string, string> {
     "--teal-light": `color-mix(in srgb, ${secondary} 75%, white)`,
     "--sand": tertiary,
     "--sand-deep": `color-mix(in srgb, ${tertiary} 88%, ${primary})`,
-    "--background": tertiary,
-    "--foreground": primary,
     "--brand": secondary,
     "--brand-light": `color-mix(in srgb, ${secondary} 75%, white)`,
     "--brand-dark": `color-mix(in srgb, ${secondary} 82%, black)`,
+    "--font-ui": `"${b.fontUi}", system-ui, sans-serif`,
+    "--font-display-face": `"${b.fontDisplay}", Georgia, serif`,
+    "--font-display": `"${b.fontDisplay}", Georgia, serif`,
+    "--font-sans": `"${b.fontUi}", system-ui, sans-serif`,
+  };
+}
+
+/** Light-mode semantic tokens derived from brand palette */
+export function brandingLightSemanticVars(
+  b: BrandingSettings
+): Record<string, string> {
+  const primary = b.primaryColor;
+  const secondary = b.secondaryColor;
+  const tertiary = b.tertiaryColor;
+  return {
+    "--background": tertiary,
+    "--foreground": primary,
     "--brand-subtle": `color-mix(in srgb, ${secondary} 18%, ${tertiary})`,
     "--surface": `color-mix(in srgb, ${tertiary} 92%, white)`,
     "--surface-dark": `color-mix(in srgb, ${tertiary} 88%, ${primary})`,
@@ -79,10 +94,26 @@ export function brandingToCssVars(b: BrandingSettings): Record<string, string> {
     "--border": `color-mix(in srgb, ${tertiary} 70%, ${primary})`,
     "--border-dark": `color-mix(in srgb, ${tertiary} 55%, ${primary})`,
     "--card": "#ffffff",
-    "--font-ui": `"${b.fontUi}", system-ui, sans-serif`,
-    "--font-display-face": `"${b.fontDisplay}", Georgia, serif`,
-    "--font-display": `"${b.fontDisplay}", Georgia, serif`,
-    "--font-sans": `"${b.fontUi}", system-ui, sans-serif`,
+  };
+}
+
+/** Dark-mode semantic tokens derived from brand palette */
+export function brandingDarkSemanticVars(
+  b: BrandingSettings
+): Record<string, string> {
+  const primary = b.primaryColor;
+  const secondary = b.secondaryColor;
+  const tertiary = b.tertiaryColor;
+  return {
+    "--background": `color-mix(in srgb, ${primary} 92%, black)`,
+    "--foreground": tertiary,
+    "--brand-subtle": `color-mix(in srgb, ${secondary} 22%, ${primary})`,
+    "--surface": primary,
+    "--surface-dark": `color-mix(in srgb, ${primary} 88%, black)`,
+    "--muted": `color-mix(in srgb, ${tertiary} 55%, #7a8594)`,
+    "--border": `color-mix(in srgb, ${primary} 65%, ${secondary})`,
+    "--border-dark": `color-mix(in srgb, ${primary} 75%, ${secondary})`,
+    "--card": `color-mix(in srgb, ${primary} 95%, black)`,
   };
 }
 

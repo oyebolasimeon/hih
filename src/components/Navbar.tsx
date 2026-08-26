@@ -31,7 +31,11 @@ export default function Navbar() {
 
   useEffect(() => {
     setMobileOpen(false);
-  }, [pathname]);
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen, pathname]);
 
   return (
     <header
@@ -39,10 +43,38 @@ export default function Navbar() {
         solid ? "site-nav-solid" : "bg-transparent"
       }`}
     >
-      <div className="mx-auto flex h-[4.5rem] max-w-7xl items-center justify-between px-5 sm:px-6 lg:px-8">
-        <BrandMark invert />
+      <div className="mx-auto flex h-[4.5rem] max-w-7xl items-center px-5 sm:px-6 lg:px-8">
+        <button
+          type="button"
+          className="lg:hidden p-2 text-sand shrink-0"
+          aria-label={mobileOpen ? "Close menu" : "Open menu"}
+          aria-expanded={mobileOpen}
+          onClick={() => setMobileOpen((o) => !o)}
+        >
+          <span className="flex h-5 w-6 flex-col justify-between">
+            <span
+              className={`h-0.5 w-full bg-current transition duration-300 ${
+                mobileOpen ? "translate-y-[9px] rotate-45" : ""
+              }`}
+            />
+            <span
+              className={`h-0.5 w-full bg-current transition duration-300 ${
+                mobileOpen ? "opacity-0" : ""
+              }`}
+            />
+            <span
+              className={`h-0.5 w-full bg-current transition duration-300 ${
+                mobileOpen ? "-translate-y-[9px] -rotate-45" : ""
+              }`}
+            />
+          </span>
+        </button>
 
-        <nav className="hidden items-center gap-8 lg:flex">
+        <div className="hidden lg:block shrink-0">
+          <BrandMark invert />
+        </div>
+
+        <nav className="hidden lg:flex flex-1 items-center justify-center gap-8">
           {navLinks.map((link) => {
             const active = pathname === link.href;
             return (
@@ -66,7 +98,7 @@ export default function Navbar() {
           })}
         </nav>
 
-        <div className="hidden items-center gap-3 lg:flex">
+        <div className="hidden lg:flex items-center gap-3 shrink-0">
           <Link
             href="/login"
             className="text-sm font-medium text-sand/80 hover:text-sand transition-colors"
@@ -81,59 +113,57 @@ export default function Navbar() {
           </Link>
         </div>
 
-        <button
-          type="button"
-          className="lg:hidden p-2 text-sand"
-          aria-label="Menu"
-          onClick={() => setMobileOpen((o) => !o)}
-        >
-          <span className="flex h-5 w-6 flex-col justify-between">
-            <span
-              className={`h-0.5 w-full bg-current transition duration-300 ${
-                mobileOpen ? "translate-y-[9px] rotate-45" : ""
-              }`}
-            />
-            <span
-              className={`h-0.5 w-full bg-current transition duration-300 ${
-                mobileOpen ? "opacity-0" : ""
-              }`}
-            />
-            <span
-              className={`h-0.5 w-full bg-current transition duration-300 ${
-                mobileOpen ? "-translate-y-[9px] -rotate-45" : ""
-              }`}
-            />
-          </span>
-        </button>
+        <div className="lg:hidden ml-auto shrink-0">
+          <BrandMark invert size="sm" />
+        </div>
       </div>
 
       <AnimatePresence>
         {mobileOpen ? (
-          <motion.div
-            className="border-t border-white/10 bg-navy lg:hidden overflow-hidden"
-            initial={reduce ? false : { height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={reduce ? undefined : { height: 0, opacity: 0 }}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <div className="space-y-1 px-5 py-5">
-              {navLinks.map((link, i) => (
-                <motion.div
-                  key={link.href}
-                  initial={reduce ? false : { opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.04 * i }}
-                >
-                  <Link
-                    href={link.href}
-                    onClick={() => setMobileOpen(false)}
-                    className="block py-3 text-sand/90 font-medium"
+          <>
+            <motion.button
+              type="button"
+              aria-label="Close menu"
+              className="fixed inset-0 z-40 bg-navy/60 backdrop-blur-sm lg:hidden"
+              initial={reduce ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={reduce ? undefined : { opacity: 0 }}
+              onClick={() => setMobileOpen(false)}
+            />
+            <motion.aside
+              className="fixed inset-y-0 left-0 z-50 flex w-[min(100%,18rem)] flex-col bg-navy border-r border-white/10 shadow-xl lg:hidden"
+              initial={reduce ? false : { x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={reduce ? undefined : { x: "-100%" }}
+              transition={{ type: "spring", stiffness: 380, damping: 34 }}
+            >
+              <div className="border-b border-white/10 px-5 py-5">
+                <BrandMark invert href="/" size="sm" />
+                <p className="mt-2 text-xs text-sand/60">Menu</p>
+              </div>
+              <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+                {navLinks.map((link, i) => (
+                  <motion.div
+                    key={link.href}
+                    initial={reduce ? false : { opacity: 0, x: -12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.03 * i }}
                   >
-                    {link.label}
-                  </Link>
-                </motion.div>
-              ))}
-              <div className="flex flex-col gap-2 pt-4">
+                    <Link
+                      href={link.href}
+                      onClick={() => setMobileOpen(false)}
+                      className={`block rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+                        pathname === link.href
+                          ? "bg-white/10 text-teal"
+                          : "text-sand/90 hover:bg-white/5 hover:text-sand"
+                      }`}
+                    >
+                      {link.label}
+                    </Link>
+                  </motion.div>
+                ))}
+              </nav>
+              <div className="border-t border-white/10 p-4 flex flex-col gap-2">
                 <Link
                   href="/login"
                   onClick={() => setMobileOpen(false)}
@@ -149,8 +179,8 @@ export default function Navbar() {
                   Get started
                 </Link>
               </div>
-            </div>
-          </motion.div>
+            </motion.aside>
+          </>
         ) : null}
       </AnimatePresence>
     </header>

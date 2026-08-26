@@ -28,6 +28,12 @@ export async function POST(req: Request) {
   if (!profile) {
     return NextResponse.json({ error: "Profile not found." }, { status: 404 });
   }
+  if (profile.status === "suspended") {
+    return NextResponse.json(
+      { error: "This profile is suspended and cannot be selected." },
+      { status: 403 }
+    );
+  }
 
   await User.findByIdAndUpdate(user.id, { activeProfileId: profile._id });
 
