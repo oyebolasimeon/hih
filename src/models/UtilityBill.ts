@@ -9,6 +9,8 @@ export type UtilityCategory =
   | "cable";
 
 export type UtilityBillStatus = "pending" | "paid" | "failed";
+export type UtilityMeterType = "prepaid" | "postpaid";
+export type UtilityIntegration = "vtpass" | "manual";
 
 export interface IUtilityBill {
   _id: mongoose.Types.ObjectId;
@@ -16,11 +18,20 @@ export interface IUtilityBill {
   profileId: mongoose.Types.ObjectId;
   category: UtilityCategory;
   provider: string;
+  providerId: string;
   accountNumber: string;
+  meterType?: UtilityMeterType;
+  customerName?: string;
+  customerAddress?: string;
+  phone?: string;
   amount: number;
   currency: string;
   status: UtilityBillStatus;
+  integration: UtilityIntegration;
   providerRef?: string;
+  paystackRef?: string;
+  vtpassRequestId?: string;
+  purchaseToken?: string;
   paidAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -53,7 +64,15 @@ const UtilityBillSchema = new Schema<IUtilityBill>(
       required: true,
     },
     provider: { type: String, required: true, trim: true },
+    providerId: { type: String, required: true, trim: true, default: "manual" },
     accountNumber: { type: String, required: true, trim: true },
+    meterType: {
+      type: String,
+      enum: ["prepaid", "postpaid"],
+    },
+    customerName: { type: String, trim: true },
+    customerAddress: { type: String, trim: true },
+    phone: { type: String, trim: true },
     amount: { type: Number, required: true, min: 1 },
     currency: { type: String, default: "NGN", trim: true },
     status: {
@@ -61,7 +80,15 @@ const UtilityBillSchema = new Schema<IUtilityBill>(
       enum: ["pending", "paid", "failed"],
       default: "pending",
     },
+    integration: {
+      type: String,
+      enum: ["vtpass", "manual"],
+      default: "manual",
+    },
     providerRef: { type: String, trim: true },
+    paystackRef: { type: String, trim: true, index: true },
+    vtpassRequestId: { type: String, trim: true },
+    purchaseToken: { type: String, trim: true },
     paidAt: { type: Date },
   },
   { timestamps: true }

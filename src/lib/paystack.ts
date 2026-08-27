@@ -29,8 +29,10 @@ export async function paystackInitialize(input: {
       /\/$/,
       ""
     );
+    const callback = input.callbackUrl || `${appUrl}/portal/payments?paid=1`;
+    const sep = callback.includes("?") ? "&" : "?";
     return {
-      authorization_url: `${appUrl}/portal/payments?mock_ref=${encodeURIComponent(input.reference)}&paid=1`,
+      authorization_url: `${callback}${sep}mock_ref=${encodeURIComponent(input.reference)}&paid=1`,
       access_code: `mock_${input.reference}`,
       reference: input.reference,
       mock: true,
