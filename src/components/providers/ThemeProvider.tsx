@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { useSession } from "next-auth/react";
+import { mutationSilentHeaders } from "@/lib/mutation-fetch";
 
 type Theme = "light" | "dark";
 
@@ -82,7 +83,9 @@ export function ThemeProvider({
       try {
         await fetch("/api/account/theme", {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: mutationSilentHeaders({
+            "Content-Type": "application/json",
+          }),
           body: JSON.stringify({ theme: next }),
         });
         await update({ theme: next });

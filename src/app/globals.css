@@ -440,3 +440,39 @@ button.app-card:hover {
 .auth-card-body a.text-brand {
   color: #008585;
 }
+
+@keyframes mutation-progress {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
+.mutation-progress-bar {
+  transform-origin: left center;
+  animation: mutation-progress 0.95s ease-in-out infinite;
+}
+
+@keyframes mutation-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.mutation-spinner {
+  animation: mutation-spin 0.75s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mutation-progress-bar {
+    animation: none;
+    width: 100% !important;
+    opacity: 0.9;
+  }
+
+  .mutation-spinner {
+    animation: none;
+  }
+}

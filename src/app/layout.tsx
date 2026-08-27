@@ -3,6 +3,7 @@ import { JetBrains_Mono } from "next/font/google";
 import Script from "next/script";
 import AuthProvider from "@/components/providers/AuthProvider";
 import { BrandingProvider } from "@/components/providers/BrandingProvider";
+import { MutationProvider } from "@/components/providers/MutationProvider";
 import { DEFAULT_BRANDING } from "@/lib/branding-defaults";
 import "./globals.css";
 
@@ -64,7 +65,9 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <BrandingProvider initial={DEFAULT_BRANDING}>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <MutationProvider>{children}</MutationProvider>
+          </AuthProvider>
         </BrandingProvider>
       </body>
     </html>
