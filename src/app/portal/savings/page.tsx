@@ -7,8 +7,9 @@ export default function PortalSavingsPage() {
         <h1 className="text-2xl sm:text-3xl font-display font-semibold">
           Savings
         </h1>
-        <p className="mt-1 text-sm text-muted">
-          Set rent and deposit targets and track deposits over time.
+        <p className="mt-1 text-sm text-muted max-w-2xl">
+          Build rent and deposit funds with clear targets, progress tracking, and
+          quick contributions along the way.
         </p>
       </div>
       <SavingsClient />
