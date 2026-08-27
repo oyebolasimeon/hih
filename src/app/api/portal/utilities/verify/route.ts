@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { assertUser } from "@/lib/api-auth";
-import { getProviderById } from "@/lib/utility-providers";
+import { mapVtpassCategory } from "@/lib/utility-catalog";
 import { vtpassVerify } from "@/lib/vtpass";
 import { requireActiveProfile } from "@/lib/profile-context";
 
 const verifySchema = z.object({
-  providerId: z.string().min(1),
+  serviceID: z.string().min(1),
+  vtpassCategory: z.string().min(1),
   accountNumber: z.string().trim().min(1).max(80),
   meterType: z.enum(["prepaid", "postpaid"]).optional(),
 });
@@ -29,22 +30,18 @@ export async function POST(req: Request) {
     );
   }
 
-  const provider = getProviderById(parsed.data.providerId);
-  if (!provider) {
-    return NextResponse.json({ error: "Unknown provider." }, { status: 400 });
-  }
-
-  if (!provider.integrated) {
+  const meta = mapVtpassCategory(parsed.data.vtpassCategory);
+  if (!meta.requiresVerify) {
     return NextResponse.json({
       verified: true,
       customerName: null,
       address: null,
       accountNumber: parsed.data.accountNumber,
-      manual: true,
+      skipped: true,
     });
   }
 
-  if (provider.requiresMeterType && !parsed.data.meterType) {
+  if (meta.requiresMeterType && !parsed.data.meterType) {
     return NextResponse.json(
       { error: "Select prepaid or postpaid meter type." },
       { status: 400 }
@@ -53,7 +50,7 @@ export async function POST(req: Request) {
 
   try {
     const result = await vtpassVerify({
-      serviceID: provider.id,
+      serviceID: parsed.data.serviceID,
       billersCode: parsed.data.accountNumber,
       type: parsed.data.meterType,
     });
@@ -63,8 +60,6 @@ export async function POST(req: Request) {
       customerName: result.customerName,
       address: result.address,
       accountNumber: result.accountNumber,
-      provider: provider.name,
-      manual: false,
     });
   } catch (err) {
     return NextResponse.json(
@@ -72,7 +67,7 @@ export async function POST(req: Request) {
         error:
           err instanceof Error
             ? err.message
-            : "Could not verify account. Check the number and try again.",
+            : "Could not verify account. Check the details and try again.",
       },
       { status: 422 }
     );

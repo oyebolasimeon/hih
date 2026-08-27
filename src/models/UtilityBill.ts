@@ -6,7 +6,11 @@ export type UtilityCategory =
   | "waste"
   | "estate_dues"
   | "internet"
-  | "cable";
+  | "cable"
+  | "airtime"
+  | "education"
+  | "insurance"
+  | "other";
 
 export type UtilityBillStatus = "pending" | "paid" | "failed";
 export type UtilityMeterType = "prepaid" | "postpaid";
@@ -17,10 +21,13 @@ export interface IUtilityBill {
   userId: mongoose.Types.ObjectId;
   profileId: mongoose.Types.ObjectId;
   category: UtilityCategory;
+  vtpassCategory?: string;
   provider: string;
   providerId: string;
   accountNumber: string;
   meterType?: UtilityMeterType;
+  variationCode?: string;
+  variationName?: string;
   customerName?: string;
   customerAddress?: string;
   phone?: string;
@@ -32,6 +39,7 @@ export interface IUtilityBill {
   paystackRef?: string;
   vtpassRequestId?: string;
   purchaseToken?: string;
+  vtpassStatus?: string;
   paidAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -60,9 +68,14 @@ const UtilityBillSchema = new Schema<IUtilityBill>(
         "estate_dues",
         "internet",
         "cable",
+        "airtime",
+        "education",
+        "insurance",
+        "other",
       ],
       required: true,
     },
+    vtpassCategory: { type: String, trim: true },
     provider: { type: String, required: true, trim: true },
     providerId: { type: String, required: true, trim: true, default: "manual" },
     accountNumber: { type: String, required: true, trim: true },
@@ -70,6 +83,8 @@ const UtilityBillSchema = new Schema<IUtilityBill>(
       type: String,
       enum: ["prepaid", "postpaid"],
     },
+    variationCode: { type: String, trim: true },
+    variationName: { type: String, trim: true },
     customerName: { type: String, trim: true },
     customerAddress: { type: String, trim: true },
     phone: { type: String, trim: true },
@@ -87,8 +102,9 @@ const UtilityBillSchema = new Schema<IUtilityBill>(
     },
     providerRef: { type: String, trim: true },
     paystackRef: { type: String, trim: true, index: true },
-    vtpassRequestId: { type: String, trim: true },
+    vtpassRequestId: { type: String, trim: true, index: true },
     purchaseToken: { type: String, trim: true },
+    vtpassStatus: { type: String, trim: true },
     paidAt: { type: Date },
   },
   { timestamps: true }

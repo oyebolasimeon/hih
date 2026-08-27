@@ -3,7 +3,7 @@ import { assertUser } from "@/lib/api-auth";
 import { connectDB } from "@/lib/db";
 import { notifyUser } from "@/lib/profile-context";
 import { paystackVerify } from "@/lib/paystack";
-import { vtpassPay, vtpassRequestId } from "@/lib/vtpass";
+import { vtpassPay, vtpassRequery, vtpassRequestId } from "@/lib/vtpass";
 import { UtilityBill } from "@/models/UtilityBill";
 import { User } from "@/models/User";
 
@@ -36,6 +36,7 @@ export async function GET(req: Request) {
         category: bill.category,
         provider: bill.provider,
         purchaseToken: bill.purchaseToken || null,
+        vtpassStatus: bill.vtpassStatus || null,
         paidAt: bill.paidAt,
         providerRef: bill.providerRef,
       },
@@ -55,6 +56,7 @@ export async function GET(req: Request) {
 
     let purchaseToken: string | null = null;
     let providerRef = reference;
+    let vtpassStatus: string | undefined;
 
     if (bill.integration === "vtpass" && bill.phone) {
       const requestId = vtpassRequestId();
@@ -64,10 +66,19 @@ export async function GET(req: Request) {
         billersCode: bill.accountNumber,
         amount: bill.amount,
         phone: bill.phone,
-        variationCode: bill.meterType,
+        variationCode: bill.variationCode || bill.meterType,
       });
       bill.vtpassRequestId = vtpass.requestId;
-      purchaseToken = vtpass.token;
+
+      try {
+        const requery = await vtpassRequery(vtpass.requestId);
+        vtpassStatus = requery.status;
+        purchaseToken = requery.purchasedCode || vtpass.purchasedCode;
+      } catch {
+        purchaseToken = vtpass.purchasedCode;
+        vtpassStatus = "pending";
+      }
+
       providerRef = vtpass.requestId;
     }
 
@@ -75,12 +86,11 @@ export async function GET(req: Request) {
     bill.paidAt = new Date();
     bill.providerRef = providerRef;
     bill.purchaseToken = purchaseToken || undefined;
+    bill.vtpassStatus = vtpassStatus;
     await bill.save();
 
     const dbUser = await User.findById(user.id).select("email name").lean();
-    const tokenNote = purchaseToken
-      ? ` Token: ${purchaseToken}`
-      : "";
+    const tokenNote = purchaseToken ? ` Token: ${purchaseToken}` : "";
     await notifyUser({
       userId: user.id,
       type: "utility.paid",
@@ -106,12 +116,10 @@ export async function GET(req: Request) {
         category: bill.category,
         provider: bill.provider,
         purchaseToken: bill.purchaseToken || null,
+        vtpassStatus: bill.vtpassStatus || null,
         paidAt: bill.paidAt,
         providerRef: bill.providerRef,
-        mock:
-          "mock" in verified
-            ? verified.mock
-            : bill.integration === "vtpass",
+        mock: "mock" in verified ? verified.mock : false,
       },
     });
   } catch (err) {

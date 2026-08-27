@@ -6,30 +6,38 @@ import { Reveal, Stagger, StaggerItem } from "@/components/motion/Motion";
 import EmptyState from "@/components/ui/EmptyState";
 import Select from "@/components/ui/Select";
 import { StatCardsSkeleton, TableSkeleton } from "@/components/ui/Skeleton";
+import { isFixedPriceVariation, parseAmount } from "@/lib/utility-catalog";
 
-type UtilityCategory =
-  | "electricity"
-  | "water"
-  | "waste"
-  | "estate_dues"
-  | "internet"
-  | "cable";
-
-type ProviderDef = {
-  id: string;
-  name: string;
-  category: UtilityCategory;
-  integrated: boolean;
-  accountLabel: string;
-  requiresMeterType?: boolean;
-  minAmount?: number;
-  amountPresets?: number[];
-};
-
-type CategoryDef = {
-  id: UtilityCategory;
+type CategoryMeta = {
+  portalCategory: string;
   label: string;
   description: string;
+  accountLabel: string;
+  requiresVerify: boolean;
+  requiresMeterType: boolean;
+  billersCodeIsPhone: boolean;
+};
+
+type VtpassCategory = {
+  identifier: string;
+  name: string;
+  meta: CategoryMeta;
+};
+
+type VtpassService = {
+  serviceID: string;
+  name: string;
+  minimium_amount?: string;
+  maximum_amount?: string;
+  product_type?: string;
+  image?: string;
+};
+
+type Variation = {
+  variation_code: string;
+  name: string;
+  variation_amount: string;
+  fixedPrice?: string;
 };
 
 type Bill = {
@@ -38,14 +46,15 @@ type Bill = {
   provider: string;
   providerId: string;
   accountNumber: string;
-  meterType: string | null;
+  variationName: string | null;
   customerName: string | null;
   amount: number;
   currency: string;
   status: string;
-  integration: string;
   purchaseToken: string | null;
+  vtpassStatus: string | null;
   providerRef: string | null;
+  vtpassRequestId: string | null;
   paidAt: string | null;
   createdAt: string;
 };
@@ -54,7 +63,6 @@ type VerifiedAccount = {
   customerName: string | null;
   address: string | null;
   accountNumber: string;
-  manual: boolean;
 };
 
 function formatMoney(amount: number, currency = "NGN") {
@@ -69,10 +77,6 @@ function formatMoney(amount: number, currency = "NGN") {
   }
 }
 
-function categoryLabel(id: string) {
-  return id.replace("_", " ");
-}
-
 function statusClass(status: string) {
   if (status === "paid") return "bg-teal/15 text-brand border-teal/30";
   if (status === "failed") return "bg-danger/10 text-danger border-danger/30";
@@ -81,34 +85,55 @@ function statusClass(status: string) {
 
 export default function UtilitiesClient() {
   const searchParams = useSearchParams();
-  const [categories, setCategories] = useState<CategoryDef[]>([]);
-  const [providers, setProviders] = useState<ProviderDef[]>([]);
+  const [categories, setCategories] = useState<VtpassCategory[]>([]);
+  const [services, setServices] = useState<VtpassService[]>([]);
+  const [variations, setVariations] = useState<Variation[]>([]);
   const [integrationMode, setIntegrationMode] = useState("mock");
   const [bills, setBills] = useState<Bill[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingServices, setLoadingServices] = useState(false);
+  const [loadingVariations, setLoadingVariations] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [paying, setPaying] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [requeryingId, setRequeryingId] = useState<string | null>(null);
 
-  const [category, setCategory] = useState<UtilityCategory>("electricity");
-  const [providerId, setProviderId] = useState("");
+  const [vtpassCategory, setVtpassCategory] = useState("");
+  const [serviceID, setServiceID] = useState("");
+  const [variationCode, setVariationCode] = useState("");
   const [meterType, setMeterType] = useState<"prepaid" | "postpaid">("prepaid");
   const [accountNumber, setAccountNumber] = useState("");
   const [phone, setPhone] = useState("");
   const [amount, setAmount] = useState("");
   const [verified, setVerified] = useState<VerifiedAccount | null>(null);
 
-  const categoryProviders = useMemo(
-    () => providers.filter((p) => p.category === category),
-    [providers, category]
+  const categoryMeta = useMemo(
+    () => categories.find((c) => c.identifier === vtpassCategory)?.meta || null,
+    [categories, vtpassCategory]
   );
 
-  const selectedProvider = useMemo(
-    () => providers.find((p) => p.id === providerId) || null,
-    [providers, providerId]
+  const selectedService = useMemo(
+    () => services.find((s) => s.serviceID === serviceID) || null,
+    [services, serviceID]
   );
+
+  const selectedVariation = useMemo(
+    () => variations.find((v) => v.variation_code === variationCode) || null,
+    [variations, variationCode]
+  );
+
+  const amountLocked = useMemo(
+    () =>
+      selectedVariation
+        ? isFixedPriceVariation(selectedVariation.fixedPrice)
+        : false,
+    [selectedVariation]
+  );
+
+  const needsVerify = categoryMeta?.requiresVerify ?? false;
+  const canPay = needsVerify ? Boolean(verified) : true;
 
   const stats = useMemo(() => {
     const paid = bills.filter((b) => b.status === "paid");
@@ -120,43 +145,93 @@ export default function UtilitiesClient() {
     };
   }, [bills]);
 
-  const load = useCallback(async () => {
+  const loadBills = useCallback(async () => {
+    const res = await fetch("/api/portal/utilities");
+    const data = await res.json();
+    if (res.ok) setBills(data.bills || []);
+  }, []);
+
+  const loadCatalog = useCallback(async () => {
     setLoading(true);
     setError("");
-    const [pRes, bRes] = await Promise.all([
-      fetch("/api/portal/utilities/providers"),
-      fetch("/api/portal/utilities"),
-    ]);
-    const pData = await pRes.json();
-    const bData = await bRes.json();
+    const res = await fetch("/api/portal/utilities/catalog");
+    const data = await res.json();
     setLoading(false);
-    if (!bRes.ok) {
-      setError(bData.error || "Unable to load bills.");
+    if (!res.ok) {
+      setError(data.error || "Unable to load VTpass catalog.");
       return;
     }
-    if (pRes.ok) {
-      setCategories(pData.categories || []);
-      setProviders(pData.providers || []);
-      setIntegrationMode(pData.integrationMode || "mock");
+    const cats = (data.categories || []) as VtpassCategory[];
+    setCategories(cats);
+    setIntegrationMode(data.integrationMode || "mock");
+    if (!vtpassCategory && cats[0]) {
+      setVtpassCategory(cats[0].identifier);
     }
-    setBills(bData.bills || []);
+    await loadBills();
+  }, [loadBills, vtpassCategory]);
+
+  useEffect(() => {
+    void loadCatalog();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (!vtpassCategory) return;
+    void (async () => {
+      setLoadingServices(true);
+      setServices([]);
+      setServiceID("");
+      setVariations([]);
+      setVariationCode("");
+      setVerified(null);
+      const res = await fetch(
+        `/api/portal/utilities/catalog?identifier=${encodeURIComponent(vtpassCategory)}`
+      );
+      const data = await res.json();
+      setLoadingServices(false);
+      if (!res.ok) {
+        setError(data.error || "Could not load services.");
+        return;
+      }
+      const list = (data.services || []) as VtpassService[];
+      setServices(list);
+      if (list[0]) setServiceID(list[0].serviceID);
+    })();
+  }, [vtpassCategory]);
 
   useEffect(() => {
-    const first = categoryProviders[0];
-    if (first && !categoryProviders.some((p) => p.id === providerId)) {
-      setProviderId(first.id);
+    if (!serviceID) return;
+    void (async () => {
+      setLoadingVariations(true);
+      setVariations([]);
+      setVariationCode("");
       setVerified(null);
+      const res = await fetch(
+        `/api/portal/utilities/variations?serviceID=${encodeURIComponent(serviceID)}`
+      );
+      const data = await res.json();
+      setLoadingVariations(false);
+      if (!res.ok) return;
+      const vars = (data.variations || []) as Variation[];
+      setVariations(vars);
+      if (vars[0]) {
+        setVariationCode(vars[0].variation_code);
+        if (isFixedPriceVariation(vars[0].fixedPrice)) {
+          setAmount(vars[0].variation_amount);
+        }
+      }
+    })();
+  }, [serviceID]);
+
+  useEffect(() => {
+    if (selectedVariation && isFixedPriceVariation(selectedVariation.fixedPrice)) {
+      setAmount(selectedVariation.variation_amount);
     }
-  }, [category, categoryProviders, providerId]);
+  }, [selectedVariation]);
 
   useEffect(() => {
     setVerified(null);
-  }, [providerId, accountNumber, meterType]);
+  }, [serviceID, accountNumber, meterType, variationCode]);
 
   useEffect(() => {
     const paid = searchParams.get("paid");
@@ -181,23 +256,19 @@ export default function UtilitiesClient() {
       const token = data.bill?.purchaseToken;
       setMessage(
         token
-          ? `Payment successful. Your token: ${token}`
+          ? `Payment successful. Token / code: ${token}`
           : "Utility bill paid successfully."
       );
       setVerified(null);
       setAccountNumber("");
       setAmount("");
-      await load();
+      await loadBills();
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  async function onVerify(e: FormEvent) {
-    e.preventDefault();
-    if (!providerId || !accountNumber.trim()) {
-      setError("Select a provider and enter your account number.");
-      return;
-    }
+  async function onVerify() {
+    if (!serviceID || !vtpassCategory || !accountNumber.trim()) return;
     setVerifying(true);
     setError("");
     setMessage("");
@@ -205,9 +276,10 @@ export default function UtilitiesClient() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        providerId,
+        serviceID,
+        vtpassCategory,
         accountNumber: accountNumber.trim(),
-        meterType: selectedProvider?.requiresMeterType ? meterType : undefined,
+        meterType: categoryMeta?.requiresMeterType ? meterType : undefined,
       }),
     });
     const data = await res.json();
@@ -216,32 +288,29 @@ export default function UtilitiesClient() {
       setError(data.error || "Verification failed.");
       return;
     }
+    if (data.skipped) {
+      setVerified({ customerName: null, address: null, accountNumber: accountNumber.trim() });
+      setMessage("Ready to pay.");
+      return;
+    }
     setVerified({
       customerName: data.customerName,
       address: data.address,
       accountNumber: data.accountNumber,
-      manual: data.manual,
     });
-    setMessage(
-      data.manual
-        ? "Account saved — proceed to payment."
-        : `Verified: ${data.customerName}`
-    );
+    setMessage(`Verified: ${data.customerName}`);
   }
 
   async function onPay(e: FormEvent) {
     e.preventDefault();
-    if (!verified || !providerId) {
-      setError("Verify your account before paying.");
-      return;
-    }
+    if (!canPay || !serviceID || !vtpassCategory) return;
     const numAmount = Number(amount);
     if (!numAmount || numAmount <= 0) {
       setError("Enter a valid amount.");
       return;
     }
     if (!phone.trim() || phone.trim().length < 10) {
-      setError("Enter a valid phone number for receipts.");
+      setError("Enter a valid phone number.");
       return;
     }
 
@@ -253,11 +322,13 @@ export default function UtilitiesClient() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        providerId,
-        accountNumber: verified.accountNumber,
-        meterType: selectedProvider?.requiresMeterType ? meterType : undefined,
-        customerName: verified.customerName || undefined,
-        customerAddress: verified.address || undefined,
+        serviceID,
+        vtpassCategory,
+        accountNumber: verified?.accountNumber || accountNumber.trim(),
+        meterType: categoryMeta?.requiresMeterType ? meterType : undefined,
+        variationCode: variationCode || undefined,
+        customerName: verified?.customerName || undefined,
+        customerAddress: verified?.address || undefined,
         phone: phone.trim(),
         amount: numAmount,
       }),
@@ -279,12 +350,29 @@ export default function UtilitiesClient() {
       setError(payData.error || "Could not start payment.");
       return;
     }
-
     if (payData.authorization_url) {
       window.location.href = payData.authorization_url;
+    }
+  }
+
+  async function onRequery(billId: string) {
+    setRequeryingId(billId);
+    setError("");
+    const res = await fetch(`/api/portal/utilities/${billId}/requery`, {
+      method: "POST",
+    });
+    const data = await res.json();
+    setRequeryingId(null);
+    if (!res.ok) {
+      setError(data.error || "Requery failed.");
       return;
     }
-    setError("Payment URL missing.");
+    setMessage(
+      data.requery?.purchasedCode
+        ? `Updated: ${data.requery.purchasedCode}`
+        : `Status: ${data.bill?.vtpassStatus || "updated"}`
+    );
+    await loadBills();
   }
 
   if (loading) {
@@ -308,39 +396,25 @@ export default function UtilitiesClient() {
           {message}
         </p>
       ) : null}
-      {confirming ? (
-        <p className="text-sm text-muted">Confirming your payment…</p>
-      ) : null}
+      {confirming ? <p className="text-sm text-muted">Confirming payment…</p> : null}
 
       <section className="grid sm:grid-cols-3 gap-3">
         <Reveal>
           <div className="app-card p-4 sm:p-5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted">
-              Total paid
-            </p>
-            <p className="mt-2 text-2xl font-display font-semibold">
-              {formatMoney(stats.totalPaid)}
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted">Total paid</p>
+            <p className="mt-2 text-2xl font-display font-semibold">{formatMoney(stats.totalPaid)}</p>
           </div>
         </Reveal>
         <Reveal delay={0.04}>
           <div className="app-card p-4 sm:p-5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted">
-              Completed
-            </p>
-            <p className="mt-2 text-2xl font-display font-semibold">
-              {stats.paidCount}
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted">Completed</p>
+            <p className="mt-2 text-2xl font-display font-semibold">{stats.paidCount}</p>
           </div>
         </Reveal>
         <Reveal delay={0.08}>
           <div className="app-card p-4 sm:p-5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted">
-              Pending
-            </p>
-            <p className="mt-2 text-2xl font-display font-semibold">
-              {stats.pendingCount}
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted">Pending</p>
+            <p className="mt-2 text-2xl font-display font-semibold">{stats.pendingCount}</p>
           </div>
         </Reveal>
       </section>
@@ -350,8 +424,18 @@ export default function UtilitiesClient() {
           <div className="px-5 py-6 sm:px-6 border-b border-border/60 bg-gradient-to-br from-brand/10 to-transparent">
             <h2 className="font-display text-lg font-semibold">Pay a bill</h2>
             <p className="text-sm text-muted mt-1">
-              Verify your meter or account, then pay securely via Paystack
-              {integrationMode === "mock" ? " (demo mode — VTpass mock)" : " + VTpass"}.
+              Powered by{" "}
+              <a
+                href="https://vtpass.com/documentation/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-brand hover:underline"
+              >
+                VTpass
+              </a>
+              {" · "}
+              {integrationMode === "mock" ? "demo mode" : "live API"}
+              {" · Paystack checkout"}
             </p>
           </div>
 
@@ -359,38 +443,52 @@ export default function UtilitiesClient() {
             <div className="flex flex-wrap gap-2">
               {categories.map((c) => (
                 <button
-                  key={c.id}
+                  key={c.identifier}
                   type="button"
-                  onClick={() => setCategory(c.id)}
+                  onClick={() => setVtpassCategory(c.identifier)}
                   className={`rounded-full border px-3.5 py-1.5 text-sm transition-colors ${
-                    category === c.id
+                    vtpassCategory === c.identifier
                       ? "border-brand bg-brand/10 font-semibold"
                       : "border-border text-muted hover:border-brand/40"
                   }`}
                 >
-                  {c.label}
+                  {c.meta?.label || c.name}
                 </button>
               ))}
             </div>
 
-            <p className="text-xs text-muted">
-              {categories.find((c) => c.id === category)?.description}
-            </p>
+            {categoryMeta ? (
+              <p className="text-xs text-muted">{categoryMeta.description}</p>
+            ) : null}
 
             <div className="grid sm:grid-cols-2 gap-4">
               <Select
-                label="Provider"
-                value={providerId}
-                onChange={setProviderId}
-                options={categoryProviders.map((p) => ({
-                  value: p.id,
-                  label: p.name + (p.integrated ? "" : " (manual)"),
+                label="Service provider"
+                value={serviceID}
+                onChange={setServiceID}
+                options={services.map((s) => ({
+                  value: s.serviceID,
+                  label: s.name,
                 }))}
-                placeholder="Choose provider"
-                required
+                placeholder={loadingServices ? "Loading…" : "Choose provider"}
               />
 
-              {selectedProvider?.requiresMeterType ? (
+              {variations.length > 0 ? (
+                <Select
+                  label="Plan / option"
+                  value={variationCode}
+                  onChange={setVariationCode}
+                  options={variations.map((v) => ({
+                    value: v.variation_code,
+                    label: `${v.name}${
+                      parseAmount(v.variation_amount) > 0
+                        ? ` · ${formatMoney(parseAmount(v.variation_amount))}`
+                        : ""
+                    }`,
+                  }))}
+                  placeholder={loadingVariations ? "Loading…" : "Choose plan"}
+                />
+              ) : categoryMeta?.requiresMeterType ? (
                 <Select
                   label="Meter type"
                   value={meterType}
@@ -403,97 +501,94 @@ export default function UtilitiesClient() {
               ) : null}
             </div>
 
-            <form onSubmit={onVerify} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1.5">
-                  {selectedProvider?.accountLabel || "Account number"}
-                </label>
-                <input
-                  className="app-input w-full"
-                  value={accountNumber}
-                  onChange={(e) => setAccountNumber(e.target.value)}
-                  placeholder={
-                    selectedProvider?.requiresMeterType
-                      ? "Enter meter number"
-                      : "Enter account / smartcard number"
-                  }
-                  required
-                />
-              </div>
+            {selectedService?.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={selectedService.image}
+                alt=""
+                className="h-12 w-auto rounded object-contain"
+              />
+            ) : null}
+
+            <div>
+              <label className="block text-sm font-medium mb-1.5">
+                {categoryMeta?.accountLabel || "Account number"}
+              </label>
+              <input
+                className="app-input w-full"
+                value={accountNumber}
+                onChange={(e) => setAccountNumber(e.target.value)}
+                placeholder={
+                  categoryMeta?.billersCodeIsPhone ? "08012345678" : "Enter account details"
+                }
+                inputMode={categoryMeta?.billersCodeIsPhone ? "tel" : "text"}
+              />
+            </div>
+
+            {needsVerify ? (
               <button
-                type="submit"
-                disabled={verifying || !providerId}
+                type="button"
+                disabled={verifying || !accountNumber.trim()}
+                onClick={() => void onVerify()}
                 className="app-btn app-btn-secondary text-sm"
               >
                 {verifying ? "Verifying…" : "Verify account"}
               </button>
-            </form>
+            ) : null}
 
             {verified ? (
-              <div className="rounded-lg border border-brand/25 bg-brand/5 p-4 space-y-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted">
-                    Verified account
-                  </p>
-                  {verified.customerName ? (
-                    <p className="mt-1 font-semibold">{verified.customerName}</p>
-                  ) : null}
-                  <p className="text-sm text-muted mt-0.5">
-                    {verified.accountNumber}
-                    {verified.address ? ` · ${verified.address}` : ""}
-                  </p>
-                </div>
-
-                <form onSubmit={onPay} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">
-                      Phone (for receipt)
-                    </label>
-                    <input
-                      className="app-input w-full"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="08012345678"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">
-                      Amount (NGN)
-                    </label>
-                    <input
-                      type="number"
-                      min={selectedProvider?.minAmount || 1}
-                      className="app-input w-full"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      required
-                    />
-                    {selectedProvider?.amountPresets?.length ? (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {selectedProvider.amountPresets.map((preset) => (
-                          <button
-                            key={preset}
-                            type="button"
-                            onClick={() => setAmount(String(preset))}
-                            className="rounded-md border border-border px-2.5 py-1 text-xs font-medium hover:border-brand/50 hover:bg-brand/5"
-                          >
-                            {formatMoney(preset)}
-                          </button>
-                        ))}
-                      </div>
-                    ) : null}
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={paying}
-                    className="app-btn app-btn-primary text-sm"
-                  >
-                    {paying ? "Redirecting to Paystack…" : "Pay with Paystack"}
-                  </button>
-                </form>
+              <div className="rounded-lg border border-brand/25 bg-brand/5 p-3 text-sm">
+                {verified.customerName ? (
+                  <p className="font-semibold">{verified.customerName}</p>
+                ) : null}
+                <p className="text-muted">{verified.accountNumber}</p>
+                {verified.address ? (
+                  <p className="text-xs text-muted mt-1">{verified.address}</p>
+                ) : null}
               </div>
             ) : null}
+
+            {(canPay || !needsVerify) && (
+              <form onSubmit={onPay} className="space-y-4 border-t border-border/60 pt-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">Phone (receipt)</label>
+                  <input
+                    className="app-input w-full"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="08012345678"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">Amount (NGN)</label>
+                  <input
+                    type="number"
+                    min={parseAmount(selectedService?.minimium_amount) || 1}
+                    className="app-input w-full"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    readOnly={amountLocked}
+                    required
+                  />
+                  {selectedService?.minimium_amount ? (
+                    <p className="text-xs text-muted mt-1">
+                      Min {formatMoney(parseAmount(selectedService.minimium_amount))}
+                      {selectedService.maximum_amount
+                        ? ` · Max ${formatMoney(parseAmount(selectedService.maximum_amount))}`
+                        : ""}
+                    </p>
+                  ) : null}
+                </div>
+                <button
+                  type="submit"
+                  disabled={paying || (needsVerify && !verified)}
+                  className="app-btn app-btn-primary text-sm"
+                >
+                  {paying ? "Redirecting to Paystack…" : "Pay with Paystack"}
+                </button>
+              </form>
+            )}
           </div>
         </section>
       </Reveal>
@@ -502,8 +597,8 @@ export default function UtilitiesClient() {
         <h2 className="font-display text-lg font-semibold">Payment history</h2>
         {bills.length === 0 ? (
           <EmptyState
-            title="No utility payments yet"
-            description="Pay electricity, cable TV, or estate dues — your receipts and tokens will show here."
+            title="No payments yet"
+            description="Electricity, cable, data, airtime, education pins, and more — all via VTpass."
           />
         ) : (
           <Stagger className="grid gap-3">
@@ -513,7 +608,7 @@ export default function UtilitiesClient() {
                   <div className="min-w-0 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-semibold capitalize">
-                        {categoryLabel(b.category)} · {b.provider}
+                        {b.category.replace("_", " ")} · {b.provider}
                       </p>
                       <span
                         className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${statusClass(b.status)}`}
@@ -522,49 +617,52 @@ export default function UtilitiesClient() {
                       </span>
                     </div>
                     <p className="text-sm text-muted">
-                      {formatMoney(b.amount, b.currency)}
-                      {b.accountNumber ? ` · ${b.accountNumber}` : ""}
-                      {b.customerName ? ` · ${b.customerName}` : ""}
+                      {formatMoney(b.amount, b.currency)} · {b.accountNumber}
+                      {b.variationName ? ` · ${b.variationName}` : ""}
                     </p>
                     {b.purchaseToken ? (
-                      <p className="text-xs font-mono text-brand-dark mt-2 break-all">
-                        Token: {b.purchaseToken}
+                      <p className="text-xs font-mono text-brand-dark break-all">
+                        Code: {b.purchaseToken}
                       </p>
                     ) : null}
-                    {b.paidAt ? (
-                      <p className="text-xs text-muted">
-                        Paid {new Date(b.paidAt).toLocaleString()}
-                      </p>
+                    {b.vtpassStatus ? (
+                      <p className="text-xs text-muted">VTpass: {b.vtpassStatus}</p>
                     ) : null}
                   </div>
-                  {b.status === "pending" ? (
-                    <button
-                      type="button"
-                      disabled={paying}
-                      onClick={() => {
-                        void (async () => {
-                          setPaying(true);
-                          setError("");
-                          const res = await fetch(
-                            `/api/portal/utilities/${b.id}/pay`,
-                            { method: "POST" }
-                          );
-                          const data = await res.json();
-                          setPaying(false);
-                          if (!res.ok) {
-                            setError(data.error || "Payment failed.");
-                            return;
-                          }
-                          if (data.authorization_url) {
-                            window.location.href = data.authorization_url;
-                          }
-                        })();
-                      }}
-                      className="app-btn app-btn-primary text-sm shrink-0"
-                    >
-                      Complete payment
-                    </button>
-                  ) : null}
+                  <div className="flex flex-wrap gap-2 shrink-0">
+                    {b.vtpassRequestId && b.status === "paid" && !b.purchaseToken ? (
+                      <button
+                        type="button"
+                        disabled={requeryingId === b.id}
+                        onClick={() => void onRequery(b.id)}
+                        className="app-btn app-btn-secondary text-xs"
+                      >
+                        {requeryingId === b.id ? "Checking…" : "Check status"}
+                      </button>
+                    ) : null}
+                    {b.status === "pending" ? (
+                      <button
+                        type="button"
+                        disabled={paying}
+                        onClick={() => {
+                          void (async () => {
+                            setPaying(true);
+                            const res = await fetch(`/api/portal/utilities/${b.id}/pay`, {
+                              method: "POST",
+                            });
+                            const data = await res.json();
+                            setPaying(false);
+                            if (res.ok && data.authorization_url) {
+                              window.location.href = data.authorization_url;
+                            }
+                          })();
+                        }}
+                        className="app-btn app-btn-primary text-xs"
+                      >
+                        Complete payment
+                      </button>
+                    ) : null}
+                  </div>
                 </article>
               </StaggerItem>
             ))}
