@@ -1,9 +1,10 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import EmptyState from "@/components/ui/EmptyState";
-import { TableSkeleton } from "@/components/ui/Skeleton";
+import { FormSkeleton, TableSkeleton } from "@/components/ui/Skeleton";
 import { useActiveProfile } from "@/hooks/useActiveProfile";
 import { useSession } from "next-auth/react";
 
@@ -26,6 +27,106 @@ type ApplicationRow = {
   } | null;
 };
 
+type ApplyListing = {
+  id: string;
+  title: string;
+  listingType: string;
+  description: string;
+  address: { street: string; city: string; state: string; country: string };
+  price: { amount: number; currency: string; period: string };
+  images: { url: string; isPrimary?: boolean }[];
+  bedrooms: number | null;
+  bathrooms: number | null;
+  verificationStatus: string;
+  ownerVerified: boolean;
+  ownerDisplayName?: string;
+};
+
+function formatPrice(p: ApplyListing["price"]) {
+  try {
+    return `${new Intl.NumberFormat("en-NG", {
+      style: "currency",
+      currency: p.currency || "NGN",
+      maximumFractionDigits: 0,
+    }).format(p.amount)} / ${p.period}`;
+  } catch {
+    return `${p.currency} ${p.amount} / ${p.period}`;
+  }
+}
+
+function ListingApplyPreview({
+  listing,
+  onClear,
+}: {
+  listing: ApplyListing;
+  onClear?: () => void;
+}) {
+  const img =
+    listing.images.find((i) => i.isPrimary)?.url || listing.images[0]?.url;
+
+  return (
+    <div className="rounded-lg border border-border overflow-hidden bg-surface">
+      <div className="flex flex-col sm:flex-row">
+        {img ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={img}
+            alt=""
+            className="h-40 w-full sm:h-auto sm:w-44 object-cover shrink-0"
+          />
+        ) : (
+          <div className="h-40 w-full sm:w-44 bg-surface-dark shrink-0" />
+        )}
+        <div className="p-4 flex-1 min-w-0 space-y-1">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="font-semibold truncate">{listing.title}</p>
+              <p className="text-sm text-muted mt-0.5">
+                {listing.address.street}, {listing.address.city},{" "}
+                {listing.address.state}
+              </p>
+              <p className="text-sm text-muted capitalize">
+                {listing.listingType.replace("_", " ")}
+                {listing.bedrooms != null ? ` · ${listing.bedrooms} bed` : ""}
+                {listing.bathrooms != null ? ` · ${listing.bathrooms} bath` : ""}
+              </p>
+            </div>
+            {listing.verificationStatus === "verified" ? (
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-brand shrink-0">
+                Verified
+              </span>
+            ) : null}
+          </div>
+          <p className="text-sm font-medium pt-1">{formatPrice(listing.price)}</p>
+          {listing.ownerDisplayName ? (
+            <p className="text-xs text-muted">
+              Listed by {listing.ownerDisplayName}
+              {listing.ownerVerified ? " · verified owner" : ""}
+            </p>
+          ) : null}
+          <div className="flex flex-wrap gap-2 pt-2">
+            <Link
+              href={`/portal/search/${listing.id}`}
+              className="text-xs text-brand hover:underline"
+            >
+              View full listing
+            </Link>
+            {onClear ? (
+              <button
+                type="button"
+                className="text-xs text-muted hover:text-foreground"
+                onClick={onClear}
+              >
+                Change property
+              </button>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ApplicationsClient() {
   const searchParams = useSearchParams();
   const { data: session } = useSession();
@@ -38,6 +139,11 @@ export default function ApplicationsClient() {
   const [listingId, setListingId] = useState(
     () => searchParams.get("listingId") || ""
   );
+  const [selectedListing, setSelectedListing] = useState<ApplyListing | null>(
+    null
+  );
+  const [listingLoading, setListingLoading] = useState(false);
+  const [listingError, setListingError] = useState("");
   const [applyMessage, setApplyMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [busyId, setBusyId] = useState("");
@@ -65,8 +171,48 @@ export default function ApplicationsClient() {
     if (id) setListingId(id);
   }, [searchParams]);
 
+  useEffect(() => {
+    if (!listingId.trim() || !isTenantLike) {
+      setSelectedListing(null);
+      setListingError("");
+      return;
+    }
+
+    let cancelled = false;
+    setListingLoading(true);
+    setListingError("");
+
+    void (async () => {
+      const res = await fetch(`/api/portal/search/${listingId.trim()}`);
+      const data = await res.json();
+      if (cancelled) return;
+      setListingLoading(false);
+      if (!res.ok) {
+        setSelectedListing(null);
+        setListingError(data.error || "Could not load this property.");
+        return;
+      }
+      setSelectedListing(data.listing as ApplyListing);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [listingId, isTenantLike]);
+
+  function clearSelectedListing() {
+    setListingId("");
+    setSelectedListing(null);
+    setListingError("");
+    setError("");
+  }
+
   async function onApply(e: FormEvent) {
     e.preventDefault();
+    if (!listingId.trim() || !selectedListing) {
+      setError("Choose a property from search before applying.");
+      return;
+    }
     setSubmitting(true);
     setError("");
     setMessage("");
@@ -84,7 +230,7 @@ export default function ApplicationsClient() {
       setError(data.error || "Could not submit application.");
       return;
     }
-    setListingId("");
+    clearSelectedListing();
     setApplyMessage("");
     setMessage("Application submitted.");
     await load();
@@ -132,38 +278,62 @@ export default function ApplicationsClient() {
       {message ? <p className="text-sm text-brand-dark">{message}</p> : null}
 
       {isTenantLike ? (
-        <form onSubmit={onApply} className="app-card p-4 sm:p-5 space-y-4 max-w-xl">
+        <form onSubmit={onApply} className="app-card p-4 sm:p-5 space-y-4 max-w-2xl">
           <h2 className="font-semibold">Apply to a listing</h2>
           <p className="text-xs text-muted">
-            Use a verified tenant or student profile. Listing ID comes from
-            search or a listing detail page.
+            Browse search, open a property, then apply with your verified tenant
+            or student profile.
           </p>
-          <div>
-            <label className="block text-sm font-medium mb-1.5">Listing ID</label>
-            <input
-              className="app-input w-full"
-              value={listingId}
-              onChange={(e) => setListingId(e.target.value)}
-              required
-              placeholder="Listing ID"
+
+          {listingLoading ? (
+            <FormSkeleton />
+          ) : selectedListing ? (
+            <ListingApplyPreview
+              listing={selectedListing}
+              onClear={clearSelectedListing}
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1.5">Message</label>
-            <textarea
-              className="app-input w-full min-h-[80px]"
-              value={applyMessage}
-              onChange={(e) => setApplyMessage(e.target.value)}
-              placeholder="Introduce yourself to the landlord"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="app-btn app-btn-primary text-sm"
-          >
-            {submitting ? "Submitting…" : "Submit application"}
-          </button>
+          ) : listingError ? (
+            <div className="space-y-3">
+              <p className="text-sm text-danger" role="alert">
+                {listingError}
+              </p>
+              <Link href="/portal/search" className="app-btn app-btn-secondary text-sm">
+                Browse listings
+              </Link>
+            </div>
+          ) : (
+            <EmptyState
+              title="No property selected"
+              description="Find a home in search, then tap Apply from the listing page — or pick one below."
+            >
+              <Link href="/portal/search" className="app-btn app-btn-primary text-sm">
+                Browse listings
+              </Link>
+            </EmptyState>
+          )}
+
+          {selectedListing ? (
+            <>
+              <div>
+                <label className="block text-sm font-medium mb-1.5">
+                  Message to landlord
+                </label>
+                <textarea
+                  className="app-input w-full min-h-[80px]"
+                  value={applyMessage}
+                  onChange={(e) => setApplyMessage(e.target.value)}
+                  placeholder="Introduce yourself and why you're interested"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="app-btn app-btn-primary text-sm"
+              >
+                {submitting ? "Submitting…" : `Apply to ${selectedListing.title}`}
+              </button>
+            </>
+          ) : null}
         </form>
       ) : null}
 
