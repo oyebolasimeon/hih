@@ -55,8 +55,8 @@ export async function POST(req: Request) {
     await markPaymentSuccessful(payment);
     await writeAudit({
       action: "payment.webhook",
-      summary: `Paystack webhook marked ${reference} successful`,
-      actor: { kind: "system", email: "paystack@webhook", name: "Paystack" },
+      summary: `Payment webhook marked ${reference} successful`,
+      actor: { kind: "system", email: "payments@webhook", name: "Payments" },
       entityType: "payment",
       entityId: String(payment._id),
       metadata: { reference },

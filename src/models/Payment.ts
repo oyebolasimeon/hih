@@ -15,6 +15,9 @@ export interface IPayment {
   provider: PaymentProvider;
   providerRef?: string;
   receiptUrl?: string;
+  receiptNumber?: string;
+  landlordWalletTxId?: mongoose.Types.ObjectId;
+  tenantWalletTxId?: mongoose.Types.ObjectId;
   dueDate?: Date;
   paidAt?: Date;
   createdAt: Date;
@@ -57,6 +60,15 @@ const PaymentSchema = new Schema<IPayment>(
     },
     providerRef: { type: String, trim: true },
     receiptUrl: { type: String, trim: true },
+    receiptNumber: { type: String, trim: true, index: true },
+    landlordWalletTxId: {
+      type: Schema.Types.ObjectId,
+      ref: "WalletTransaction",
+    },
+    tenantWalletTxId: {
+      type: Schema.Types.ObjectId,
+      ref: "WalletTransaction",
+    },
     dueDate: { type: Date },
     paidAt: { type: Date },
   },

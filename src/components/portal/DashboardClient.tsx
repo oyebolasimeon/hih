@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/Motion";
+import { useBranding } from "@/components/providers/BrandingProvider";
 import { StatCardsSkeleton } from "@/components/ui/Skeleton";
 import { useActiveProfile } from "@/hooks/useActiveProfile";
 import type { ProfileType } from "@/models/Profile";
@@ -229,6 +230,8 @@ type Props = {
 
 export default function DashboardClient({ name }: Props) {
   const { data: session } = useSession();
+  const { branding } = useBranding();
+  const heroImage = branding.authBackgroundUrl || "/hero-home.jpg";
   const {
     profile,
     profileType,
@@ -372,22 +375,31 @@ export default function DashboardClient({ name }: Props) {
     <div className="space-y-8">
       <Reveal>
         <section className="app-card overflow-hidden">
-          <div className="relative px-6 py-8 sm:px-8 sm:py-10 bg-gradient-to-br from-brand/12 via-transparent to-teal/8 dark:from-brand/20 dark:to-teal/10">
-            <div className="relative z-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div className="relative min-h-[220px] sm:min-h-[240px]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={heroImage}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-navy/95 via-navy/82 to-navy/55" />
+            <div className="absolute inset-0 bg-gradient-to-t from-navy/70 via-transparent to-navy/20" />
+
+            <div className="relative z-10 flex flex-col gap-5 px-6 py-8 sm:flex-row sm:items-end sm:justify-between sm:px-8 sm:py-10">
               <div className="space-y-3 max-w-xl">
-                <p className="site-kicker flex items-center gap-2">
+                <p className="site-kicker flex items-center gap-2 text-teal">
                   <span className="site-live-dot" aria-hidden />
                   Your workspace
                 </p>
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-display font-semibold tracking-tight">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-display font-semibold tracking-tight text-white">
                   Good to see you, {firstName}
                 </h1>
-                <p className="text-sm sm:text-base text-muted leading-relaxed">
+                <p className="text-sm sm:text-base text-sand/80 leading-relaxed">
                   {hero.subtitle}
                 </p>
                 {profile ? (
-                  <div className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-background/70 px-3 py-1.5 text-xs font-medium backdrop-blur-sm">
-                    <span className="h-2 w-2 rounded-full bg-brand" aria-hidden />
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
+                    <span className="h-2 w-2 rounded-full bg-teal" aria-hidden />
                     Active as {profile.displayName} · {profileLabel(profile.type)}
                   </div>
                 ) : null}

@@ -46,6 +46,7 @@ export async function GET() {
         provider: p.provider,
         providerRef: p.providerRef || null,
         receiptUrl: p.receiptUrl || null,
+        receiptNumber: p.receiptNumber || null,
         dueDate: p.dueDate || null,
         paidAt: p.paidAt || null,
         createdAt: p.createdAt,

@@ -10,7 +10,7 @@ export default function PortalPaymentsPage() {
           Payments
         </h1>
         <p className="mt-1 text-sm text-muted">
-          View rent payments, deposits, and payout history.
+          Pay rent, manage your wallet, withdraw earnings, and view receipts.
         </p>
       </div>
       <Suspense fallback={<TableSkeleton rows={4} />}>

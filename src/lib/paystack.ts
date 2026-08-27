@@ -95,3 +95,103 @@ export async function paystackVerify(reference: string) {
     paid_at?: string;
   };
 }
+
+export type PaystackBank = {
+  name: string;
+  code: string;
+};
+
+export async function paystackListBanks() {
+  if (paystackMockMode()) {
+    return [
+      { name: "Access Bank", code: "044" },
+      { name: "GTBank", code: "058" },
+      { name: "Zenith Bank", code: "057" },
+      { name: "First Bank", code: "011" },
+      { name: "UBA", code: "033" },
+    ] satisfies PaystackBank[];
+  }
+
+  const res = await fetch(`${BASE}/bank?country=nigeria`, {
+    headers: { Authorization: `Bearer ${secret()}` },
+  });
+  const data = await res.json();
+  if (!res.ok || !data.status) {
+    throw new Error(data.message || "Could not load banks.");
+  }
+  return (data.data as PaystackBank[]).map((b) => ({
+    name: b.name,
+    code: b.code,
+  }));
+}
+
+export async function paystackCreateRecipient(input: {
+  name: string;
+  accountNumber: string;
+  bankCode: string;
+}) {
+  if (paystackMockMode()) {
+    return {
+      recipient_code: `RCP_mock_${input.accountNumber.slice(-4)}`,
+    };
+  }
+
+  const res = await fetch(`${BASE}/transferrecipient`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${secret()}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      type: "nuban",
+      name: input.name,
+      account_number: input.accountNumber,
+      bank_code: input.bankCode,
+      currency: "NGN",
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.status) {
+    throw new Error(data.message || "Could not save bank account.");
+  }
+  return data.data as { recipient_code: string };
+}
+
+export async function paystackInitiateTransfer(input: {
+  amountKobo: number;
+  recipientCode: string;
+  reference: string;
+  reason?: string;
+}) {
+  if (paystackMockMode()) {
+    return {
+      transfer_code: `TRF_mock_${input.reference.slice(-8)}`,
+      status: "success",
+      reference: input.reference,
+    };
+  }
+
+  const res = await fetch(`${BASE}/transfer`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${secret()}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      source: "balance",
+      amount: input.amountKobo,
+      recipient: input.recipientCode,
+      reference: input.reference,
+      reason: input.reason || "Payout",
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.status) {
+    throw new Error(data.message || "Withdrawal transfer failed.");
+  }
+  return data.data as {
+    transfer_code: string;
+    status: string;
+    reference: string;
+  };
+}

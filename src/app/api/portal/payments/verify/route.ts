@@ -41,6 +41,7 @@ export async function GET(req: Request) {
         currency: payment.currency,
         paidAt: payment.paidAt,
         receiptUrl: payment.receiptUrl,
+        receiptNumber: payment.receiptNumber,
         providerRef: payment.providerRef,
       },
     });
@@ -77,6 +78,7 @@ export async function GET(req: Request) {
         currency: payment.currency,
         paidAt: payment.paidAt,
         receiptUrl: payment.receiptUrl,
+        receiptNumber: payment.receiptNumber,
         providerRef: payment.providerRef,
       },
     });
