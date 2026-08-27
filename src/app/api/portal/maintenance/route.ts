@@ -3,7 +3,11 @@ import { z } from "zod";
 import mongoose from "mongoose";
 import { assertUser } from "@/lib/api-auth";
 import { connectDB } from "@/lib/db";
-import { requireActiveProfile, notifyUser } from "@/lib/profile-context";
+import {
+  requireActiveProfile,
+  notifyUser,
+} from "@/lib/profile-context";
+import { assertListingAccess } from "@/lib/property-access";
 import { MaintenanceRequest } from "@/models/MaintenanceRequest";
 import { Listing } from "@/models/Listing";
 import { User } from "@/models/User";
@@ -95,24 +99,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid listing." }, { status: 400 });
   }
 
-  await connectDB();
-  const listing = await Listing.findById(parsed.data.listingId);
-  if (!listing) {
-    return NextResponse.json({ error: "Listing not found." }, { status: 404 });
-  }
-
-  const isOwner = String(listing.ownerUserId) === user.id;
-  const isTenantLike =
-    active.profile.type === "tenant" || active.profile.type === "student";
-  if (!isOwner && !isTenantLike) {
-    return NextResponse.json(
-      { error: "You can only open maintenance on your own listings." },
-      { status: 403 }
-    );
+  const access = await assertListingAccess({
+    userId: user.id,
+    profile: active.profile,
+    listingId: parsed.data.listingId,
+    requireLeaseForTenant: true,
+  });
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
   const request = await MaintenanceRequest.create({
-    listingId: listing._id,
+    listingId: access.listing._id,
     requesterUserId: user.id,
     title: parsed.data.title,
     description: parsed.data.description,
@@ -120,22 +118,25 @@ export async function POST(req: Request) {
     status: "open",
   });
 
-  if (String(listing.ownerUserId) !== user.id) {
-    const owner = await User.findById(listing.ownerUserId)
+  if (access.role === "tenant") {
+    const owner = await User.findById(access.listing.ownerUserId)
       .select("email name")
       .lean();
     if (owner) {
       await notifyUser({
         userId: String(owner._id),
         type: "maintenance.created",
-        title: "New maintenance request",
-        body: `${parsed.data.title} on “${listing.title}” (${parsed.data.priority}).`,
+        title: "New service request",
+        body: `${parsed.data.title} on “${access.listing.title}” (${parsed.data.priority}).`,
         link: "/portal/maintenance",
-        meta: { requestId: String(request._id), listingId: String(listing._id) },
+        meta: {
+          requestId: String(request._id),
+          listingId: String(access.listing._id),
+        },
         email: owner.email
-          ? { to: owner.email, subject: "New maintenance request" }
+          ? { to: owner.email, subject: "New service request" }
           : undefined,
-      });
+      }).catch(() => undefined);
     }
   }
 
@@ -143,7 +144,7 @@ export async function POST(req: Request) {
     {
       request: serializeRequest(
         request.toObject() as unknown as Record<string, unknown>,
-        { listingTitle: listing.title }
+        { listingTitle: access.listing.title }
       ),
     },
     { status: 201 }

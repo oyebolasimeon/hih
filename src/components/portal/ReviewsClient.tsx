@@ -1,7 +1,9 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import EmptyState from "@/components/ui/EmptyState";
+import Select from "@/components/ui/Select";
 import { TableSkeleton } from "@/components/ui/Skeleton";
 
 type Review = {
@@ -14,13 +16,29 @@ type Review = {
   createdAt: string;
 };
 
+type ReviewableListing = {
+  listingId: string;
+  title: string;
+  city?: string;
+  state?: string;
+  context: "leased" | "applied";
+  contextLabel: string;
+  imageUrl?: string;
+};
+
 type Props = {
   listingId?: string;
   compact?: boolean;
 };
 
+function locationLabel(listing: ReviewableListing) {
+  const parts = [listing.city, listing.state].filter(Boolean);
+  return parts.length ? parts.join(", ") : null;
+}
+
 export default function ReviewsClient({ listingId, compact }: Props) {
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [eligible, setEligible] = useState<ReviewableListing[]>([]);
   const [averageRating, setAverageRating] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -28,36 +46,78 @@ export default function ReviewsClient({ listingId, compact }: Props) {
   const [saving, setSaving] = useState(false);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
-  const [manualListingId, setManualListingId] = useState(listingId || "");
+  const [selectedListingId, setSelectedListingId] = useState(listingId || "");
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
-    const q = listingId
-      ? `?listingId=${encodeURIComponent(listingId)}`
-      : "";
-    const res = await fetch(`/api/portal/reviews${q}`);
-    const data = await res.json();
+    const q = listingId ? `?listingId=${encodeURIComponent(listingId)}` : "";
+    const requests: Promise<Response>[] = [fetch(`/api/portal/reviews${q}`)];
+    if (!listingId) {
+      requests.push(fetch("/api/portal/reviews/eligible"));
+    }
+    const [reviewsRes, eligibleRes] = await Promise.all(requests);
+    const data = await reviewsRes.json();
     setLoading(false);
-    if (!res.ok) {
+    if (!reviewsRes.ok) {
       setError(data.error || "Unable to load reviews.");
       return;
     }
-    setReviews(data.reviews || []);
+    const loadedReviews = (data.reviews || []) as Review[];
+    setReviews(loadedReviews);
     setAverageRating(
       typeof data.averageRating === "number" ? data.averageRating : null
     );
+
+    if (!listingId && eligibleRes) {
+      const eligibleData = await eligibleRes.json();
+      if (eligibleRes.ok) {
+        const listings = (eligibleData.listings || []) as ReviewableListing[];
+        setEligible(listings);
+        const reviewedIds = new Set(loadedReviews.map((r) => r.listingId));
+        const available = listings.filter(
+          (l) => !reviewedIds.has(l.listingId)
+        );
+        setSelectedListingId((current) => {
+          if (current && available.some((l) => l.listingId === current)) {
+            return current;
+          }
+          return available[0]?.listingId || "";
+        });
+      } else {
+        setEligible([]);
+      }
+    }
   }, [listingId]);
 
   useEffect(() => {
     void load();
-  }, [load]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listingId]);
+
+  const reviewedIds = useMemo(
+    () => new Set(reviews.map((r) => r.listingId)),
+    [reviews]
+  );
+
+  const availableListings = useMemo(
+    () => eligible.filter((l) => !reviewedIds.has(l.listingId)),
+    [eligible, reviewedIds]
+  );
+
+  const selectedListing = useMemo(
+    () =>
+      availableListings.find((l) => l.listingId === selectedListingId) ||
+      eligible.find((l) => l.listingId === selectedListingId) ||
+      null,
+    [availableListings, eligible, selectedListingId]
+  );
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    const targetListingId = listingId || manualListingId;
+    const targetListingId = listingId || selectedListingId;
     if (!targetListingId) {
-      setError("Listing ID is required.");
+      setError("Select a property to review.");
       return;
     }
     setSaving(true);
@@ -85,6 +145,8 @@ export default function ReviewsClient({ listingId, compact }: Props) {
 
   if (loading) return <TableSkeleton rows={compact ? 2 : 4} />;
 
+  const showFullPageForm = !listingId;
+
   return (
     <div className="space-y-4">
       {error ? (
@@ -101,51 +163,105 @@ export default function ReviewsClient({ listingId, compact }: Props) {
         </p>
       ) : null}
 
-      <form onSubmit={onSubmit} className="app-card p-4 space-y-3 max-w-xl">
-        <h2 className="font-semibold text-sm">Leave a review</h2>
-        {!listingId ? (
+      {showFullPageForm && eligible.length === 0 ? (
+        <EmptyState
+          title="No homes to review yet"
+          description="You can review properties after you apply or move in. Browse listings to find a place you might want to stay."
+        >
+          <Link href="/portal/search" className="app-btn app-btn-primary text-sm">
+            Browse listings
+          </Link>
+        </EmptyState>
+      ) : showFullPageForm && availableListings.length === 0 ? (
+        <EmptyState
+          title="All caught up"
+          description="You've reviewed every home you've applied for or stayed in. Browse listings to discover more properties."
+        >
+          <Link href="/portal/search" className="app-btn app-btn-primary text-sm">
+            Browse listings
+          </Link>
+        </EmptyState>
+      ) : (
+        <form onSubmit={onSubmit} className="app-card p-4 space-y-3 max-w-xl">
+          <h2 className="font-semibold text-sm">Leave a review</h2>
+          {!listingId ? (
+            <div className="space-y-3">
+              <div>
+                <Select
+                  label="Property"
+                  value={selectedListingId}
+                  onChange={setSelectedListingId}
+                  required
+                  options={availableListings.map((l) => ({
+                    value: l.listingId,
+                    label: `${l.title}${
+                      locationLabel(l) ? ` · ${locationLabel(l)}` : ""
+                    } · ${l.contextLabel}`,
+                  }))}
+                  placeholder="Choose a property"
+                />
+              </div>
+              {selectedListing ? (
+                <div className="flex gap-3 rounded-lg border border-border/60 p-3 bg-muted/20">
+                  {selectedListing.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={selectedListing.imageUrl}
+                      alt=""
+                      className="h-16 w-20 rounded-md object-cover shrink-0"
+                    />
+                  ) : (
+                    <div className="h-16 w-20 rounded-md bg-muted/40 shrink-0" />
+                  )}
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm truncate">
+                      {selectedListing.title}
+                    </p>
+                    {locationLabel(selectedListing) ? (
+                      <p className="text-xs text-muted">
+                        {locationLabel(selectedListing)}
+                      </p>
+                    ) : null}
+                    <p className="text-xs text-brand-dark mt-0.5">
+                      {selectedListing.contextLabel}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           <div>
-            <label className="block text-sm font-medium mb-1.5">
-              Listing ID
-            </label>
-            <input
+            <label className="block text-sm font-medium mb-1.5">Rating</label>
+            <select
               className="app-input w-full"
-              value={manualListingId}
-              onChange={(e) => setManualListingId(e.target.value)}
-              required
+              value={rating}
+              onChange={(e) => setRating(Number(e.target.value))}
+            >
+              {[5, 4, 3, 2, 1].map((n) => (
+                <option key={n} value={n}>
+                  {n} star{n === 1 ? "" : "s"}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1.5">Comment</label>
+            <textarea
+              className="app-input w-full min-h-[72px]"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Share your experience with this home"
             />
           </div>
-        ) : null}
-        <div>
-          <label className="block text-sm font-medium mb-1.5">Rating</label>
-          <select
-            className="app-input w-full"
-            value={rating}
-            onChange={(e) => setRating(Number(e.target.value))}
+          <button
+            type="submit"
+            disabled={saving}
+            className="app-btn app-btn-primary text-sm"
           >
-            {[5, 4, 3, 2, 1].map((n) => (
-              <option key={n} value={n}>
-                {n} star{n === 1 ? "" : "s"}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1.5">Comment</label>
-          <textarea
-            className="app-input w-full min-h-[72px]"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={saving}
-          className="app-btn app-btn-primary text-sm"
-        >
-          {saving ? "Submitting…" : "Submit review"}
-        </button>
-      </form>
+            {saving ? "Submitting…" : "Submit review"}
+          </button>
+        </form>
+      )}
 
       {reviews.length === 0 ? (
         <EmptyState

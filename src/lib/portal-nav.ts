@@ -25,6 +25,10 @@ export const PORTAL_NAV_LINKS: PortalNavLink[] = [
   { href: "/portal/payments", label: "Payments" },
   { href: "/portal/messages", label: "Messages" },
   {
+    href: "/portal/services",
+    label: "Services",
+  },
+  {
     href: "/portal/utilities",
     label: "Utilities",
     forTypes: ["student", "tenant"],
@@ -50,7 +54,8 @@ export const PORTAL_NAV_LINKS: PortalNavLink[] = [
     label: "IoT",
     forTypes: ["landlord", "estate_manager", "tenant"],
   },
-  { href: "/portal/maintenance", label: "Maintenance" },
+  { href: "/portal/maintenance", label: "Service requests" },
+  { href: "/portal/complaints", label: "Complaints" },
   {
     href: "/portal/reviews",
     label: "Reviews",

@@ -3,6 +3,7 @@ import { z } from "zod";
 import mongoose from "mongoose";
 import { assertUser } from "@/lib/api-auth";
 import { connectDB } from "@/lib/db";
+import { assertReviewableListing } from "@/lib/property-access";
 import { requireActiveProfile } from "@/lib/profile-context";
 import { Review } from "@/models/Review";
 import { Listing } from "@/models/Listing";
@@ -103,15 +104,13 @@ export async function POST(req: Request) {
   }
 
   await connectDB();
-  const listing = await Listing.findById(parsed.data.listingId).lean();
-  if (!listing) {
-    return NextResponse.json({ error: "Listing not found." }, { status: 404 });
-  }
-  if (String(listing.ownerUserId) === user.id) {
-    return NextResponse.json(
-      { error: "You cannot review your own listing." },
-      { status: 400 }
-    );
+  const access = await assertReviewableListing(
+    user.id,
+    active.profile,
+    parsed.data.listingId
+  );
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
   try {

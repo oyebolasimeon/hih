@@ -2,9 +2,17 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import EmptyState from "@/components/ui/EmptyState";
+import Select from "@/components/ui/Select";
 import { TableSkeleton } from "@/components/ui/Skeleton";
 import { useActiveProfile } from "@/hooks/useActiveProfile";
 import { useSession } from "next-auth/react";
+
+type PropertyOption = {
+  listingId: string;
+  title: string;
+  city?: string;
+  role: "owner" | "tenant";
+};
 
 type RequestRow = {
   id: string;
@@ -29,41 +37,48 @@ export default function MaintenanceClient() {
   const { data: session } = useSession();
   const { isLandlordLike, isTenantLike, loading: profileLoading } =
     useActiveProfile();
+  const [properties, setProperties] = useState<PropertyOption[]>([]);
   const [rows, setRows] = useState<RequestRow[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [busyId, setBusyId] = useState("");
   const [listingId, setListingId] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState<"low" | "medium" | "high">(
-    "medium"
-  );
+  const [priority, setPriority] = useState("medium");
+  const [assignees, setAssignees] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
-    const [rRes, iRes] = await Promise.all([
+    const [rRes, iRes, pRes] = await Promise.all([
       fetch("/api/portal/maintenance"),
       fetch("/api/portal/maintenance/insights"),
+      fetch("/api/portal/properties"),
     ]);
     const rData = await rRes.json();
     const iData = await iRes.json();
+    const pData = await pRes.json();
     setLoading(false);
     if (!rRes.ok) {
-      setError(rData.error || "Unable to load maintenance.");
+      setError(rData.error || "Unable to load service requests.");
       return;
     }
     setRows(rData.requests || []);
     if (iRes.ok) setInsights(iData.insights || []);
     else setInsights([]);
-  }, []);
+    const props = (pData.properties || []) as PropertyOption[];
+    setProperties(props);
+    if (!listingId && props[0]) setListingId(props[0].listingId);
+  }, [listingId]);
 
   useEffect(() => {
     void load();
-  }, [load]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function onCreate(e: FormEvent) {
     e.preventDefault();
@@ -83,18 +98,23 @@ export default function MaintenanceClient() {
     }
     setTitle("");
     setDescription("");
-    setMessage("Maintenance request submitted.");
+    setMessage("Service request submitted.");
     await load();
   }
 
-  async function updateStatus(id: string, status: string) {
+  async function updateRequest(
+    id: string,
+    patch: { status?: string; assignee?: string }
+  ) {
+    setBusyId(id);
     setError("");
     const res = await fetch(`/api/portal/maintenance/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify(patch),
     });
     const data = await res.json();
+    setBusyId("");
     if (!res.ok) {
       setError(data.error || "Update failed.");
       return;
@@ -105,6 +125,12 @@ export default function MaintenanceClient() {
   if (loading || profileLoading) return <TableSkeleton rows={4} />;
 
   const meId = session?.user?.id || "";
+  const propertyOptions = properties.map((p) => ({
+    value: p.listingId,
+    label: `${p.title}${p.city ? ` · ${p.city}` : ""}${
+      p.role === "owner" ? " (yours)" : " (leased)"
+    }`,
+  }));
 
   return (
     <div className="space-y-6">
@@ -132,76 +158,91 @@ export default function MaintenanceClient() {
         </div>
       ) : null}
 
-      {(isTenantLike || isLandlordLike) ? (
+      {isTenantLike || isLandlordLike ? (
         <form onSubmit={onCreate} className="app-card p-4 sm:p-5 space-y-4 max-w-xl">
-          <h2 className="font-semibold">New maintenance request</h2>
+          <h2 className="font-semibold">New service request</h2>
           <p className="text-xs text-muted">
             {isLandlordLike
-              ? "Log facility issues on your listings."
-              : "Submit a repair request for a listing you rent."}
+              ? "Log facility issues on your properties."
+              : "Request repairs on a home you lease."}
           </p>
-          <div>
-            <label className="block text-sm font-medium mb-1.5">Listing ID</label>
-            <input
-              className="app-input w-full"
-              value={listingId}
-              onChange={(e) => setListingId(e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1.5">Title</label>
-            <input
-              className="app-input w-full"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1.5">Description</label>
-            <textarea
-              className="app-input w-full min-h-[80px]"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1.5">Priority</label>
-            <select
-              className="app-input w-full"
-              value={priority}
-              onChange={(e) =>
-                setPriority(e.target.value as "low" | "medium" | "high")
-              }
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-          </div>
-          <button
-            type="submit"
-            disabled={saving}
-            className="app-btn app-btn-primary text-sm"
-          >
-            {saving ? "Submitting…" : "Submit request"}
-          </button>
+          {propertyOptions.length === 0 ? (
+            <p className="text-sm text-muted">
+              {isLandlordLike
+                ? "Create a listing first."
+                : "You need an active lease to open a service request."}
+            </p>
+          ) : (
+            <>
+              <div>
+                <label className="block text-sm font-medium mb-1.5">
+                  Property
+                </label>
+                <Select
+                  value={listingId}
+                  onChange={setListingId}
+                  options={propertyOptions}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5">Title</label>
+                <input
+                  className="app-input w-full"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                  placeholder="Leaking kitchen sink"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5">
+                  Description
+                </label>
+                <textarea
+                  className="app-input w-full min-h-[80px]"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5">
+                  Priority
+                </label>
+                <Select
+                  value={priority}
+                  onChange={setPriority}
+                  options={[
+                    { value: "low", label: "Low" },
+                    { value: "medium", label: "Medium" },
+                    { value: "high", label: "High" },
+                  ]}
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={saving}
+                className="app-btn app-btn-primary text-sm"
+              >
+                {saving ? "Submitting…" : "Submit request"}
+              </button>
+            </>
+          )}
         </form>
       ) : null}
 
       {rows.length === 0 ? (
         <EmptyState
-          title="No maintenance requests"
-          description="Log plumbing, electrical, and facility issues for your homes."
+          title="No service requests"
+          description="Plumbing, electrical, and facility issues for leased homes appear here."
         />
       ) : (
         <ul className="space-y-3">
           {rows.map((r) => {
-            const canManageStatus = isLandlordLike;
+            const canManage = isLandlordLike;
             return (
-              <li key={r.id} className="app-card p-4 space-y-2">
+              <li key={r.id} className="app-card p-4 space-y-3">
                 <div className="flex flex-wrap justify-between gap-2">
                   <div>
                     <p className="font-medium">{r.title}</p>
@@ -211,11 +252,14 @@ export default function MaintenanceClient() {
                       {r.requesterUserId === meId ? " · you reported" : ""}
                     </p>
                   </div>
-                  {canManageStatus ? (
+                  {canManage ? (
                     <select
                       className="app-input text-xs w-auto"
                       value={r.status}
-                      onChange={(e) => void updateStatus(r.id, e.target.value)}
+                      disabled={busyId === r.id}
+                      onChange={(e) =>
+                        void updateRequest(r.id, { status: e.target.value })
+                      }
                     >
                       <option value="open">open</option>
                       <option value="assigned">assigned</option>
@@ -231,6 +275,35 @@ export default function MaintenanceClient() {
                 <p className="text-sm text-muted whitespace-pre-wrap">
                   {r.description}
                 </p>
+                {canManage ? (
+                  <div className="flex flex-wrap gap-2 items-end border-t border-border pt-3">
+                    <div className="flex-1 min-w-[10rem]">
+                      <label className="block text-xs text-muted mb-1">
+                        Assign to
+                      </label>
+                      <input
+                        className="app-input w-full text-sm"
+                        placeholder="Technician or vendor name"
+                        value={assignees[r.id] ?? r.assignee ?? ""}
+                        onChange={(e) =>
+                          setAssignees({ ...assignees, [r.id]: e.target.value })
+                        }
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      disabled={busyId === r.id}
+                      className="app-btn app-btn-secondary text-xs"
+                      onClick={() =>
+                        void updateRequest(r.id, {
+                          assignee: assignees[r.id] ?? r.assignee ?? "",
+                        })
+                      }
+                    >
+                      Save assignee
+                    </button>
+                  </div>
+                ) : null}
               </li>
             );
           })}

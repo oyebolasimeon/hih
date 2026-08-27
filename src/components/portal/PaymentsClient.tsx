@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import EmptyState from "@/components/ui/EmptyState";
 import { TableSkeleton } from "@/components/ui/Skeleton";
+import { useActiveProfile } from "@/hooks/useActiveProfile";
 
 type PaymentRow = {
   id: string;
@@ -24,13 +25,17 @@ type AgreementOption = {
   status: string;
   rentAmount: number;
   currency: string;
+  tenantProfileId: string;
+  landlordProfileId: string;
   listing: { title: string } | null;
 };
 
 export default function PaymentsClient() {
   const searchParams = useSearchParams();
+  const { profile, isLandlordLike, isTenantLike, loading: profileLoading } =
+    useActiveProfile();
   const [rows, setRows] = useState<PaymentRow[]>([]);
-  const [leases, setLeases] = useState<AgreementOption[]>([]);
+  const [tenantLeases, setTenantLeases] = useState<AgreementOption[]>([]);
   const [leaseId, setLeaseId] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -53,17 +58,22 @@ export default function PaymentsClient() {
       return;
     }
     setRows(pData.payments || []);
-    const active = (aData.agreements || []).filter(
-      (a: AgreementOption) => a.status === "active"
-    );
-    setLeases(active);
-    if (!leaseId && active[0]?.id) setLeaseId(active[0].id);
-  }, [leaseId]);
+
+    const agreements = (aData.agreements || []) as AgreementOption[];
+    const active = agreements.filter((a) => a.status === "active");
+    const myProfileId = profile?.id;
+    const mineAsTenant = myProfileId
+      ? active.filter((a) => a.tenantProfileId === myProfileId)
+      : [];
+    setTenantLeases(mineAsTenant);
+    if (!leaseId && mineAsTenant[0]?.id) setLeaseId(mineAsTenant[0].id);
+  }, [leaseId, profile?.id]);
 
   useEffect(() => {
+    if (profileLoading) return;
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [profileLoading, profile?.id]);
 
   useEffect(() => {
     const paid = searchParams.get("paid");
@@ -117,7 +127,7 @@ export default function PaymentsClient() {
     await load();
   }
 
-  if (loading) return <TableSkeleton rows={4} />;
+  if (loading || profileLoading) return <TableSkeleton rows={4} />;
 
   return (
     <div className="space-y-6">
@@ -131,52 +141,71 @@ export default function PaymentsClient() {
         <p className="text-sm text-muted">Verifying payment…</p>
       ) : null}
 
-      <form onSubmit={onPay} className="app-card p-4 sm:p-5 space-y-4 max-w-xl">
-        <h2 className="font-semibold">Pay rent</h2>
-        <p className="text-xs text-muted">
-          Paystack (or mock mode) for active leases where you are the tenant.
-        </p>
-        {leases.length === 0 ? (
-          <p className="text-sm text-muted">
-            No active leases. Complete signatures first.
+      {isTenantLike ? (
+        <form onSubmit={onPay} className="app-card p-4 sm:p-5 space-y-4 max-w-xl">
+          <h2 className="font-semibold">Pay rent</h2>
+          <p className="text-xs text-muted">
+            Pay with Paystack for active leases where you are the tenant.
           </p>
-        ) : (
-          <>
-            <div>
-              <label className="block text-sm font-medium mb-1.5">Lease</label>
-              <select
-                className="app-input w-full"
-                value={leaseId}
-                onChange={(e) => setLeaseId(e.target.value)}
+          {tenantLeases.length === 0 ? (
+            <p className="text-sm text-muted">
+              No active leases on this profile. Complete an agreement first.
+            </p>
+          ) : (
+            <>
+              <div>
+                <label className="block text-sm font-medium mb-1.5">Lease</label>
+                <select
+                  className="app-input w-full"
+                  value={leaseId}
+                  onChange={(e) => setLeaseId(e.target.value)}
+                >
+                  {tenantLeases.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.listing?.title || "Lease"} · {l.currency}{" "}
+                      {l.rentAmount.toLocaleString()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="submit"
+                disabled={paying}
+                className="app-btn app-btn-primary text-sm"
               >
-                {leases.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.listing?.title || "Lease"} · {l.currency}{" "}
-                    {l.rentAmount.toLocaleString()}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <button
-              type="submit"
-              disabled={paying}
-              className="app-btn app-btn-primary text-sm"
-            >
-              {paying ? "Redirecting…" : "Pay with Paystack"}
-            </button>
-          </>
-        )}
-      </form>
+                {paying ? "Redirecting…" : "Pay with Paystack"}
+              </button>
+            </>
+          )}
+        </form>
+      ) : null}
+
+      {isLandlordLike ? (
+        <div className="app-card p-4 sm:p-5 max-w-xl">
+          <h2 className="font-semibold">Rent received</h2>
+          <p className="text-sm text-muted mt-1">
+            Tenants pay rent on their leases. Successful payments to your
+            landlord profile appear in the history below.
+          </p>
+        </div>
+      ) : null}
 
       {rows.length === 0 ? (
         <EmptyState
           title="No payments yet"
-          description="Rent payments you make or receive will show up here."
+          description={
+            isLandlordLike
+              ? "Rent payments from tenants will show up here once collected."
+              : "Rent payments you make will show up here."
+          }
         />
       ) : (
         <ul className="space-y-3">
           {rows.map((p) => (
-            <li key={p.id} className="app-card p-4 flex flex-wrap items-center justify-between gap-3">
+            <li
+              key={p.id}
+              className="app-card p-4 flex flex-wrap items-center justify-between gap-3"
+            >
               <div>
                 <p className="font-medium">
                   {p.currency} {p.amount.toLocaleString()} · {p.status}
