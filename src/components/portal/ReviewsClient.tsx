@@ -31,6 +31,90 @@ type Props = {
   compact?: boolean;
 };
 
+function StarRating({
+  value,
+  onChange,
+  readOnly = false,
+  size = "md",
+}: {
+  value: number;
+  onChange?: (value: number) => void;
+  readOnly?: boolean;
+  size?: "sm" | "md";
+}) {
+  const [hover, setHover] = useState(0);
+  const starSize = size === "sm" ? "h-4 w-4" : "h-7 w-7";
+  const active = hover || value;
+
+  return (
+    <div
+      className="inline-flex items-center gap-0.5"
+      role={readOnly ? "img" : "radiogroup"}
+      aria-label={readOnly ? `${value} out of 5 stars` : "Rating"}
+      onMouseLeave={() => !readOnly && setHover(0)}
+    >
+      {[1, 2, 3, 4, 5].map((star) => {
+        const filled = star <= active;
+        if (readOnly) {
+          return (
+            <span key={star} className={filled ? "text-brand" : "text-border"}>
+              <StarIcon filled={filled} className={starSize} />
+            </span>
+          );
+        }
+        return (
+          <button
+            key={star}
+            type="button"
+            role="radio"
+            aria-checked={value === star}
+            aria-label={`${star} star${star === 1 ? "" : "s"}`}
+            className={`rounded p-0.5 transition-transform hover:scale-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand ${
+              filled ? "text-brand" : "text-border hover:text-brand/60"
+            }`}
+            onMouseEnter={() => setHover(star)}
+            onClick={() => onChange?.(star)}
+          >
+            <StarIcon filled={filled} className={starSize} />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function StarIcon({
+  filled,
+  className = "",
+}: {
+  filled: boolean;
+  className?: string;
+}) {
+  if (filled) {
+    return (
+      <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className={className} aria-hidden>
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ratingLabel(value: number) {
+  const labels: Record<number, string> = {
+    1: "Poor",
+    2: "Fair",
+    3: "Good",
+    4: "Very good",
+    5: "Excellent",
+  };
+  return labels[value] || "";
+}
+
 function locationLabel(listing: ReviewableListing) {
   const parts = [listing.city, listing.state].filter(Boolean);
   return parts.length ? parts.join(", ") : null;
@@ -157,10 +241,13 @@ export default function ReviewsClient({ listingId, compact }: Props) {
       {message ? <p className="text-sm text-brand-dark">{message}</p> : null}
 
       {listingId && averageRating != null ? (
-        <p className="text-sm text-muted">
-          Average {averageRating.toFixed(1)} / 5 · {reviews.length} review
-          {reviews.length === 1 ? "" : "s"}
-        </p>
+        <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
+          <StarRating value={Math.round(averageRating)} readOnly size="sm" />
+          <span>
+            {averageRating.toFixed(1)} average · {reviews.length} review
+            {reviews.length === 1 ? "" : "s"}
+          </span>
+        </div>
       ) : null}
 
       {showFullPageForm && eligible.length === 0 ? (
@@ -231,18 +318,14 @@ export default function ReviewsClient({ listingId, compact }: Props) {
             </div>
           ) : null}
           <div>
-            <label className="block text-sm font-medium mb-1.5">Rating</label>
-            <select
-              className="app-input w-full"
-              value={rating}
-              onChange={(e) => setRating(Number(e.target.value))}
-            >
-              {[5, 4, 3, 2, 1].map((n) => (
-                <option key={n} value={n}>
-                  {n} star{n === 1 ? "" : "s"}
-                </option>
-              ))}
-            </select>
+            <label className="block text-sm font-medium mb-2">Rating</label>
+            <div className="flex flex-wrap items-center gap-3">
+              <StarRating value={rating} onChange={setRating} />
+              <span className="text-sm text-muted">
+                {rating} star{rating === 1 ? "" : "s"}
+                {ratingLabel(rating) ? ` · ${ratingLabel(rating)}` : ""}
+              </span>
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1.5">Comment</label>
@@ -275,12 +358,13 @@ export default function ReviewsClient({ listingId, compact }: Props) {
       ) : (
         <ul className="space-y-2">
           {reviews.map((r) => (
-            <li key={r.id} className="app-card p-4 space-y-1">
-              <p className="font-medium text-sm">
-                {"★".repeat(r.rating)}
-                {"☆".repeat(5 - r.rating)}
-                {r.reviewerName ? ` · ${r.reviewerName}` : ""}
-              </p>
+            <li key={r.id} className="app-card p-4 space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <StarRating value={r.rating} readOnly size="sm" />
+                {r.reviewerName ? (
+                  <span className="text-sm font-medium">{r.reviewerName}</span>
+                ) : null}
+              </div>
               {!listingId && r.listingTitle ? (
                 <p className="text-xs text-muted">{r.listingTitle}</p>
               ) : null}
