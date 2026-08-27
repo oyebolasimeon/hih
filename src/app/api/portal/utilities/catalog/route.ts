@@ -39,7 +39,7 @@ export async function GET(req: Request) {
     return NextResponse.json(
       {
         error:
-          err instanceof Error ? err.message : "Could not load VTpass catalog.",
+          err instanceof Error ? err.message : "Could not load bill catalog.",
       },
       { status: 502 }
     );

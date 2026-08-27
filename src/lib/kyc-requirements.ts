@@ -13,7 +13,7 @@ export function requirementsForProfile(type: ProfileType): KycRequirement[] {
   const base: KycRequirement[] = [
     {
       type: "nin_face",
-      label: "NIN + selfie (Prembly)",
+      label: "NIN + selfie",
       provider: "prembly",
       required: true,
     },
@@ -22,7 +22,7 @@ export function requirementsForProfile(type: ProfileType): KycRequirement[] {
   if (type === "estate_manager") {
     base.push({
       type: "cac",
-      label: "CAC / RC number (Prembly)",
+      label: "CAC / RC number",
       provider: "prembly",
       required: true,
     });

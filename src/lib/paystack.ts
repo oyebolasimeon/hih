@@ -56,7 +56,7 @@ export async function paystackInitialize(input: {
   });
   const data = await res.json();
   if (!res.ok || !data.status) {
-    throw new Error(data.message || "Paystack initialize failed");
+    throw new Error(data.message || "Payment could not be started.");
   }
   return data.data as {
     authorization_url: string;
@@ -85,7 +85,7 @@ export async function paystackVerify(reference: string) {
   );
   const data = await res.json();
   if (!res.ok || !data.status) {
-    throw new Error(data.message || "Paystack verify failed");
+    throw new Error(data.message || "Payment could not be verified.");
   }
   return data.data as {
     status: string;

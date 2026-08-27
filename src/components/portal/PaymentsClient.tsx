@@ -145,7 +145,7 @@ export default function PaymentsClient() {
         <form onSubmit={onPay} className="app-card p-4 sm:p-5 space-y-4 max-w-xl">
           <h2 className="font-semibold">Pay rent</h2>
           <p className="text-xs text-muted">
-            Pay with Paystack for active leases where you are the tenant.
+            Pay rent online for active leases where you are the tenant.
           </p>
           {tenantLeases.length === 0 ? (
             <p className="text-sm text-muted">
@@ -173,7 +173,7 @@ export default function PaymentsClient() {
                 disabled={paying}
                 className="app-btn app-btn-primary text-sm"
               >
-                {paying ? "Redirecting…" : "Pay with Paystack"}
+                {paying ? "Redirecting to checkout…" : "Pay rent"}
               </button>
             </>
           )}
@@ -211,8 +211,7 @@ export default function PaymentsClient() {
                   {p.currency} {p.amount.toLocaleString()} · {p.status}
                 </p>
                 <p className="text-xs text-muted mt-1">
-                  {p.provider}
-                  {p.providerRef ? ` · ${p.providerRef}` : ""}
+                  {p.providerRef ? `Ref ${p.providerRef}` : "Online payment"}
                   {p.paidAt
                     ? ` · paid ${new Date(p.paidAt).toLocaleString()}`
                     : ` · ${new Date(p.createdAt).toLocaleString()}`}

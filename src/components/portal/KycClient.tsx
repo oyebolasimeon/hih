@@ -205,7 +205,7 @@ export default function KycClient() {
       return;
     }
     if (!selfieFiles[0]) {
-      setError("A clear selfie is required for Prembly face match.");
+      setError("A clear selfie is required for face match.");
       return;
     }
 
@@ -253,10 +253,10 @@ export default function KycClient() {
 
       const sub = data.submission;
       if (sub.status === "approved") {
-        setMessage("Identity verified with Prembly. Your profile is now verified.");
+        setMessage("Identity verified. Your profile is now verified.");
       } else if (sub.status === "pending") {
         setMessage(
-          "Prembly checks passed. Your submission is awaiting Ops review (e.g. student ID)."
+          "Identity checks passed. Your submission is awaiting Ops review (e.g. student ID)."
         );
       } else {
         setMessage(
@@ -283,7 +283,7 @@ export default function KycClient() {
             Identity verification
           </h1>
           <p className="mt-1 text-sm text-muted max-w-2xl">
-            Verify with Prembly using NIN and a selfie. Estate managers also
+            Verify your identity with NIN and a selfie. Estate managers also
             submit CAC details; student IDs are reviewed by Ops.
           </p>
         </div>
@@ -328,7 +328,7 @@ export default function KycClient() {
           Identity verification
         </h1>
         <p className="mt-1 text-sm text-muted max-w-2xl">
-          Verify with Prembly using NIN and a selfie. Estate managers also
+          Verify your identity with NIN and a selfie. Estate managers also
           submit CAC details; student IDs are reviewed by Ops.
         </p>
       </div>
@@ -357,7 +357,7 @@ export default function KycClient() {
             <p className="mt-2 text-2xl font-display font-semibold">
               {stats.pending}
             </p>
-            <p className="mt-1 text-xs text-muted">Awaiting Prembly or Ops</p>
+            <p className="mt-1 text-xs text-muted">Awaiting automated or Ops review</p>
           </div>
         </Reveal>
         <Reveal delay={0.08}>
@@ -482,7 +482,7 @@ export default function KycClient() {
                     We&apos;re reviewing {selected?.displayName}
                   </h2>
                   <p className="text-sm text-muted mt-2 max-w-lg">
-                    Prembly checks are complete. Our Ops team may still need to
+                    Automated identity checks are complete. Our Ops team may still need to
                     review documents (e.g. student ID). You&apos;ll be notified
                     when this profile is approved.
                   </p>
@@ -502,7 +502,7 @@ export default function KycClient() {
                     Verify {selected?.displayName}
                   </h2>
                   <p className="text-sm text-muted mt-1">
-                    Powered by Prembly · secure NIN and face match
+                    Secure NIN and face match verification
                   </p>
                 </div>
 
@@ -612,7 +612,7 @@ export default function KycClient() {
                     multiple={false}
                     value={selfieFiles}
                     onChange={setSelfieFiles}
-                    helpText="Face forward, good lighting. Used for Prembly NIN face match."
+                    helpText="Face forward, good lighting. Used for NIN face match."
                   />
 
                   <button
@@ -620,7 +620,7 @@ export default function KycClient() {
                     disabled={!canSubmit}
                     className="app-btn app-btn-primary text-sm w-full sm:w-auto"
                   >
-                    {submitting ? "Verifying with Prembly…" : "Submit verification"}
+                    {submitting ? "Verifying identity…" : "Submit verification"}
                   </button>
                 </div>
               </form>
@@ -646,7 +646,7 @@ export default function KycClient() {
                     <p className="text-sm font-medium">{req.label}</p>
                     <p className="text-xs text-muted mt-0.5">
                       {req.provider === "prembly"
-                        ? "Automated via Prembly"
+                        ? "Automated verification"
                         : "Reviewed by Ops team"}
                     </p>
                   </div>

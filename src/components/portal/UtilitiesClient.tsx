@@ -88,7 +88,6 @@ export default function UtilitiesClient() {
   const [categories, setCategories] = useState<VtpassCategory[]>([]);
   const [services, setServices] = useState<VtpassService[]>([]);
   const [variations, setVariations] = useState<Variation[]>([]);
-  const [integrationMode, setIntegrationMode] = useState("mock");
   const [bills, setBills] = useState<Bill[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingServices, setLoadingServices] = useState(false);
@@ -158,12 +157,11 @@ export default function UtilitiesClient() {
     const data = await res.json();
     setLoading(false);
     if (!res.ok) {
-      setError(data.error || "Unable to load VTpass catalog.");
+      setError(data.error || "Unable to load bill catalog.");
       return;
     }
     const cats = (data.categories || []) as VtpassCategory[];
     setCategories(cats);
-    setIntegrationMode(data.integrationMode || "mock");
     if (!vtpassCategory && cats[0]) {
       setVtpassCategory(cats[0].identifier);
     }
@@ -424,18 +422,7 @@ export default function UtilitiesClient() {
           <div className="px-5 py-6 sm:px-6 border-b border-border/60 bg-gradient-to-br from-brand/10 to-transparent">
             <h2 className="font-display text-lg font-semibold">Pay a bill</h2>
             <p className="text-sm text-muted mt-1">
-              Powered by{" "}
-              <a
-                href="https://vtpass.com/documentation/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-brand hover:underline"
-              >
-                VTpass
-              </a>
-              {" · "}
-              {integrationMode === "mock" ? "demo mode" : "live API"}
-              {" · Paystack checkout"}
+              Electricity, cable, data, airtime, education, and more — pay securely in one place.
             </p>
           </div>
 
@@ -585,7 +572,7 @@ export default function UtilitiesClient() {
                   disabled={paying || (needsVerify && !verified)}
                   className="app-btn app-btn-primary text-sm"
                 >
-                  {paying ? "Redirecting to Paystack…" : "Pay with Paystack"}
+                  {paying ? "Redirecting to checkout…" : "Pay bill"}
                 </button>
               </form>
             )}
@@ -598,7 +585,7 @@ export default function UtilitiesClient() {
         {bills.length === 0 ? (
           <EmptyState
             title="No payments yet"
-            description="Electricity, cable, data, airtime, education pins, and more — all via VTpass."
+            description="Electricity, cable, data, airtime, education pins, and more."
           />
         ) : (
           <Stagger className="grid gap-3">
@@ -626,7 +613,7 @@ export default function UtilitiesClient() {
                       </p>
                     ) : null}
                     {b.vtpassStatus ? (
-                      <p className="text-xs text-muted">VTpass: {b.vtpassStatus}</p>
+                      <p className="text-xs text-muted">Status: {b.vtpassStatus}</p>
                     ) : null}
                   </div>
                   <div className="flex flex-wrap gap-2 shrink-0">

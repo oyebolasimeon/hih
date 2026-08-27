@@ -120,7 +120,7 @@ type VtpassEnvelope = {
 
 function assertOk(data: VtpassEnvelope) {
   if (data.code && data.code !== "000" && data.code !== "099") {
-    throw new Error(data.response_description || "VTpass request failed.");
+    throw new Error(data.response_description || "Bill service request failed.");
   }
 }
 
@@ -234,7 +234,7 @@ async function vtpassGet<T>(path: string): Promise<T> {
   });
   const data = (await res.json()) as VtpassEnvelope;
   if (!res.ok) {
-    throw new Error(data.response_description || data.message || "VTpass GET failed.");
+    throw new Error(data.response_description || data.message || "Could not load bill options.");
   }
   assertOk(data);
   return data.content as T;
@@ -275,7 +275,7 @@ async function vtpassPost(path: string, body: Record<string, unknown>) {
     };
   };
   if (!res.ok) {
-    throw new Error(data.response_description || data.message || "VTpass POST failed.");
+    throw new Error(data.response_description || data.message || "Bill payment request failed.");
   }
   assertOk(data);
   return data;

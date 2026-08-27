@@ -70,7 +70,7 @@ export const VTPASS_CATEGORY_MAP: Record<
   "other-services": {
     portalCategory: "other",
     label: "Other services",
-    description: "Additional VTpass merchants",
+    description: "Additional bill merchants",
     accountLabel: "Account / reference",
     requiresVerify: false,
     requiresMeterType: false,
@@ -82,7 +82,7 @@ export function mapVtpassCategory(identifier: string) {
   return VTPASS_CATEGORY_MAP[identifier] || {
     portalCategory: "other" as UtilityCategory,
     label: identifier.replace(/-/g, " "),
-    description: "VTpass service",
+    description: "Bill payment service",
     accountLabel: "Account number",
     requiresVerify: false,
     requiresMeterType: false,

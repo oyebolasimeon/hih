@@ -36,7 +36,7 @@ function headers(): HeadersInit {
   const apiKey = process.env.PREMBLY_API_KEY;
   const appId = process.env.PREMBLY_APP_ID;
   if (!apiKey || !appId) {
-    throw new Error("Prembly is not configured (PREMBLY_API_KEY / PREMBLY_APP_ID).");
+    throw new Error("Identity verification is not configured.");
   }
   return {
     "Content-Type": "application/json",
@@ -60,7 +60,7 @@ async function premblyPost(
     const detail =
       (typeof data.detail === "string" && data.detail) ||
       (typeof data.message === "string" && data.message) ||
-      `Prembly request failed (${res.status})`;
+      `Identity verification request failed (${res.status})`;
     throw new Error(detail);
   }
   return data;
@@ -106,7 +106,7 @@ function mockSuccess(
     ok: true,
     checkType,
     responseCode: "00",
-    message: `Mock ${checkType} verified (PREMBLY_MOCK / unset keys)`,
+    message: `Mock ${checkType} verified (demo mode)`,
     reference: `mock-${checkType}-${Date.now()}`,
     confidence: 0.99,
     faceMatched: checkType.includes("face"),

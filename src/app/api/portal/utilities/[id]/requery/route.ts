@@ -23,7 +23,7 @@ export async function POST(_req: Request, ctx: Ctx) {
   }
   if (!bill.vtpassRequestId) {
     return NextResponse.json(
-      { error: "No VTpass transaction to requery." },
+      { error: "No transaction to check." },
       { status: 409 }
     );
   }

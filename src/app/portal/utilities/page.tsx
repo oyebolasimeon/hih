@@ -10,8 +10,8 @@ export default function PortalUtilitiesPage() {
           Utilities
         </h1>
         <p className="mt-1 text-sm text-muted max-w-2xl">
-          Pay electricity, cable TV, data, airtime, education, and insurance via
-          the full VTpass catalog — checkout with Paystack.
+          Pay electricity, cable TV, data, airtime, education, and insurance in
+          one place — secure checkout included.
         </p>
       </div>
       <Suspense fallback={<TableSkeleton rows={4} />}>
