@@ -24,6 +24,7 @@ type ListingDetail = {
   bathrooms: number | null;
   sizeSqm: number | null;
   verificationStatus: string;
+  ownerUserId: string;
   ownerVerified: boolean;
   ownerDisplayName?: string;
 };
@@ -171,12 +172,22 @@ export default function ListingDetailClient({ id }: { id: string }) {
           </div>
         ) : null}
 
-        <Link
-          href={`/portal/applications?listingId=${listing.id}`}
-          className="app-btn app-btn-primary inline-flex text-sm"
-        >
-          Apply for this home
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={`/portal/applications?listingId=${listing.id}`}
+            className="app-btn app-btn-primary inline-flex text-sm"
+          >
+            Apply for this home
+          </Link>
+          {listing.ownerUserId ? (
+            <Link
+              href={`/portal/messages?userId=${encodeURIComponent(listing.ownerUserId)}&listingId=${encodeURIComponent(listing.id)}&name=${encodeURIComponent(listing.ownerDisplayName || "Landlord")}&listingTitle=${encodeURIComponent(listing.title)}`}
+              className="app-btn app-btn-secondary inline-flex text-sm"
+            >
+              Message {listing.ownerDisplayName || "landlord"}
+            </Link>
+          ) : null}
+        </div>
       </div>
 
       <section className="space-y-3">

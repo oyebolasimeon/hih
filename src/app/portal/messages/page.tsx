@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import MessagesClient from "@/components/portal/MessagesClient";
+import { TableSkeleton } from "@/components/ui/Skeleton";
 
 export default function PortalMessagesPage() {
   return (
@@ -11,7 +13,9 @@ export default function PortalMessagesPage() {
           Chat with landlords, tenants, and estate managers.
         </p>
       </div>
-      <MessagesClient />
+      <Suspense fallback={<TableSkeleton />}>
+        <MessagesClient />
+      </Suspense>
     </div>
   );
 }
