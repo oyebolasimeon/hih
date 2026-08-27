@@ -6,6 +6,10 @@ import { assertUser } from "@/lib/api-auth";
 import { connectDB } from "@/lib/db";
 import { actorFromUser, writeAudit } from "@/lib/audit";
 import { paystackInitialize } from "@/lib/paystack";
+import {
+  formatRentPeriodLabel,
+  getPayableRentPeriod,
+} from "@/lib/rent-period";
 import { Lease } from "@/models/Lease";
 import { Payment } from "@/models/Payment";
 import { Profile } from "@/models/Profile";
@@ -57,6 +61,30 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Account email required." }, { status: 400 });
   }
 
+  const payable = await getPayableRentPeriod(lease);
+  if (payable.paid) {
+    return NextResponse.json(
+      {
+        error: `Rent for ${formatRentPeriodLabel(payable.periodStart, payable.periodEnd)} is already paid. Deposit and lock funds for the next period instead.`,
+        code: "RENT_ALREADY_PAID",
+      },
+      { status: 409 }
+    );
+  }
+
+  const pendingSamePeriod = await Payment.findOne({
+    leaseId: lease._id,
+    purpose: "rent",
+    status: "pending",
+    rentPeriodIndex: payable.periodIndex,
+  }).select("_id");
+  if (pendingSamePeriod) {
+    return NextResponse.json(
+      { error: "A payment for this rent period is already in progress." },
+      { status: 409 }
+    );
+  }
+
   const reference = `hih_${randomBytes(12).toString("hex")}`;
   const amountKobo = Math.round(lease.rentAmount * 100);
   const appUrl = (process.env.AUTH_URL || "http://localhost:3000").replace(
@@ -69,12 +97,19 @@ export async function POST(req: Request) {
     leaseId: lease._id,
     listingId: lease.listingId,
     payerUserId: user.id,
+    payerProfileId: tenantProfile._id,
     payeeProfileId: lease.landlordProfileId,
     amount: lease.rentAmount,
     currency: lease.currency || "NGN",
     status: "pending",
     provider: "paystack",
+    purpose: "rent",
+    source: "paystack",
     providerRef: reference,
+    rentPeriodIndex: payable.periodIndex,
+    rentPeriodStart: payable.periodStart,
+    rentPeriodEnd: payable.periodEnd,
+    dueDate: payable.periodEnd,
   });
 
   try {

@@ -52,6 +52,7 @@ type WalletData = {
   id: string;
   currency: string;
   availableBalance: number;
+  lockedBalance: number;
   pendingBalance: number;
   totalCredited: number;
   totalWithdrawn: number;
@@ -61,6 +62,32 @@ type WalletData = {
     accountNumberLast4: string;
     bankCode: string;
   } | null;
+};
+
+type RentLockRow = {
+  id: string;
+  leaseId: string;
+  amount: number;
+  currency: string;
+  rentPeriodStart: string;
+  rentPeriodEnd: string;
+  canApply: boolean;
+  status: string;
+};
+
+type RentStatus = {
+  payablePeriod: {
+    periodStart: string;
+    periodEnd: string;
+    label: string;
+    paid: boolean;
+    expired: boolean;
+  };
+  canPayRent: boolean;
+  canLockNext: boolean;
+  nextPeriod: { label: string; periodStart: string } | null;
+  nextLock: RentLockRow | null;
+  activeLocks: RentLockRow[];
 };
 
 type AgreementOption = {
@@ -112,6 +139,10 @@ function statusClass(status: string) {
 function txLabel(type: string) {
   if (type === "rent_credit") return "Rent received";
   if (type === "rent_payment") return "Rent paid";
+  if (type === "wallet_deposit") return "Wallet deposit";
+  if (type === "rent_lock") return "Reserved for rent";
+  if (type === "rent_unlock") return "Released reserve";
+  if (type === "rent_lock_apply") return "Rent from reserve";
   if (type === "withdrawal") return "Withdrawal";
   if (type === "withdrawal_refund") return "Withdrawal refund";
   return type.replace(/_/g, " ");
@@ -128,6 +159,8 @@ export default function PaymentsClient() {
   const [withdrawals, setWithdrawals] = useState<WithdrawalRow[]>([]);
   const [banks, setBanks] = useState<BankOption[]>([]);
   const [limits, setLimits] = useState({ minWithdrawal: 1000, withdrawalFee: 0 });
+  const [rentLocks, setRentLocks] = useState<RentLockRow[]>([]);
+  const [rentStatus, setRentStatus] = useState<RentStatus | null>(null);
 
   const [tenantLeases, setTenantLeases] = useState<AgreementOption[]>([]);
   const [leaseId, setLeaseId] = useState("");
@@ -138,8 +171,14 @@ export default function PaymentsClient() {
   const [verifying, setVerifying] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
   const [savingBank, setSavingBank] = useState(false);
+  const [depositing, setDepositing] = useState(false);
+  const [locking, setLocking] = useState(false);
+  const [unlockingId, setUnlockingId] = useState("");
+  const [applyingId, setApplyingId] = useState("");
 
   const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [depositAmount, setDepositAmount] = useState("");
+  const [lockAmount, setLockAmount] = useState("");
   const [bankCode, setBankCode] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [accountName, setAccountName] = useState("");
@@ -157,7 +196,20 @@ export default function PaymentsClient() {
     setWallet(data.wallet || null);
     setTransactions(data.transactions || []);
     setWithdrawals(data.withdrawals || []);
+    setRentLocks(data.rentLocks || []);
     setLimits(data.limits || { minWithdrawal: 1000, withdrawalFee: 0 });
+  }, []);
+
+  const loadRentStatus = useCallback(async (selectedLeaseId: string) => {
+    if (!selectedLeaseId) {
+      setRentStatus(null);
+      return;
+    }
+    const res = await fetch(
+      `/api/portal/payments/rent-status?leaseId=${encodeURIComponent(selectedLeaseId)}`
+    );
+    const data = await res.json();
+    if (res.ok) setRentStatus(data.rentStatus || null);
   }, []);
 
   const load = useCallback(async () => {
@@ -192,19 +244,25 @@ export default function PaymentsClient() {
   }, [profileLoading, profile?.id, load]);
 
   useEffect(() => {
-    if (!isLandlordLike) return;
+    if (!isLandlordLike && !isTenantLike) return;
     void (async () => {
       const res = await fetch("/api/portal/wallet/bank");
       const data = await res.json();
       if (res.ok) setBanks(data.banks || []);
     })();
-  }, [isLandlordLike]);
+  }, [isLandlordLike, isTenantLike]);
+
+  useEffect(() => {
+    if (!isTenantLike || !leaseId) return;
+    void loadRentStatus(leaseId);
+  }, [isTenantLike, leaseId, loadRentStatus]);
 
   useEffect(() => {
     const paid = searchParams.get("paid");
+    const deposit = searchParams.get("deposit");
     const mockRef = searchParams.get("mock_ref");
     const ref = mockRef || searchParams.get("reference");
-    if (paid === "1" && ref) {
+    if ((paid === "1" || deposit === "1") && ref) {
       void (async () => {
         setVerifying(true);
         setError("");
@@ -217,11 +275,16 @@ export default function PaymentsClient() {
           setError(data.error || "Could not verify payment.");
           return;
         }
-        setMessage("Payment verified and wallet updated.");
+        setMessage(
+          deposit === "1"
+            ? "Deposit confirmed — funds added to your wallet."
+            : "Payment verified and wallet updated."
+        );
         await load();
+        if (leaseId) await loadRentStatus(leaseId);
       })();
     }
-  }, [searchParams, load]);
+  }, [searchParams, load, leaseId, loadRentStatus]);
 
   useEffect(() => {
     if (!receiptId) {
@@ -249,6 +312,107 @@ export default function PaymentsClient() {
         .reduce((sum, tx) => sum + tx.amount, 0),
     [transactions]
   );
+
+  const selectedLease = useMemo(
+    () => tenantLeases.find((l) => l.id === leaseId) || null,
+    [tenantLeases, leaseId]
+  );
+
+  async function onDeposit(e: FormEvent) {
+    e.preventDefault();
+    if (!profile?.id) return;
+    const amount = Number(depositAmount);
+    if (!amount || amount <= 0) {
+      setError("Enter a valid deposit amount.");
+      return;
+    }
+    setDepositing(true);
+    setError("");
+    setMessage("");
+    const res = await fetch("/api/portal/wallet/deposit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profileId: profile.id, amount }),
+    });
+    const data = await res.json();
+    setDepositing(false);
+    if (!res.ok) {
+      setError(data.error || "Could not start deposit.");
+      return;
+    }
+    if (data.authorization_url) {
+      window.location.href = data.authorization_url;
+    }
+  }
+
+  async function onLock(e: FormEvent) {
+    e.preventDefault();
+    if (!profile?.id || !leaseId) return;
+    setLocking(true);
+    setError("");
+    setMessage("");
+    const amount = lockAmount ? Number(lockAmount) : undefined;
+    const res = await fetch("/api/portal/wallet/lock", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        profileId: profile.id,
+        leaseId,
+        ...(amount && amount > 0 ? { amount } : {}),
+      }),
+    });
+    const data = await res.json();
+    setLocking(false);
+    if (!res.ok) {
+      setError(data.error || "Could not lock funds.");
+      return;
+    }
+    setMessage("Funds reserved for your next rent period.");
+    setLockAmount("");
+    await load();
+    await loadRentStatus(leaseId);
+  }
+
+  async function onUnlock(lockId: string) {
+    if (!profile?.id) return;
+    setUnlockingId(lockId);
+    setError("");
+    setMessage("");
+    const res = await fetch(
+      `/api/portal/wallet/lock?lockId=${encodeURIComponent(lockId)}&profileId=${encodeURIComponent(profile.id)}`,
+      { method: "DELETE" }
+    );
+    const data = await res.json();
+    setUnlockingId("");
+    if (!res.ok) {
+      setError(data.error || "Could not unlock funds.");
+      return;
+    }
+    setMessage("Reserved funds released to your available balance.");
+    await load();
+    if (leaseId) await loadRentStatus(leaseId);
+  }
+
+  async function onApplyLock(lockId: string) {
+    if (!profile?.id) return;
+    setApplyingId(lockId);
+    setError("");
+    setMessage("");
+    const res = await fetch("/api/portal/wallet/lock", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profileId: profile.id, lockId }),
+    });
+    const data = await res.json();
+    setApplyingId("");
+    if (!res.ok) {
+      setError(data.error || "Could not apply reserved funds.");
+      return;
+    }
+    setMessage("Reserved funds applied — rent paid to your landlord.");
+    await load();
+    if (leaseId) await loadRentStatus(leaseId);
+  }
 
   async function onPay(e: FormEvent) {
     e.preventDefault();
@@ -371,7 +535,11 @@ export default function PaymentsClient() {
               {isLandlordLike ? (
                 <p className="mt-1 text-xs text-muted">Ready to withdraw</p>
               ) : (
-                <p className="mt-1 text-xs text-muted">Payment activity wallet</p>
+                <p className="mt-1 text-xs text-muted">
+                  {wallet.lockedBalance > 0
+                    ? `${formatMoney(wallet.lockedBalance, wallet.currency)} reserved for rent`
+                    : "Deposit, reserve, or withdraw"}
+                </p>
               )}
             </div>
           </Reveal>
@@ -464,40 +632,253 @@ export default function PaymentsClient() {
       <div className="grid lg:grid-cols-2 gap-6">
         {isTenantLike ? (
           <Reveal>
-            <form onSubmit={onPay} className="app-card overflow-hidden h-fit">
-              <div className="px-5 py-6 border-b border-border/60 bg-gradient-to-br from-brand/10 to-transparent">
-                <h2 className="font-display text-lg font-semibold">Pay rent</h2>
-                <p className="text-sm text-muted mt-1">
-                  Secure checkout — funds go to your landlord&apos;s wallet.
-                </p>
-              </div>
-              <div className="p-5 space-y-4">
-                {tenantLeases.length === 0 ? (
-                  <p className="text-sm text-muted">
-                    No active leases on this profile. Complete an agreement first.
+            <div className="space-y-6">
+              <form onSubmit={onPay} className="app-card overflow-hidden h-fit">
+                <div className="px-5 py-6 border-b border-border/60 bg-gradient-to-br from-brand/10 to-transparent">
+                  <h2 className="font-display text-lg font-semibold">Pay rent</h2>
+                  <p className="text-sm text-muted mt-1">
+                    One payment per rent period. Reserve early for the next period below.
                   </p>
-                ) : (
-                  <>
-                    <Select
-                      label="Active lease"
-                      value={leaseId}
-                      onChange={setLeaseId}
-                      options={tenantLeases.map((l) => ({
-                        value: l.id,
-                        label: `${l.listing?.title || "Lease"} · ${formatMoney(l.rentAmount, l.currency)}`,
-                      }))}
+                </div>
+                <div className="p-5 space-y-4">
+                  {tenantLeases.length === 0 ? (
+                    <p className="text-sm text-muted">
+                      No active leases on this profile. Complete an agreement first.
+                    </p>
+                  ) : (
+                    <>
+                      <Select
+                        label="Active lease"
+                        value={leaseId}
+                        onChange={setLeaseId}
+                        options={tenantLeases.map((l) => ({
+                          value: l.id,
+                          label: `${l.listing?.title || "Lease"} · ${formatMoney(l.rentAmount, l.currency)}`,
+                        }))}
+                      />
+                      {rentStatus ? (
+                        <div className="rounded-lg border border-border/60 bg-surface/40 p-3 text-sm space-y-1">
+                          <p>
+                            <span className="text-muted">Current period:</span>{" "}
+                            {rentStatus.payablePeriod.label}
+                          </p>
+                          {rentStatus.payablePeriod.paid ? (
+                            <p className="text-brand-dark font-medium">
+                              Paid for this period
+                            </p>
+                          ) : rentStatus.payablePeriod.expired ? (
+                            <p className="text-danger font-medium">Overdue — payment required</p>
+                          ) : (
+                            <p className="text-muted">Due before period ends</p>
+                          )}
+                        </div>
+                      ) : null}
+                      <button
+                        type="submit"
+                        disabled={paying || rentStatus?.canPayRent === false}
+                        className="app-btn app-btn-primary text-sm w-full sm:w-auto disabled:opacity-50"
+                      >
+                        {paying
+                          ? "Redirecting to checkout…"
+                          : rentStatus?.canPayRent === false
+                            ? "Rent already paid this period"
+                            : `Pay ${formatMoney(selectedLease?.rentAmount || 0, selectedLease?.currency)}`}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </form>
+
+              <div className="app-card overflow-hidden h-fit">
+                <div className="px-5 py-6 border-b border-border/60 bg-gradient-to-br from-teal/10 to-transparent">
+                  <h2 className="font-display text-lg font-semibold">Wallet &amp; early rent</h2>
+                  <p className="text-sm text-muted mt-1">
+                    Deposit funds, lock them for the next rent period, or unlock and withdraw.
+                  </p>
+                </div>
+                <div className="p-5 space-y-5">
+                  <form onSubmit={onDeposit} className="space-y-3">
+                    <p className="text-sm font-medium">Deposit to wallet</p>
+                    <input
+                      type="number"
+                      min={1000}
+                      className="app-input w-full"
+                      value={depositAmount}
+                      onChange={(e) => setDepositAmount(e.target.value)}
+                      placeholder="Amount"
                     />
                     <button
                       type="submit"
-                      disabled={paying}
-                      className="app-btn app-btn-primary text-sm w-full sm:w-auto"
+                      disabled={depositing}
+                      className="app-btn app-btn-secondary text-sm"
                     >
-                      {paying ? "Redirecting to checkout…" : "Pay rent"}
+                      {depositing ? "Starting deposit…" : "Deposit via checkout"}
                     </button>
-                  </>
-                )}
+                  </form>
+
+                  {leaseId && rentStatus?.canLockNext ? (
+                    <form onSubmit={onLock} className="space-y-3 border-t border-border/60 pt-4">
+                      <p className="text-sm font-medium">Reserve for next period</p>
+                      {rentStatus.nextPeriod ? (
+                        <p className="text-xs text-muted">{rentStatus.nextPeriod.label}</p>
+                      ) : null}
+                      <input
+                        type="number"
+                        min={1000}
+                        className="app-input w-full"
+                        value={lockAmount}
+                        onChange={(e) => setLockAmount(e.target.value)}
+                        placeholder={
+                          selectedLease
+                            ? String(selectedLease.rentAmount)
+                            : "Amount (defaults to rent)"
+                        }
+                      />
+                      <button
+                        type="submit"
+                        disabled={locking || (wallet?.availableBalance || 0) <= 0}
+                        className="app-btn app-btn-secondary text-sm"
+                      >
+                        {locking ? "Locking…" : "Lock funds for next rent"}
+                      </button>
+                    </form>
+                  ) : null}
+
+                  {(rentLocks.length > 0 || (rentStatus?.activeLocks.length || 0) > 0) ? (
+                    <div className="space-y-2 border-t border-border/60 pt-4">
+                      <p className="text-sm font-medium">Reserved funds</p>
+                      {(rentStatus?.activeLocks || rentLocks).map((lock) => (
+                        <div
+                          key={lock.id}
+                          className="rounded-lg border border-border/60 bg-surface/40 p-3 text-sm flex flex-wrap items-center justify-between gap-2"
+                        >
+                          <div>
+                            <p className="font-medium">
+                              {formatMoney(lock.amount, lock.currency)}
+                            </p>
+                            <p className="text-xs text-muted mt-0.5">
+                              {new Date(lock.rentPeriodStart).toLocaleDateString()} –{" "}
+                              {new Date(lock.rentPeriodEnd).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {lock.canApply ? (
+                              <button
+                                type="button"
+                                onClick={() => onApplyLock(lock.id)}
+                                disabled={applyingId === lock.id}
+                                className="app-btn app-btn-primary text-xs"
+                              >
+                                {applyingId === lock.id ? "Applying…" : "Pay rent"}
+                              </button>
+                            ) : null}
+                            <button
+                              type="button"
+                              onClick={() => onUnlock(lock.id)}
+                              disabled={unlockingId === lock.id}
+                              className="app-btn app-btn-secondary text-xs"
+                            >
+                              {unlockingId === lock.id ? "Unlocking…" : "Unlock"}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  <div className="border-t border-border/60 pt-4 space-y-3">
+                    <p className="text-sm font-medium">Withdraw available balance</p>
+                    {wallet?.bankDetails ? (
+                      <div className="rounded-lg border border-border/60 bg-surface/40 p-3 text-sm">
+                        <p className="font-medium">{wallet.bankDetails.accountName}</p>
+                        <p className="text-muted text-xs mt-1">
+                          {wallet.bankDetails.bankName} · {wallet.bankDetails.accountNumberLast4}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setShowBankForm((v) => !v)}
+                          className="text-xs text-brand mt-2 hover:underline"
+                        >
+                          {showBankForm ? "Cancel change" : "Change bank account"}
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted">
+                        Add a bank account to withdraw unlocked funds.
+                      </p>
+                    )}
+
+                    {showBankForm || !wallet?.bankDetails ? (
+                      <form onSubmit={onSaveBank} className="space-y-3">
+                        <Select
+                          label="Bank"
+                          value={bankCode}
+                          onChange={setBankCode}
+                          options={banks.map((b) => ({ value: b.code, label: b.name }))}
+                          placeholder="Select bank"
+                        />
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">
+                            Account number
+                          </label>
+                          <input
+                            className="app-input w-full"
+                            inputMode="numeric"
+                            value={accountNumber}
+                            onChange={(e) =>
+                              setAccountNumber(e.target.value.replace(/\D/g, "").slice(0, 10))
+                            }
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">
+                            Account name
+                          </label>
+                          <input
+                            className="app-input w-full"
+                            value={accountName}
+                            onChange={(e) => setAccountName(e.target.value)}
+                            required
+                          />
+                        </div>
+                        <button
+                          type="submit"
+                          disabled={savingBank}
+                          className="app-btn app-btn-secondary text-sm"
+                        >
+                          {savingBank ? "Saving…" : "Save bank account"}
+                        </button>
+                      </form>
+                    ) : null}
+
+                    {wallet?.bankDetails ? (
+                      <form onSubmit={onWithdraw} className="space-y-3">
+                        <input
+                          type="number"
+                          min={limits.minWithdrawal}
+                          className="app-input w-full"
+                          value={withdrawAmount}
+                          onChange={(e) => setWithdrawAmount(e.target.value)}
+                          placeholder={`Min ${limits.minWithdrawal}`}
+                          required
+                        />
+                        <button
+                          type="submit"
+                          disabled={
+                            withdrawing ||
+                            (wallet?.availableBalance || 0) < limits.minWithdrawal
+                          }
+                          className="app-btn app-btn-primary text-sm"
+                        >
+                          {withdrawing ? "Processing…" : "Withdraw to bank"}
+                        </button>
+                      </form>
+                    ) : null}
+                  </div>
+                </div>
               </div>
-            </form>
+            </div>
           </Reveal>
         ) : null}
 

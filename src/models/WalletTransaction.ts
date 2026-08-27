@@ -3,6 +3,10 @@ import mongoose, { Schema, models, model } from "mongoose";
 export type WalletTxType =
   | "rent_credit"
   | "rent_payment"
+  | "wallet_deposit"
+  | "rent_lock"
+  | "rent_unlock"
+  | "rent_lock_apply"
   | "withdrawal"
   | "withdrawal_refund"
   | "adjustment";
@@ -56,6 +60,10 @@ const WalletTransactionSchema = new Schema<IWalletTransaction>(
       enum: [
         "rent_credit",
         "rent_payment",
+        "wallet_deposit",
+        "rent_lock",
+        "rent_unlock",
+        "rent_lock_apply",
         "withdrawal",
         "withdrawal_refund",
         "adjustment",

@@ -1,5 +1,5 @@
 import { notifyUser } from "@/lib/profile-context";
-import { settleRentPaymentWallets } from "@/lib/wallet";
+import { creditWalletDeposit, settleRentPaymentWallets } from "@/lib/wallet";
 import { generateReceiptNumber } from "@/lib/wallet-utils";
 import { Payment } from "@/models/Payment";
 import { Profile } from "@/models/Profile";
@@ -9,7 +9,13 @@ export async function markPaymentSuccessful(
   payment: InstanceType<typeof Payment>
 ) {
   if (payment.status === "successful") {
-    if (!payment.landlordWalletTxId && payment.payeeProfileId) {
+    if (payment.purpose === "wallet_deposit" && !payment.tenantWalletTxId) {
+      await creditWalletDeposit(payment);
+    } else if (
+      payment.purpose === "rent" &&
+      !payment.landlordWalletTxId &&
+      payment.payeeProfileId
+    ) {
       await settleRentPaymentWallets(payment);
     }
     return payment;
@@ -21,11 +27,18 @@ export async function markPaymentSuccessful(
   );
   payment.status = "successful";
   payment.paidAt = new Date();
-  if (!payment.receiptNumber) {
+  if (!payment.receiptNumber && payment.purpose === "rent") {
     payment.receiptNumber = generateReceiptNumber();
   }
-  payment.receiptUrl = `${appUrl}/portal/payments?receipt=${payment._id}`;
+  if (payment.purpose === "rent") {
+    payment.receiptUrl = `${appUrl}/portal/payments?receipt=${payment._id}`;
+  }
   await payment.save();
+
+  if (payment.purpose === "wallet_deposit") {
+    await creditWalletDeposit(payment);
+    return payment;
+  }
 
   await settleRentPaymentWallets(payment);
 
@@ -40,11 +53,14 @@ export async function markPaymentSuccessful(
     : null;
 
   if (payer) {
+    const isDeposit = payment.purpose === "wallet_deposit";
     await notifyUser({
       userId: String(payer._id),
-      type: "payment.successful",
-      title: "Rent payment successful",
-      body: `Your payment of ${payment.currency} ${payment.amount.toLocaleString()} was successful.`,
+      type: isDeposit ? "wallet.deposit" : "payment.successful",
+      title: isDeposit ? "Wallet deposit successful" : "Rent payment successful",
+      body: isDeposit
+        ? `${payment.currency} ${payment.amount.toLocaleString()} was added to your wallet.`
+        : `Your payment of ${payment.currency} ${payment.amount.toLocaleString()} was successful.`,
       link: payment.receiptUrl || "/portal/payments",
       meta: {
         paymentId: String(payment._id),
@@ -52,11 +68,18 @@ export async function markPaymentSuccessful(
         receiptNumber: payment.receiptNumber,
       },
       email: payer.email
-        ? { to: payer.email, subject: "Rent payment receipt" }
+        ? {
+            to: payer.email,
+            subject: isDeposit ? "Wallet deposit confirmed" : "Rent payment receipt",
+          }
         : undefined,
     });
   }
-  if (landlord && String(landlord._id) !== String(payment.payerUserId)) {
+  if (
+    landlord &&
+    String(landlord._id) !== String(payment.payerUserId) &&
+    payment.purpose === "rent"
+  ) {
     await notifyUser({
       userId: String(landlord._id),
       type: "payment.received",

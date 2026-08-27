@@ -17,6 +17,7 @@ export interface IWallet {
   ownerType: WalletOwnerType;
   currency: string;
   availableBalance: number;
+  lockedBalance: number;
   pendingBalance: number;
   totalCredited: number;
   totalWithdrawn: number;
@@ -58,6 +59,7 @@ const WalletSchema = new Schema<IWallet>(
     },
     currency: { type: String, default: "NGN", trim: true },
     availableBalance: { type: Number, default: 0, min: 0 },
+    lockedBalance: { type: Number, default: 0, min: 0 },
     pendingBalance: { type: Number, default: 0, min: 0 },
     totalCredited: { type: Number, default: 0, min: 0 },
     totalWithdrawn: { type: Number, default: 0, min: 0 },

@@ -8,6 +8,7 @@ import {
 } from "@/lib/wallet";
 import { withdrawalMinAmount, withdrawalFee } from "@/lib/wallet-utils";
 import { Profile } from "@/models/Profile";
+import { RentLock } from "@/models/RentLock";
 import { WalletTransaction } from "@/models/WalletTransaction";
 import { Withdrawal } from "@/models/Withdrawal";
 
@@ -28,7 +29,7 @@ export async function GET(req: Request) {
   }
 
   const wallet = await getOrCreateWallet(profile._id);
-  const [transactions, withdrawals] = await Promise.all([
+  const [transactions, withdrawals, rentLocks] = await Promise.all([
     WalletTransaction.find({ profileId: profile._id })
       .sort({ createdAt: -1 })
       .limit(50)
@@ -36,6 +37,9 @@ export async function GET(req: Request) {
     Withdrawal.find({ profileId: profile._id })
       .sort({ createdAt: -1 })
       .limit(20)
+      .lean(),
+    RentLock.find({ profileId: profile._id, status: "active" })
+      .sort({ rentPeriodStart: 1 })
       .lean(),
   ]);
 
@@ -74,5 +78,17 @@ export async function GET(req: Request) {
       minWithdrawal: withdrawalMinAmount(),
       withdrawalFee: withdrawalFee(),
     },
+    rentLocks: rentLocks.map((lock) => ({
+      id: String(lock._id),
+      leaseId: String(lock.leaseId),
+      amount: lock.amount,
+      currency: lock.currency,
+      rentPeriodIndex: lock.rentPeriodIndex,
+      rentPeriodStart: lock.rentPeriodStart,
+      rentPeriodEnd: lock.rentPeriodEnd,
+      status: lock.status,
+      canApply: new Date() >= lock.rentPeriodStart,
+      createdAt: lock.createdAt,
+    })),
   });
 }
