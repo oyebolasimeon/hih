@@ -73,7 +73,12 @@ export async function POST(req: Request) {
   const { user, response } = await assertUser();
   if (response || !user) return response!;
 
-  const active = await requireActiveProfile(user.id);
+  const active = await requireActiveProfile(user.id, [
+    "tenant",
+    "student",
+    "landlord",
+    "estate_manager",
+  ]);
   if (!active.ok) {
     return NextResponse.json({ error: active.error }, { status: active.status });
   }
@@ -94,6 +99,16 @@ export async function POST(req: Request) {
   const listing = await Listing.findById(parsed.data.listingId);
   if (!listing) {
     return NextResponse.json({ error: "Listing not found." }, { status: 404 });
+  }
+
+  const isOwner = String(listing.ownerUserId) === user.id;
+  const isTenantLike =
+    active.profile.type === "tenant" || active.profile.type === "student";
+  if (!isOwner && !isTenantLike) {
+    return NextResponse.json(
+      { error: "You can only open maintenance on your own listings." },
+      { status: 403 }
+    );
   }
 
   const request = await MaintenanceRequest.create({

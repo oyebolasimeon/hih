@@ -85,7 +85,7 @@ export async function POST(req: Request) {
   const { user, response } = await assertUser();
   if (response || !user) return response!;
 
-  const active = await requireActiveProfile(user.id);
+  const active = await requireActiveProfile(user.id, ["tenant", "student"]);
   if (!active.ok) {
     return NextResponse.json({ error: active.error }, { status: active.status });
   }

@@ -4,7 +4,11 @@ import mongoose from "mongoose";
 import { assertUser } from "@/lib/api-auth";
 import { connectDB } from "@/lib/db";
 import { actorFromUser, writeAudit } from "@/lib/audit";
-import { notifyUser } from "@/lib/profile-context";
+import {
+  notifyUser,
+  requireActiveProfile,
+  requireVerifiedProfile,
+} from "@/lib/profile-context";
 import { Application } from "@/models/Application";
 import { Lease } from "@/models/Lease";
 import { Listing } from "@/models/Listing";
@@ -21,6 +25,21 @@ type RouteCtx = { params: Promise<{ id: string }> };
 export async function PATCH(req: Request, ctx: RouteCtx) {
   const { user, response } = await assertUser();
   if (response || !user) return response!;
+
+  const gate = await requireActiveProfile(user.id, [
+    "landlord",
+    "estate_manager",
+  ]);
+  if (!gate.ok) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+  const verified = requireVerifiedProfile(gate.profile);
+  if (!verified.ok) {
+    return NextResponse.json(
+      { error: verified.error },
+      { status: verified.status }
+    );
+  }
 
   const { id } = await ctx.params;
   if (!mongoose.Types.ObjectId.isValid(id)) {

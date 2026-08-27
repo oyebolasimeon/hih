@@ -5,6 +5,7 @@ import Select from "@/components/ui/Select";
 import ImageFilePicker from "@/components/ui/ImageFilePicker";
 import EmptyState from "@/components/ui/EmptyState";
 import { FormSkeleton } from "@/components/ui/Skeleton";
+import RequireProfileTypes from "@/components/portal/RequireProfileTypes";
 
 type ListingRow = {
   id: string;
@@ -88,13 +89,14 @@ function formatPrice(p: ListingRow["price"]) {
   }
 }
 
-export default function ListingsClient() {
+function ListingsManager() {
   const [listings, setListings] = useState<ListingRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [busyId, setBusyId] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const [listingType, setListingType] = useState("apartment");
   const [title, setTitle] = useState("");
@@ -109,7 +111,29 @@ export default function ListingsClient() {
   const [sizeSqm, setSizeSqm] = useState("");
   const [amenitiesText, setAmenitiesText] = useState("");
   const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [existingImages, setExistingImages] = useState<
+    ListingRow["images"]
+  >([]);
   const [publishNow, setPublishNow] = useState(false);
+
+  const resetForm = useCallback(() => {
+    setEditingId(null);
+    setListingType("apartment");
+    setTitle("");
+    setDescription("");
+    setStreet("");
+    setCity("");
+    setState("Lagos");
+    setAmount("");
+    setPeriod("yearly");
+    setBedrooms("");
+    setBathrooms("");
+    setSizeSqm("");
+    setAmenitiesText("");
+    setImageFiles([]);
+    setExistingImages([]);
+    setPublishNow(false);
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -128,6 +152,28 @@ export default function ListingsClient() {
     void load();
   }, [load]);
 
+  function startEdit(l: ListingRow) {
+    setEditingId(l.id);
+    setListingType(l.listingType);
+    setTitle(l.title);
+    setDescription(l.description);
+    setStreet(l.address.street);
+    setCity(l.address.city);
+    setState(l.address.state || "Lagos");
+    setAmount(String(l.price.amount));
+    setPeriod(l.price.period);
+    setBedrooms(l.bedrooms != null ? String(l.bedrooms) : "");
+    setBathrooms(l.bathrooms != null ? String(l.bathrooms) : "");
+    setSizeSqm(l.sizeSqm != null ? String(l.sizeSqm) : "");
+    setAmenitiesText((l.amenities || []).join(", "));
+    setExistingImages(l.images || []);
+    setImageFiles([]);
+    setPublishNow(false);
+    setMessage("");
+    setError("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   async function uploadImages(files: File[]) {
     const uploaded: { url: string; publicId: string; isPrimary: boolean }[] =
       [];
@@ -145,74 +191,91 @@ export default function ListingsClient() {
       uploaded.push({
         url: data.url,
         publicId: data.publicId,
-        isPrimary: i === 0,
+        isPrimary: false,
       });
     }
     return uploaded;
   }
 
-  async function onCreate(e: FormEvent) {
+  async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     setError("");
     setMessage("");
     try {
-      const images = await uploadImages(imageFiles);
+      const newImages = await uploadImages(imageFiles);
+      const images = [
+        ...existingImages.map((img, i) => ({
+          url: img.url,
+          publicId: img.publicId || "",
+          isPrimary: img.isPrimary ?? i === 0,
+        })),
+        ...newImages,
+      ].map((img, i) => ({ ...img, isPrimary: i === 0 }));
+
       const amenities = amenitiesText
         .split(",")
         .map((a) => a.trim())
         .filter(Boolean);
-      const res = await fetch("/api/portal/listings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          listingType,
-          title: title.trim(),
-          description: description.trim(),
-          address: {
-            street: street.trim(),
-            city: city.trim(),
-            state,
-            country: "Nigeria",
-          },
-          price: {
-            amount: Number(amount),
-            currency: "NGN",
-            period,
-          },
-          bedrooms: bedrooms ? Number(bedrooms) : undefined,
-          bathrooms: bathrooms ? Number(bathrooms) : undefined,
-          sizeSqm: sizeSqm ? Number(sizeSqm) : undefined,
-          amenities,
-          images,
-          availabilityStatus: publishNow ? "available" : "draft",
-        }),
-      });
+
+      const payload = {
+        listingType,
+        title: title.trim(),
+        description: description.trim(),
+        address: {
+          street: street.trim(),
+          city: city.trim(),
+          state,
+          country: "Nigeria",
+        },
+        price: {
+          amount: Number(amount),
+          currency: "NGN",
+          period,
+        },
+        bedrooms: bedrooms ? Number(bedrooms) : null,
+        bathrooms: bathrooms ? Number(bathrooms) : null,
+        sizeSqm: sizeSqm ? Number(sizeSqm) : null,
+        amenities,
+        images,
+        ...(editingId
+          ? publishNow
+            ? { availabilityStatus: "available" as const }
+            : {}
+          : {
+              availabilityStatus: publishNow
+                ? ("available" as const)
+                : ("draft" as const),
+            }),
+      };
+
+      const res = await fetch(
+        editingId ? `/api/portal/listings/${editingId}` : "/api/portal/listings",
+        {
+          method: editingId ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Could not create listing.");
+        setError(data.error || "Could not save listing.");
         setSubmitting(false);
         return;
       }
-      setTitle("");
-      setDescription("");
-      setStreet("");
-      setCity("");
-      setAmount("");
-      setBedrooms("");
-      setBathrooms("");
-      setSizeSqm("");
-      setAmenitiesText("");
-      setImageFiles([]);
-      setPublishNow(false);
       setMessage(
-        publishNow
-          ? "Listing submitted for verification."
-          : "Draft listing saved."
+        editingId
+          ? publishNow
+            ? "Listing updated and submitted for verification."
+            : "Listing updated."
+          : publishNow
+            ? "Listing submitted for verification."
+            : "Draft listing saved."
       );
+      resetForm();
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create listing.");
+      setError(err instanceof Error ? err.message : "Could not save listing.");
     }
     setSubmitting(false);
   }
@@ -246,6 +309,7 @@ export default function ListingsClient() {
       setError(data.error || "Could not delete listing.");
       return;
     }
+    if (editingId === id) resetForm();
     setMessage("Listing deleted.");
     await load();
   }
@@ -261,69 +325,21 @@ export default function ListingsClient() {
       ) : null}
       {message ? <p className="text-sm text-brand-dark">{message}</p> : null}
 
-      <section className="space-y-3">
-        <h2 className="font-display text-lg font-semibold">Your listings</h2>
-        {listings.length === 0 ? (
-          <EmptyState
-            title="No listings yet"
-            description="Create your first property listing below. KYC-verified landlord or estate manager profiles only."
-          />
-        ) : (
-          <ul className="space-y-3">
-            {listings.map((l) => {
-              const img =
-                l.images.find((i) => i.isPrimary)?.url || l.images[0]?.url;
-              return (
-                <li key={l.id} className="app-card p-4 flex flex-col sm:flex-row gap-4">
-                  {img ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={img}
-                      alt=""
-                      className="h-28 w-full sm:w-36 rounded object-cover border border-border"
-                    />
-                  ) : (
-                    <div className="h-28 w-full sm:w-36 rounded bg-surface border border-border" />
-                  )}
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <p className="font-semibold truncate">{l.title}</p>
-                    <p className="text-sm text-muted">
-                      {l.address.city}, {l.address.state} · {l.listingType}
-                    </p>
-                    <p className="text-sm">{formatPrice(l.price)}</p>
-                    <p className="text-xs text-muted">
-                      {l.availabilityStatus} · verification: {l.verificationStatus}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2 items-start">
-                    {l.availabilityStatus === "draft" ? (
-                      <button
-                        type="button"
-                        className="app-btn app-btn-primary text-xs"
-                        disabled={busyId === l.id}
-                        onClick={() => void publish(l.id)}
-                      >
-                        Publish
-                      </button>
-                    ) : null}
-                    <button
-                      type="button"
-                      className="app-btn app-btn-secondary text-xs"
-                      disabled={busyId === l.id}
-                      onClick={() => void remove(l.id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
-
-      <form onSubmit={onCreate} className="app-card p-5 sm:p-6 space-y-4">
-        <h2 className="font-display text-lg font-semibold">New listing</h2>
+      <form onSubmit={onSubmit} className="app-card p-5 sm:p-6 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-display text-lg font-semibold">
+            {editingId ? "Edit listing" : "New listing"}
+          </h2>
+          {editingId ? (
+            <button
+              type="button"
+              className="app-btn app-btn-secondary text-xs"
+              onClick={resetForm}
+            >
+              Cancel edit
+            </button>
+          ) : null}
+        </div>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1.5">Type</label>
@@ -441,11 +457,39 @@ export default function ListingsClient() {
             placeholder="Wi‑Fi, Generator, Parking"
           />
         </div>
+        {existingImages.length ? (
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Current images</p>
+            <div className="flex flex-wrap gap-2">
+              {existingImages.map((img) => (
+                <div key={img.url} className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={img.url}
+                    alt=""
+                    className="h-20 w-28 rounded object-cover border border-border"
+                  />
+                  <button
+                    type="button"
+                    className="absolute -top-1 -right-1 rounded-full bg-navy text-sand text-[10px] px-1.5 py-0.5"
+                    onClick={() =>
+                      setExistingImages((prev) =>
+                        prev.filter((i) => i.url !== img.url)
+                      )
+                    }
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
         <ImageFilePicker
-          label="Property images"
+          label={editingId ? "Add more images" : "Property images"}
           value={imageFiles}
           onChange={setImageFiles}
-          helpText="Upload photos of the property. First image becomes the cover."
+          helpText="First image becomes the cover."
         />
         <label className="flex items-center gap-2 text-sm">
           <input
@@ -453,16 +497,110 @@ export default function ListingsClient() {
             checked={publishNow}
             onChange={(e) => setPublishNow(e.target.checked)}
           />
-          Submit for verification now (publish as available)
+          {editingId
+            ? "Submit for verification / mark available"
+            : "Submit for verification now (publish as available)"}
         </label>
         <button
           type="submit"
           disabled={submitting}
           className="app-btn app-btn-primary text-sm"
         >
-          {submitting ? "Saving…" : "Create listing"}
+          {submitting
+            ? "Saving…"
+            : editingId
+              ? "Update listing"
+              : "Create listing"}
         </button>
       </form>
+
+      <section className="space-y-3">
+        <h2 className="font-display text-lg font-semibold">Your listings</h2>
+        {listings.length === 0 ? (
+          <EmptyState
+            title="No listings yet"
+            description="Create your first property listing above. KYC-verified landlord or estate manager profiles only."
+          />
+        ) : (
+          <ul className="space-y-3">
+            {listings.map((l) => {
+              const img =
+                l.images.find((i) => i.isPrimary)?.url || l.images[0]?.url;
+              return (
+                <li
+                  key={l.id}
+                  className="app-card p-4 flex flex-col sm:flex-row gap-4"
+                >
+                  {img ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={img}
+                      alt=""
+                      className="h-28 w-full sm:w-36 rounded object-cover border border-border"
+                    />
+                  ) : (
+                    <div className="h-28 w-full sm:w-36 rounded bg-surface border border-border" />
+                  )}
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <p className="font-semibold truncate">{l.title}</p>
+                    <p className="text-sm text-muted">
+                      {l.address.city}, {l.address.state} · {l.listingType}
+                    </p>
+                    <p className="text-sm">{formatPrice(l.price)}</p>
+                    <p className="text-xs text-muted">
+                      {l.availabilityStatus} · verification:{" "}
+                      {l.verificationStatus}
+                    </p>
+                    <p className="text-[11px] text-muted font-mono truncate">
+                      ID: {l.id}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 items-start">
+                    <button
+                      type="button"
+                      className="app-btn app-btn-secondary text-xs"
+                      disabled={busyId === l.id}
+                      onClick={() => startEdit(l)}
+                    >
+                      Edit
+                    </button>
+                    {l.availabilityStatus === "draft" ? (
+                      <button
+                        type="button"
+                        className="app-btn app-btn-primary text-xs"
+                        disabled={busyId === l.id}
+                        onClick={() => void publish(l.id)}
+                      >
+                        Publish
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="app-btn app-btn-secondary text-xs"
+                      disabled={busyId === l.id}
+                      onClick={() => void remove(l.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
     </div>
+  );
+}
+
+export default function ListingsClient() {
+  return (
+    <RequireProfileTypes
+      types={["landlord", "estate_manager"]}
+      title="Listings are for landlords"
+      description="Switch to a landlord or estate manager profile to create and manage property listings."
+    >
+      <ListingsManager />
+    </RequireProfileTypes>
   );
 }

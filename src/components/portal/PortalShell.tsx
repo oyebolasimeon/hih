@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
@@ -11,6 +11,7 @@ import MobileNavDrawer from "@/components/ui/MobileNavDrawer";
 import { PageMotion } from "@/components/motion/Motion";
 import {
   PORTAL_NAV_LINKS,
+  canAccessPortalPath,
   filterPortalNav,
   type PortalNavLink,
 } from "@/lib/portal-nav";
@@ -18,9 +19,11 @@ import type { ProfileType } from "@/models/Profile";
 
 export default function PortalShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { data: session } = useSession();
   const [profileType, setProfileType] = useState<ProfileType | null>(null);
   const [profileLabel, setProfileLabel] = useState("");
+  const [profileReady, setProfileReady] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
@@ -32,7 +35,10 @@ export default function PortalShell({ children }: { children: React.ReactNode })
       try {
         const res = await fetch("/api/portal/profiles");
         const data = await res.json();
-        if (!res.ok) return;
+        if (!res.ok) {
+          setProfileReady(true);
+          return;
+        }
         const activeId = data.activeProfileId as string | null;
         const profiles = (data.profiles || []) as {
           id: string;
@@ -45,12 +51,24 @@ export default function PortalShell({ children }: { children: React.ReactNode })
           setProfileLabel(
             `${active.displayName} · ${active.type.replace("_", " ")}`
           );
+        } else {
+          setProfileType(null);
+          setProfileLabel("");
         }
       } catch {
         /* ignore */
+      } finally {
+        setProfileReady(true);
       }
     })();
   }, [pathname]);
+
+  useEffect(() => {
+    if (!profileReady) return;
+    if (!canAccessPortalPath(pathname, profileType)) {
+      router.replace("/portal");
+    }
+  }, [pathname, profileType, profileReady, router]);
 
   const links: PortalNavLink[] = filterPortalNav(PORTAL_NAV_LINKS, profileType);
   const drawerLinks = links.map(({ href, label, exact }) => ({

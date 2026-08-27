@@ -1,12 +1,21 @@
 import { NextResponse } from "next/server";
 import { assertUser } from "@/lib/api-auth";
 import { connectDB } from "@/lib/db";
+import { requireActiveProfile } from "@/lib/profile-context";
 import { MaintenanceRequest } from "@/models/MaintenanceRequest";
 import { Listing } from "@/models/Listing";
 
 export async function GET() {
   const { user, response } = await assertUser();
   if (response || !user) return response!;
+
+  const active = await requireActiveProfile(user.id, [
+    "landlord",
+    "estate_manager",
+  ]);
+  if (!active.ok) {
+    return NextResponse.json({ error: active.error }, { status: active.status });
+  }
 
   await connectDB();
   const ownedListings = await Listing.find({ ownerUserId: user.id })

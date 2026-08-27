@@ -3,10 +3,13 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import EmptyState from "@/components/ui/EmptyState";
 import { TableSkeleton } from "@/components/ui/Skeleton";
+import { useActiveProfile } from "@/hooks/useActiveProfile";
+import { useSession } from "next-auth/react";
 
 type RequestRow = {
   id: string;
   listingId: string;
+  requesterUserId?: string;
   title: string;
   description: string;
   priority: string;
@@ -23,6 +26,9 @@ type Insight = {
 };
 
 export default function MaintenanceClient() {
+  const { data: session } = useSession();
+  const { isLandlordLike, isTenantLike, loading: profileLoading } =
+    useActiveProfile();
   const [rows, setRows] = useState<RequestRow[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,6 +58,7 @@ export default function MaintenanceClient() {
     }
     setRows(rData.requests || []);
     if (iRes.ok) setInsights(iData.insights || []);
+    else setInsights([]);
   }, []);
 
   useEffect(() => {
@@ -95,7 +102,9 @@ export default function MaintenanceClient() {
     await load();
   }
 
-  if (loading) return <TableSkeleton rows={4} />;
+  if (loading || profileLoading) return <TableSkeleton rows={4} />;
+
+  const meId = session?.user?.id || "";
 
   return (
     <div className="space-y-6">
@@ -106,7 +115,7 @@ export default function MaintenanceClient() {
       ) : null}
       {message ? <p className="text-sm text-brand-dark">{message}</p> : null}
 
-      {insights.length > 0 ? (
+      {isLandlordLike && insights.length > 0 ? (
         <div className="space-y-2">
           <h2 className="font-semibold text-sm">Predictive insights</h2>
           <ul className="space-y-2">
@@ -123,57 +132,64 @@ export default function MaintenanceClient() {
         </div>
       ) : null}
 
-      <form onSubmit={onCreate} className="app-card p-4 sm:p-5 space-y-4 max-w-xl">
-        <h2 className="font-semibold">New maintenance request</h2>
-        <div>
-          <label className="block text-sm font-medium mb-1.5">Listing ID</label>
-          <input
-            className="app-input w-full"
-            value={listingId}
-            onChange={(e) => setListingId(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1.5">Title</label>
-          <input
-            className="app-input w-full"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1.5">Description</label>
-          <textarea
-            className="app-input w-full min-h-[80px]"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1.5">Priority</label>
-          <select
-            className="app-input w-full"
-            value={priority}
-            onChange={(e) =>
-              setPriority(e.target.value as "low" | "medium" | "high")
-            }
+      {(isTenantLike || isLandlordLike) ? (
+        <form onSubmit={onCreate} className="app-card p-4 sm:p-5 space-y-4 max-w-xl">
+          <h2 className="font-semibold">New maintenance request</h2>
+          <p className="text-xs text-muted">
+            {isLandlordLike
+              ? "Log facility issues on your listings."
+              : "Submit a repair request for a listing you rent."}
+          </p>
+          <div>
+            <label className="block text-sm font-medium mb-1.5">Listing ID</label>
+            <input
+              className="app-input w-full"
+              value={listingId}
+              onChange={(e) => setListingId(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1.5">Title</label>
+            <input
+              className="app-input w-full"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1.5">Description</label>
+            <textarea
+              className="app-input w-full min-h-[80px]"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1.5">Priority</label>
+            <select
+              className="app-input w-full"
+              value={priority}
+              onChange={(e) =>
+                setPriority(e.target.value as "low" | "medium" | "high")
+              }
+            >
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+          <button
+            type="submit"
+            disabled={saving}
+            className="app-btn app-btn-primary text-sm"
           >
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-          </select>
-        </div>
-        <button
-          type="submit"
-          disabled={saving}
-          className="app-btn app-btn-primary text-sm"
-        >
-          {saving ? "Submitting…" : "Submit request"}
-        </button>
-      </form>
+            {saving ? "Submitting…" : "Submit request"}
+          </button>
+        </form>
+      ) : null}
 
       {rows.length === 0 ? (
         <EmptyState
@@ -182,32 +198,42 @@ export default function MaintenanceClient() {
         />
       ) : (
         <ul className="space-y-3">
-          {rows.map((r) => (
-            <li key={r.id} className="app-card p-4 space-y-2">
-              <div className="flex flex-wrap justify-between gap-2">
-                <div>
-                  <p className="font-medium">{r.title}</p>
-                  <p className="text-xs text-muted mt-1">
-                    {r.listingTitle || r.listingId} · {r.priority} · {r.status}
-                    {r.assignee ? ` · ${r.assignee}` : ""}
-                  </p>
+          {rows.map((r) => {
+            const canManageStatus = isLandlordLike;
+            return (
+              <li key={r.id} className="app-card p-4 space-y-2">
+                <div className="flex flex-wrap justify-between gap-2">
+                  <div>
+                    <p className="font-medium">{r.title}</p>
+                    <p className="text-xs text-muted mt-1">
+                      {r.listingTitle || r.listingId} · {r.priority} · {r.status}
+                      {r.assignee ? ` · ${r.assignee}` : ""}
+                      {r.requesterUserId === meId ? " · you reported" : ""}
+                    </p>
+                  </div>
+                  {canManageStatus ? (
+                    <select
+                      className="app-input text-xs w-auto"
+                      value={r.status}
+                      onChange={(e) => void updateStatus(r.id, e.target.value)}
+                    >
+                      <option value="open">open</option>
+                      <option value="assigned">assigned</option>
+                      <option value="in_progress">in_progress</option>
+                      <option value="done">done</option>
+                    </select>
+                  ) : (
+                    <span className="text-xs uppercase tracking-wider font-semibold text-muted">
+                      {r.status}
+                    </span>
+                  )}
                 </div>
-                <select
-                  className="app-input text-xs w-auto"
-                  value={r.status}
-                  onChange={(e) => void updateStatus(r.id, e.target.value)}
-                >
-                  <option value="open">open</option>
-                  <option value="assigned">assigned</option>
-                  <option value="in_progress">in_progress</option>
-                  <option value="done">done</option>
-                </select>
-              </div>
-              <p className="text-sm text-muted whitespace-pre-wrap">
-                {r.description}
-              </p>
-            </li>
-          ))}
+                <p className="text-sm text-muted whitespace-pre-wrap">
+                  {r.description}
+                </p>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

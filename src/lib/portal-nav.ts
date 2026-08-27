@@ -78,3 +78,31 @@ export function filterPortalNav(
   }
   return links.filter((l) => !l.forTypes || l.forTypes.includes(profileType));
 }
+
+/** Returns restricted profile types for a path, or null if open to all active profiles. */
+export function allowedTypesForPath(pathname: string): ProfileType[] | null {
+  const matches = PORTAL_NAV_LINKS.filter(
+    (l) =>
+      l.href !== "/portal" &&
+      (pathname === l.href || pathname.startsWith(`${l.href}/`))
+  ).sort((a, b) => b.href.length - a.href.length);
+
+  const exact = PORTAL_NAV_LINKS.find(
+    (l) => l.exact && pathname === l.href
+  );
+  if (exact) return exact.forTypes || null;
+
+  const best = matches[0];
+  if (!best) return null;
+  return best.forTypes || null;
+}
+
+export function canAccessPortalPath(
+  pathname: string,
+  profileType: ProfileType | null
+): boolean {
+  const allowed = allowedTypesForPath(pathname);
+  if (!allowed) return true;
+  if (!profileType) return false;
+  return allowed.includes(profileType);
+}

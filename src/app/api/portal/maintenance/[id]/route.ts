@@ -5,6 +5,7 @@ import { assertUser } from "@/lib/api-auth";
 import { connectDB } from "@/lib/db";
 import { MaintenanceRequest } from "@/models/MaintenanceRequest";
 import { Listing } from "@/models/Listing";
+import { requireActiveProfile } from "@/lib/profile-context";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -17,6 +18,14 @@ const patchSchema = z.object({
 export async function PATCH(req: Request, ctx: Ctx) {
   const { user, response } = await assertUser();
   if (response || !user) return response!;
+
+  const gate = await requireActiveProfile(user.id, [
+    "landlord",
+    "estate_manager",
+  ]);
+  if (!gate.ok) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
 
   const { id } = await ctx.params;
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -42,9 +51,11 @@ export async function PATCH(req: Request, ctx: Ctx) {
     .select("ownerUserId title")
     .lean();
   const isOwner = listing && String(listing.ownerUserId) === user.id;
-  const isRequester = String(request.requesterUserId) === user.id;
-  if (!isOwner && !isRequester) {
-    return NextResponse.json({ error: "Forbidden." }, { status: 403 });
+  if (!isOwner) {
+    return NextResponse.json(
+      { error: "Only the listing owner can update maintenance status." },
+      { status: 403 }
+    );
   }
 
   if (parsed.data.status !== undefined) request.status = parsed.data.status;

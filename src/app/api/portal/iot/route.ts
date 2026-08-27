@@ -26,7 +26,11 @@ export async function GET() {
   const { user, response } = await assertUser();
   if (response || !user) return response!;
 
-  const active = await requireActiveProfile(user.id);
+  const active = await requireActiveProfile(user.id, [
+    "landlord",
+    "estate_manager",
+    "tenant",
+  ]);
   if (!active.ok) {
     return NextResponse.json({ error: active.error }, { status: active.status });
   }
@@ -58,7 +62,6 @@ export async function POST(req: Request) {
   const active = await requireActiveProfile(user.id, [
     "landlord",
     "estate_manager",
-    "tenant",
   ]);
   if (!active.ok) {
     return NextResponse.json({ error: active.error }, { status: active.status });
@@ -85,6 +88,12 @@ export async function POST(req: Request) {
     const listing = await Listing.findById(parsed.data.listingId).lean();
     if (!listing) {
       return NextResponse.json({ error: "Listing not found." }, { status: 404 });
+    }
+    if (String(listing.ownerUserId) !== user.id) {
+      return NextResponse.json(
+        { error: "You can only attach devices to your own listings." },
+        { status: 403 }
+      );
     }
   }
 

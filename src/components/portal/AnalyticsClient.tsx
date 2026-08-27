@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import EmptyState from "@/components/ui/EmptyState";
 import StatCard from "@/components/ui/StatCard";
 import { StatCardsSkeleton } from "@/components/ui/Skeleton";
+import RequireProfileTypes from "@/components/portal/RequireProfileTypes";
 
 type Analytics = {
   listingsByStatus: Record<string, number>;
@@ -16,7 +17,7 @@ type Analytics = {
   currency: string;
 };
 
-export default function AnalyticsClient() {
+function AnalyticsDashboard() {
   const [data, setData] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -101,5 +102,17 @@ export default function AnalyticsClient() {
         </ul>
       </div>
     </div>
+  );
+}
+
+export default function AnalyticsClient() {
+  return (
+    <RequireProfileTypes
+      types={["landlord", "estate_manager"]}
+      title="Analytics unavailable"
+      description="Switch to a landlord or estate manager profile to view estate insights."
+    >
+      <AnalyticsDashboard />
+    </RequireProfileTypes>
   );
 }

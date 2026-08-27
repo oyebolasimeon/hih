@@ -3,6 +3,8 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import EmptyState from "@/components/ui/EmptyState";
 import { TableSkeleton } from "@/components/ui/Skeleton";
+import RequireProfileTypes from "@/components/portal/RequireProfileTypes";
+import { useActiveProfile } from "@/hooks/useActiveProfile";
 
 type Device = {
   id: string;
@@ -14,7 +16,8 @@ type Device = {
   lastTelemetry: Record<string, unknown> | null;
 };
 
-export default function IoTClient() {
+function IoTManager() {
+  const { isLandlordLike } = useActiveProfile();
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -98,55 +101,70 @@ export default function IoTClient() {
       ) : null}
       {message ? <p className="text-sm text-brand-dark">{message}</p> : null}
 
-      <form onSubmit={onCreate} className="app-card p-4 sm:p-5 space-y-4 max-w-xl">
-        <h2 className="font-semibold">Pair a device</h2>
-        <div>
-          <label className="block text-sm font-medium mb-1.5">Name</label>
-          <input
-            className="app-input w-full"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Front door lock"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1.5">Type</label>
-          <select
-            className="app-input w-full"
-            value={type}
-            onChange={(e) =>
-              setType(e.target.value as "lock" | "meter" | "sensor")
-            }
+      {isLandlordLike ? (
+        <form onSubmit={onCreate} className="app-card p-4 sm:p-5 space-y-4 max-w-xl">
+          <h2 className="font-semibold">Pair a device</h2>
+          <p className="text-xs text-muted">
+            Only landlords and estate managers can register devices. Tenants can
+            control devices linked to their profile.
+          </p>
+          <div>
+            <label className="block text-sm font-medium mb-1.5">Name</label>
+            <input
+              className="app-input w-full"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Front door lock"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1.5">Type</label>
+            <select
+              className="app-input w-full"
+              value={type}
+              onChange={(e) =>
+                setType(e.target.value as "lock" | "meter" | "sensor")
+              }
+            >
+              <option value="lock">Lock</option>
+              <option value="meter">Meter</option>
+              <option value="sensor">Sensor</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1.5">
+              Listing ID (optional)
+            </label>
+            <input
+              className="app-input w-full"
+              value={listingId}
+              onChange={(e) => setListingId(e.target.value)}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={saving}
+            className="app-btn app-btn-primary text-sm"
           >
-            <option value="lock">Lock</option>
-            <option value="meter">Meter</option>
-            <option value="sensor">Sensor</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1.5">
-            Listing ID (optional)
-          </label>
-          <input
-            className="app-input w-full"
-            value={listingId}
-            onChange={(e) => setListingId(e.target.value)}
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={saving}
-          className="app-btn app-btn-primary text-sm"
-        >
-          {saving ? "Adding…" : "Add device"}
-        </button>
-      </form>
+            {saving ? "Adding…" : "Add device"}
+          </button>
+        </form>
+      ) : (
+        <p className="text-sm text-muted">
+          Control paired locks and meters below. Device pairing is managed by
+          your landlord or estate manager.
+        </p>
+      )}
 
       {devices.length === 0 ? (
         <EmptyState
           title="No IoT devices"
-          description="Pair smart locks, meters, or sensors for mock telemetry and commands."
+          description={
+            isLandlordLike
+              ? "Pair smart locks, meters, or sensors for mock telemetry and commands."
+              : "No devices are linked to your profile yet."
+          }
         />
       ) : (
         <ul className="space-y-3">
@@ -202,5 +220,17 @@ export default function IoTClient() {
         </ul>
       )}
     </div>
+  );
+}
+
+export default function IoTClient() {
+  return (
+    <RequireProfileTypes
+      types={["landlord", "estate_manager", "tenant"]}
+      title="IoT unavailable"
+      description="Switch to a landlord, estate manager, or tenant profile to manage smart devices."
+    >
+      <IoTManager />
+    </RequireProfileTypes>
   );
 }

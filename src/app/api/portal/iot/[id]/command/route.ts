@@ -16,7 +16,11 @@ export async function POST(req: Request, ctx: Ctx) {
   const { user, response } = await assertUser();
   if (response || !user) return response!;
 
-  const active = await requireActiveProfile(user.id);
+  const active = await requireActiveProfile(user.id, [
+    "landlord",
+    "estate_manager",
+    "tenant",
+  ]);
   if (!active.ok) {
     return NextResponse.json({ error: active.error }, { status: active.status });
   }

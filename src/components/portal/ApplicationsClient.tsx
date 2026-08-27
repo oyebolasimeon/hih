@@ -4,6 +4,8 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import EmptyState from "@/components/ui/EmptyState";
 import { TableSkeleton } from "@/components/ui/Skeleton";
+import { useActiveProfile } from "@/hooks/useActiveProfile";
+import { useSession } from "next-auth/react";
 
 type ApplicationRow = {
   id: string;
@@ -26,6 +28,9 @@ type ApplicationRow = {
 
 export default function ApplicationsClient() {
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
+  const { isLandlordLike, isTenantLike, loading: profileLoading } =
+    useActiveProfile();
   const [rows, setRows] = useState<ApplicationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -111,7 +116,11 @@ export default function ApplicationsClient() {
     await load();
   }
 
-  if (loading) return <TableSkeleton rows={4} />;
+  if (loading || profileLoading) return <TableSkeleton rows={4} />;
+
+  const myUserId = session?.user?.id || "";
+  const outgoing = rows.filter((a) => a.applicantUserId === myUserId);
+  const incoming = rows.filter((a) => a.applicantUserId !== myUserId);
 
   return (
     <div className="space-y-6">
@@ -122,110 +131,165 @@ export default function ApplicationsClient() {
       ) : null}
       {message ? <p className="text-sm text-brand-dark">{message}</p> : null}
 
-      <form onSubmit={onApply} className="app-card p-4 sm:p-5 space-y-4 max-w-xl">
-        <h2 className="font-semibold">Apply to a listing</h2>
-        <p className="text-xs text-muted">
-          Use a verified tenant or student profile. Paste the listing ID from
-          search or a listing detail page.
-        </p>
-        <div>
-          <label className="block text-sm font-medium mb-1.5">Listing ID</label>
-          <input
-            className="app-input w-full"
-            value={listingId}
-            onChange={(e) => setListingId(e.target.value)}
-            required
-            placeholder="Mongo ObjectId"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1.5">Message</label>
-          <textarea
-            className="app-input w-full min-h-[80px]"
-            value={applyMessage}
-            onChange={(e) => setApplyMessage(e.target.value)}
-            placeholder="Introduce yourself to the landlord"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={submitting}
-          className="app-btn app-btn-primary text-sm"
-        >
-          {submitting ? "Submitting…" : "Submit application"}
-        </button>
-      </form>
+      {isTenantLike ? (
+        <form onSubmit={onApply} className="app-card p-4 sm:p-5 space-y-4 max-w-xl">
+          <h2 className="font-semibold">Apply to a listing</h2>
+          <p className="text-xs text-muted">
+            Use a verified tenant or student profile. Listing ID comes from
+            search or a listing detail page.
+          </p>
+          <div>
+            <label className="block text-sm font-medium mb-1.5">Listing ID</label>
+            <input
+              className="app-input w-full"
+              value={listingId}
+              onChange={(e) => setListingId(e.target.value)}
+              required
+              placeholder="Listing ID"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1.5">Message</label>
+            <textarea
+              className="app-input w-full min-h-[80px]"
+              value={applyMessage}
+              onChange={(e) => setApplyMessage(e.target.value)}
+              placeholder="Introduce yourself to the landlord"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="app-btn app-btn-primary text-sm"
+          >
+            {submitting ? "Submitting…" : "Submit application"}
+          </button>
+        </form>
+      ) : null}
 
-      {rows.length === 0 ? (
-        <EmptyState
-          title="No applications yet"
-          description="Apply to a listing or wait for tenant applications on your properties."
-        />
-      ) : (
-        <ul className="space-y-3">
-          {rows.map((a) => (
-            <li key={a.id} className="app-card p-4 sm:p-5 space-y-3">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                  <p className="font-medium">
-                    {a.listing?.title || "Listing"} · {a.status}
-                  </p>
-                  <p className="text-xs text-muted mt-1">
-                    {[a.listing?.city, a.listing?.state].filter(Boolean).join(", ")}
-                    {a.listing?.price
-                      ? ` · ${a.listing.price.currency} ${a.listing.price.amount.toLocaleString()}/${a.listing.price.period}`
-                      : ""}
-                  </p>
-                </div>
-                <p className="text-xs text-muted">
-                  {new Date(a.createdAt).toLocaleString()}
-                </p>
-              </div>
-              {a.message ? (
-                <p className="text-sm text-muted">{a.message}</p>
-              ) : null}
-              {a.landlordNotes ? (
-                <p className="text-xs text-muted">
-                  Landlord notes: {a.landlordNotes}
-                </p>
-              ) : null}
-              {["submitted", "under_review"].includes(a.status) ? (
-                <div className="space-y-2 border-t border-border pt-3">
-                  <input
-                    className="app-input w-full text-sm"
-                    placeholder="Notes (optional)"
-                    value={notes[a.id] || ""}
-                    onChange={(e) =>
-                      setNotes({ ...notes, [a.id]: e.target.value })
-                    }
-                  />
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      disabled={busyId === a.id}
-                      onClick={() => void review(a.id, "approved")}
-                      className="app-btn app-btn-primary text-xs"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busyId === a.id}
-                      onClick={() => void review(a.id, "rejected")}
-                      className="app-btn app-btn-secondary text-xs"
-                    >
-                      Reject
-                    </button>
+      {isLandlordLike ? (
+        <>
+          <h2 className="font-semibold">Incoming applications</h2>
+          {incoming.length === 0 ? (
+            <EmptyState
+              title="No applications yet"
+              description="When tenants apply to your listings, they will appear here for review."
+            />
+          ) : (
+            <ul className="space-y-3">
+              {incoming.map((a) => (
+                <li key={a.id} className="app-card p-4 sm:p-5 space-y-3">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="font-medium">
+                        {a.listing?.title || "Listing"} · {a.status}
+                      </p>
+                      <p className="text-xs text-muted mt-1">
+                        {[a.listing?.city, a.listing?.state]
+                          .filter(Boolean)
+                          .join(", ")}
+                        {a.listing?.price
+                          ? ` · ${a.listing.price.currency} ${a.listing.price.amount.toLocaleString()}/${a.listing.price.period}`
+                          : ""}
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted">
+                      {new Date(a.createdAt).toLocaleString()}
+                    </p>
                   </div>
-                  <p className="text-xs text-muted">
-                    Approve/reject only works if you own the landlord profile.
-                  </p>
-                </div>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      )}
+                  {a.message ? (
+                    <p className="text-sm text-muted">{a.message}</p>
+                  ) : null}
+                  {a.landlordNotes ? (
+                    <p className="text-xs text-muted">
+                      Notes: {a.landlordNotes}
+                    </p>
+                  ) : null}
+                  {["submitted", "under_review"].includes(a.status) ? (
+                    <div className="space-y-2 border-t border-border pt-3">
+                      <input
+                        className="app-input w-full text-sm"
+                        placeholder="Notes (optional)"
+                        value={notes[a.id] || ""}
+                        onChange={(e) =>
+                          setNotes({ ...notes, [a.id]: e.target.value })
+                        }
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          disabled={busyId === a.id}
+                          onClick={() => void review(a.id, "approved")}
+                          className="app-btn app-btn-primary text-xs"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busyId === a.id}
+                          onClick={() => void review(a.id, "rejected")}
+                          className="app-btn app-btn-secondary text-xs"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      ) : null}
+
+      {isTenantLike ? (
+        <>
+          <h2 className="font-semibold">Your applications</h2>
+          {outgoing.length === 0 ? (
+            <EmptyState
+              title="No applications yet"
+              description="Apply to a listing above to get started."
+            />
+          ) : (
+            <ul className="space-y-3">
+              {outgoing.map((a) => (
+                <li key={a.id} className="app-card p-4 sm:p-5 space-y-2">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="font-medium">
+                        {a.listing?.title || "Listing"} · {a.status}
+                      </p>
+                      <p className="text-xs text-muted mt-1">
+                        {[a.listing?.city, a.listing?.state]
+                          .filter(Boolean)
+                          .join(", ")}
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted">
+                      {new Date(a.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  {a.message ? (
+                    <p className="text-sm text-muted">{a.message}</p>
+                  ) : null}
+                  {a.landlordNotes ? (
+                    <p className="text-xs text-muted">
+                      Landlord notes: {a.landlordNotes}
+                    </p>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      ) : null}
+
+      {!isTenantLike && !isLandlordLike ? (
+        <EmptyState
+          title="Select a profile"
+          description="Switch to a tenant/student profile to apply, or a landlord/estate manager profile to review applications."
+        />
+      ) : null}
     </div>
   );
 }
