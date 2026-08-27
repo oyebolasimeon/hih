@@ -7,7 +7,6 @@ import { KycSubmission, type IKycCheck } from "@/models/KycSubmission";
 import { requirementsForProfile } from "@/lib/kyc-requirements";
 import {
   maskId,
-  verifyBvnWithFace,
   verifyCacBasic,
   verifyNinWithFace,
 } from "@/lib/prembly";
@@ -21,11 +20,6 @@ const submitSchema = z.object({
     .regex(/^\d{11}$/, "NIN must be 11 digits"),
   selfieUrl: z.string().url(),
   selfiePublicId: z.string().optional(),
-  bvn: z
-    .string()
-    .trim()
-    .regex(/^\d{11}$/, "BVN must be 11 digits")
-    .optional(),
   cac: z
     .object({
       rcNumber: z.string().trim().min(2).max(32),
@@ -121,9 +115,6 @@ export async function POST(req: Request) {
   }
 
   const reqs = requirementsForProfile(profile.type);
-  if (reqs.some((r) => r.type === "bvn_face") && !parsed.data.bvn) {
-    return NextResponse.json({ error: "BVN is required for landlords." }, { status: 400 });
-  }
   if (reqs.some((r) => r.type === "cac") && !parsed.data.cac) {
     return NextResponse.json(
       { error: "CAC / RC details are required for estate managers." },
@@ -179,37 +170,7 @@ export async function POST(req: Request) {
     });
   }
 
-  // 2) BVN + face (landlord)
-  if (parsed.data.bvn) {
-    try {
-      const bvnResult = await verifyBvnWithFace({
-        bvn: parsed.data.bvn,
-        imageUrlOrBase64: parsed.data.selfieUrl,
-      });
-      checks.push({
-        type: "bvn_face",
-        status: bvnResult.ok ? "passed" : "failed",
-        provider: "prembly",
-        reference: bvnResult.reference,
-        message: bvnResult.message,
-        confidence: bvnResult.confidence,
-        faceMatched: bvnResult.faceMatched,
-        identity: bvnResult.identity,
-        raw: bvnResult.raw,
-        checkedAt: new Date(),
-      });
-    } catch (err) {
-      checks.push({
-        type: "bvn_face",
-        status: "failed",
-        provider: "prembly",
-        message: err instanceof Error ? err.message : "BVN verification error",
-        checkedAt: new Date(),
-      });
-    }
-  }
-
-  // 3) CAC (estate manager)
+  // 2) CAC (estate manager)
   if (parsed.data.cac) {
     try {
       const cacResult = await verifyCacBasic({
@@ -251,7 +212,7 @@ export async function POST(req: Request) {
     }
   }
 
-  // 4) Student ID — always manual
+  // 3) Student ID — always manual
   const documents = [];
   if (parsed.data.student) {
     documents.push({
@@ -300,7 +261,6 @@ export async function POST(req: Request) {
   }
 
   profile.ninMasked = maskId(parsed.data.nin);
-  if (parsed.data.bvn) profile.bvnMasked = maskId(parsed.data.bvn);
   if (verifiedName) {
     profile.kycVerifiedName = verifiedName;
     if (!profile.displayName || profile.displayName === user.name) {

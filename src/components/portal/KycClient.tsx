@@ -45,7 +45,6 @@ export default function KycClient() {
   const [loading, setLoading] = useState(true);
   const [profileId, setProfileId] = useState(presetProfileId);
   const [nin, setNin] = useState("");
-  const [bvn, setBvn] = useState("");
   const [rcNumber, setRcNumber] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [companyType, setCompanyType] = useState<"RC" | "BN" | "IT">("RC");
@@ -125,9 +124,6 @@ export default function KycClient() {
         selfiePublicId: selfie.publicId,
       };
 
-      if (selected.type === "landlord") {
-        payload.bvn = bvn.replace(/\D/g, "");
-      }
       if (selected.type === "estate_manager") {
         payload.cac = {
           rcNumber: rcNumber.trim(),
@@ -171,7 +167,6 @@ export default function KycClient() {
         );
       }
       setNin("");
-      setBvn("");
       setSelfieFiles([]);
       setStudentIdFiles([]);
       await load();
@@ -222,7 +217,6 @@ export default function KycClient() {
         {selected ? (
           <p className="text-xs text-muted">
             Required: NIN + selfie via Prembly
-            {selected.type === "landlord" ? "; BVN + selfie" : ""}
             {selected.type === "estate_manager" ? "; CAC / RC lookup" : ""}
             {selected.type === "student"
               ? "; student ID upload (manual Ops review)"
@@ -243,21 +237,6 @@ export default function KycClient() {
             required
           />
         </div>
-
-        {selected?.type === "landlord" ? (
-          <div>
-            <label className="block text-sm font-medium mb-1.5">BVN (11 digits)</label>
-            <input
-              className="app-input w-full"
-              inputMode="numeric"
-              maxLength={11}
-              value={bvn}
-              onChange={(e) => setBvn(e.target.value.replace(/\D/g, "").slice(0, 11))}
-              placeholder="Bank Verification Number"
-              required
-            />
-          </div>
-        ) : null}
 
         {selected?.type === "estate_manager" ? (
           <div className="space-y-3">
@@ -330,7 +309,7 @@ export default function KycClient() {
           multiple={false}
           value={selfieFiles}
           onChange={setSelfieFiles}
-          helpText="Face forward, good lighting. Used for Prembly NIN (and BVN) face match."
+          helpText="Face forward, good lighting. Used for Prembly NIN face match."
         />
 
         <button

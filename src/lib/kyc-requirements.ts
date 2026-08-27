@@ -8,7 +8,7 @@ export type KycRequirement = {
   required: boolean;
 };
 
-/** Recommended MVP: NIN+face all; BVN landlords; CAC estate managers; student ID manual */
+/** NIN+face all; CAC estate managers; student ID manual */
 export function requirementsForProfile(type: ProfileType): KycRequirement[] {
   const base: KycRequirement[] = [
     {
@@ -18,15 +18,6 @@ export function requirementsForProfile(type: ProfileType): KycRequirement[] {
       required: true,
     },
   ];
-
-  if (type === "landlord") {
-    base.push({
-      type: "bvn_face",
-      label: "BVN + selfie (Prembly)",
-      provider: "prembly",
-      required: true,
-    });
-  }
 
   if (type === "estate_manager") {
     base.push({

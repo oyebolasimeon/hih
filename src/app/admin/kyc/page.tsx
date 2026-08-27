@@ -17,7 +17,7 @@ export default async function AdminKycPage() {
           KYC Review
         </h1>
         <p className="mt-1 text-sm text-muted max-w-2xl">
-          Prembly auto-verifies NIN/BVN/CAC with face match. Approve or reject
+          Prembly auto-verifies NIN and CAC with face match. Approve or reject
           cases that still need Ops review (e.g. student ID).
         </p>
       </div>
