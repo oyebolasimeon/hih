@@ -9,8 +9,8 @@ function apiKey() {
   return process.env.VTPASS_API_KEY || "";
 }
 
-function publicKey() {
-  return process.env.VTPASS_PUBLIC_KEY || "";
+function secretKey() {
+  return process.env.VTPASS_SECRET_KEY || process.env.VTPASS_PUBLIC_KEY || "";
 }
 
 function baseUrl() {
@@ -24,7 +24,7 @@ function baseUrl() {
 }
 
 export function vtpassConfigured() {
-  return Boolean(apiKey() && publicKey());
+  return Boolean(apiKey() && secretKey());
 }
 
 export function vtpassMockMode() {
@@ -35,9 +35,12 @@ export function vtpassMockMode() {
   );
 }
 
-function authHeader() {
-  const token = Buffer.from(`${apiKey()}:${publicKey()}`).toString("base64");
-  return `Basic ${token}`;
+function vtpassHeaders() {
+  return {
+    "api-key": apiKey(),
+    "secret-key": secretKey(),
+    "Content-Type": "application/json",
+  };
 }
 
 /** VTpass request_id — Africa/Lagos datetime + suffix */
@@ -74,10 +77,7 @@ async function vtpassPost(path: string, body: Record<string, unknown>) {
 
   const res = await fetch(`${baseUrl()}${path}`, {
     method: "POST",
-    headers: {
-      Authorization: authHeader(),
-      "Content-Type": "application/json",
-    },
+    headers: vtpassHeaders(),
     body: JSON.stringify(body),
   });
   const data = (await res.json()) as VtpassResponse & {
