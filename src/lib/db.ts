@@ -24,6 +24,22 @@ const cached: MongooseCache = global.mongooseCache ?? {
 
 global.mongooseCache = cached;
 
+export function isDbConnectionError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  const name = err instanceof Error ? err.name : "";
+  return (
+    name === "MongooseServerSelectionError" ||
+    name === "MongoServerSelectionError" ||
+    /Server selection timed out|ReplicaSetNoPrimary|Could not connect|whitelist|ECONNREFUSED|MONGODB_URI/i.test(
+      msg
+    )
+  );
+}
+
+export function dbConnectionErrorMessage() {
+  return "Database is temporarily unavailable. If you use MongoDB Atlas, ensure the cluster is running (not paused) and your current IP is allowed under Network Access, then try again.";
+}
+
 export async function connectDB() {
   if (cached.conn) {
     const state = cached.conn.connection.readyState;
@@ -40,11 +56,18 @@ export async function connectDB() {
   }
 
   if (!cached.promise) {
+    const serverSelectionTimeoutMS = Number(
+      process.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS || 15_000
+    );
     cached.promise = mongoose
       .connect(MONGODB_URI, {
         bufferCommands: false,
-        serverSelectionTimeoutMS: 5_000,
-        connectTimeoutMS: 5_000,
+        serverSelectionTimeoutMS,
+        connectTimeoutMS: Number(
+          process.env.MONGODB_CONNECT_TIMEOUT_MS || serverSelectionTimeoutMS
+        ),
+        socketTimeoutMS: 45_000,
+        maxPoolSize: 10,
       })
       .then((conn) => conn)
       .catch((err) => {

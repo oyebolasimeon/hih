@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import mongoose from "mongoose";
 import { assertUser } from "@/lib/api-auth";
-import { connectDB } from "@/lib/db";
+import { connectDB, dbConnectionErrorMessage, isDbConnectionError } from "@/lib/db";
 import { actorFromUser, writeAudit } from "@/lib/audit";
 import { saveWalletBankDetails } from "@/lib/wallet";
 import { paystackListBanks } from "@/lib/paystack";
@@ -46,9 +46,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid profile." }, { status: 400 });
   }
 
-  await connectDB();
-
   try {
+    await connectDB();
+
     const wallet = await saveWalletBankDetails({
       profileId: new mongoose.Types.ObjectId(parsed.data.profileId),
       userId: user.id,
@@ -86,6 +86,13 @@ export async function POST(req: Request) {
       },
     });
   } catch (err) {
+    if (isDbConnectionError(err)) {
+      console.error("wallet/bank DB error:", err);
+      return NextResponse.json(
+        { error: dbConnectionErrorMessage() },
+        { status: 503 }
+      );
+    }
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Could not save bank account." },
       { status: 400 }

@@ -119,10 +119,12 @@ export async function paystackListBanks() {
   if (!res.ok || !data.status) {
     throw new Error(data.message || "Could not load banks.");
   }
-  return (data.data as PaystackBank[]).map((b) => ({
-    name: b.name,
-    code: b.code,
-  }));
+  const byCode = new Map<string, PaystackBank>();
+  for (const bank of data.data as PaystackBank[]) {
+    if (!bank.code || byCode.has(bank.code)) continue;
+    byCode.set(bank.code, { name: bank.name, code: bank.code });
+  }
+  return [...byCode.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function paystackCreateRecipient(input: {
