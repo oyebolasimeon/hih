@@ -240,24 +240,24 @@ export async function POST(
   const { renderTemplateString, htmlToPlainText } = await import(
     "@/lib/email-templates"
   );
+  const { emailBaseVars, resolveBrandedEmailHtml } = await import(
+    "@/lib/email-layout"
+  );
   const appUrl = (process.env.AUTH_URL || "http://localhost:3000").replace(
     /\/$/,
     ""
   );
-  const vars = {
+  const vars = emailBaseVars({
     name: user.name || "Investor",
     email: user.email,
-    appUrl,
-    loginUrl: `${appUrl}/login`,
-    portalUrl: `${appUrl}/portal`,
-    adminUrl: `${appUrl}/admin`,
     resetUrl: `${appUrl}/reset-password?token=preview-token`,
+    verifyUrl: `${appUrl}/verify-email?token=preview-token`,
     role: "admin",
-    year: new Date().getFullYear(),
-  };
+  });
 
   const subject = renderTemplateString(doc.subject, vars);
-  const html = renderTemplateString(doc.html, vars);
+  const innerHtml = renderTemplateString(doc.html, vars);
+  const html = resolveBrandedEmailHtml(innerHtml, vars);
   const text = htmlToPlainText(html);
 
   if (parsed.data.send) {

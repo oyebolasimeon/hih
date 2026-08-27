@@ -2,6 +2,11 @@ import { connectDB } from "@/lib/db";
 import { Profile, type IProfile, type ProfileType } from "@/models/Profile";
 import { User } from "@/models/User";
 import { Notification } from "@/models/Notification";
+import {
+  buildBrandedEmail,
+  notificationEmailBody,
+} from "@/lib/email-layout";
+import { htmlToPlainText } from "@/lib/email-templates";
 import { sendMail } from "@/lib/mail";
 
 export async function getActiveProfile(userId: string) {
@@ -87,15 +92,22 @@ export async function notifyUser(input: {
 
   if (input.email?.to) {
     try {
+      const user = await User.findById(input.userId).select("name email").lean();
+      const inner = notificationEmailBody({
+        body: input.body,
+        name: user?.name || undefined,
+        link: input.link,
+      });
+      const html = buildBrandedEmail(inner, {
+        name: user?.name || "",
+        email: user?.email || input.email.to,
+      });
+      const text = htmlToPlainText(html);
       await sendMail({
         to: input.email.to,
         subject: input.email.subject || input.title,
-        text: input.body + (input.link ? `\n\n${process.env.AUTH_URL || ""}${input.link}` : ""),
-        html: `<p>${input.body}</p>${
-          input.link
-            ? `<p><a href="${(process.env.AUTH_URL || "").replace(/\/$/, "")}${input.link}">Open in House In Hand</a></p>`
-            : ""
-        }`,
+        html,
+        text,
       });
     } catch (err) {
       console.error("notify email failed:", err);

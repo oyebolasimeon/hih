@@ -8,7 +8,8 @@ import {
   otpSet,
   phoneOtpDeliveryChannel,
 } from "@/lib/otp-store";
-import { sendMail } from "@/lib/mail";
+import { sendBrandedMail } from "@/lib/mail";
+import { escapeHtml } from "@/lib/email-templates";
 import { User } from "@/models/User";
 
 const sendSchema = z.object({
@@ -60,11 +61,15 @@ export async function POST(req: Request) {
       );
     }
     try {
-      await sendMail({
+      await sendBrandedMail({
         to: dbUser.email,
         subject: "Your House In Hand phone verification code",
-        text: `Your verification code for ${phone} is ${otp}. It expires in 10 minutes.`,
-        html: `<p>Your verification code for <strong>${phone}</strong> is:</p><p style="font-size:24px;letter-spacing:4px"><strong>${otp}</strong></p><p>Expires in 10 minutes.</p><p style="color:#666;font-size:12px">SMS is not configured; OTP was sent by email.</p>`,
+        htmlBody: `
+<p>Your verification code for <strong>${escapeHtml(phone)}</strong> is:</p>
+<p style="font-size:28px;letter-spacing:6px;font-weight:700;color:#0B1F3A;margin:16px 0;">${escapeHtml(otp)}</p>
+<p>This code expires in 10 minutes.</p>
+<p style="color:#5A6A7D;font-size:13px;margin-top:20px;">SMS is not configured on this environment, so we sent the code to your account email instead.</p>
+`.trim(),
       });
     } catch (err) {
       console.error("phone otp email failed:", err);

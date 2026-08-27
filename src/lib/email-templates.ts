@@ -79,12 +79,9 @@ export function htmlToPlainText(html: string): string {
 }
 
 export const BUILTIN_DEFAULT_HTML = `
-  <div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0c0d0b;">
-    <p>Hi {{name}},</p>
-    <p>This is a message from House In Hand.</p>
-    <p><a href="{{loginUrl}}" style="color:#008585;">Sign in to your account</a></p>
-    <p>— House In Hand</p>
-  </div>
+  <p>Hi {{name}},</p>
+  <p>This is a message from House In Hand.</p>
+  <p><a href="{{loginUrl}}" style="color:#008585;font-weight:600;">Sign in to your account</a></p>
 `.trim();
 
 export const BUILTIN_TEMPLATES: Record<
@@ -98,70 +95,52 @@ export const BUILTIN_TEMPLATES: Record<
   welcome: {
     subject: "Welcome to House In Hand",
     html: `
-      <div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0c0d0b;">
-        <p>Hi {{name}},</p>
-        <p>Welcome to House In Hand. Your account is verified and ready.</p>
-        <p><a href="{{loginUrl}}" style="color:#008585;font-weight:600;">Sign in to your portal</a></p>
-        <p>Our team will complete your portfolio onboarding shortly.</p>
-        <p>— House In Hand</p>
-      </div>
+      <p>Hi {{name}},</p>
+      <p>Welcome to House In Hand. Your account is verified and ready.</p>
+      <p><a href="{{loginUrl}}" style="color:#008585;font-weight:600;">Sign in to your portal</a></p>
+      <p>Our team will complete your portfolio onboarding shortly.</p>
     `.trim(),
   },
   email_verify: {
     subject: "Verify your House In Hand email",
     html: `
-      <div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0c0d0b;">
-        <p>Hi {{name}},</p>
-        <p>Thanks for creating a House In Hand account. Please verify your email to continue.</p>
-        <p><a href="{{verifyUrl}}" style="color:#008585;font-weight:600;">Verify email address</a></p>
-        <p>This link expires in 24 hours. If you did not create an account, you can ignore this email.</p>
-        <p>— House In Hand</p>
-      </div>
+      <p>Hi {{name}},</p>
+      <p>Thanks for creating a House In Hand account. Please verify your email to continue.</p>
+      <p><a href="{{verifyUrl}}" style="color:#008585;font-weight:600;">Verify email address</a></p>
+      <p style="color:#5A6A7D;font-size:14px;">This link expires in 24 hours. If you did not create an account, you can ignore this email.</p>
     `.trim(),
   },
   password_reset: {
     subject: "Reset your House In Hand password",
     html: `
-      <div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0c0d0b;">
-        <p>Hi {{name}},</p>
-        <p>You requested a password reset for your House In Hand account.</p>
-        <p><a href="{{resetUrl}}" style="color:#008585;font-weight:600;">Reset password</a></p>
-        <p>This link expires in 1 hour. If you did not request this, you can ignore this email.</p>
-        <p>— House In Hand</p>
-      </div>
+      <p>Hi {{name}},</p>
+      <p>You requested a password reset for your House In Hand account.</p>
+      <p><a href="{{resetUrl}}" style="color:#008585;font-weight:600;">Reset password</a></p>
+      <p style="color:#5A6A7D;font-size:14px;">This link expires in 1 hour. If you did not request this, you can ignore this email.</p>
     `.trim(),
   },
   admin_invite: {
     subject: "You've been added as a House In Hand admin",
     html: `
-      <div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0c0d0b;">
-        <p>Hi {{name}},</p>
-        <p>You've been granted <strong>{{role}}</strong> access to the House In Hand admin console.</p>
-        <p><a href="{{adminUrl}}" style="color:#008585;font-weight:600;">Open admin console</a></p>
-        <p>— House In Hand</p>
-      </div>
+      <p>Hi {{name}},</p>
+      <p>You've been granted <strong>{{role}}</strong> access to the House In Hand admin console.</p>
+      <p><a href="{{adminUrl}}" style="color:#008585;font-weight:600;">Open admin console</a></p>
     `.trim(),
   },
   portfolio_update: {
     subject: "Your House In Hand account update",
     html: `
-      <div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0c0d0b;">
-        <p>Hi {{name}},</p>
-        <p>Here's an update on your House In Hand portfolio.</p>
-        <p><a href="{{portalUrl}}" style="color:#008585;font-weight:600;">View your portal</a></p>
-        <p>— House In Hand</p>
-      </div>
+      <p>Hi {{name}},</p>
+      <p>Here's an update on your House In Hand portfolio.</p>
+      <p><a href="{{portalUrl}}" style="color:#008585;font-weight:600;">View your portal</a></p>
     `.trim(),
   },
   admin_message: {
     subject: "{{messageSubject}}",
     html: `
-      <div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0c0d0b;">
-        <p>Hi {{name}},</p>
-        <div>{{messageBody}}</div>
-        <p style="margin-top:20px;"><a href="{{portalUrl}}" style="color:#008585;font-weight:600;">Open House In Hand</a></p>
-        <p>— House In Hand</p>
-      </div>
+      <p>Hi {{name}},</p>
+      <div>{{messageBody}}</div>
+      <p style="margin-top:20px;"><a href="{{portalUrl}}" style="color:#008585;font-weight:600;">Open House In Hand</a></p>
     `.trim(),
   },
 };

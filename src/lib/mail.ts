@@ -1,6 +1,24 @@
 import { sendTemplatedEmail } from "@/lib/email-send";
-import { escapeHtml } from "@/lib/email-templates";
+import { buildBrandedEmail } from "@/lib/email-layout";
+import { escapeHtml, htmlToPlainText } from "@/lib/email-templates";
+import { sendMail as deliverMail } from "@/lib/smtp";
+
 export { sendMail } from "@/lib/smtp";
+
+export async function sendBrandedMail(options: {
+  to: string;
+  subject: string;
+  htmlBody: string;
+  text?: string;
+}) {
+  const html = buildBrandedEmail(options.htmlBody);
+  await deliverMail({
+    to: options.to,
+    subject: options.subject,
+    html,
+    text: options.text || htmlToPlainText(html),
+  });
+}
 
 export async function sendWelcomeEmail(to: string, name: string) {
   await sendTemplatedEmail({

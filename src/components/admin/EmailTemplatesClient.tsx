@@ -34,7 +34,7 @@ type Variable = { key: string; label: string };
 const blank = (): Omit<Template, "id"> => ({
   name: "",
   subject: "",
-  html: "<p>Hi {{name}},</p><p></p><p>— House In Hand</p>",
+  html: "<p>Hi {{name}},</p><p></p>",
   isDefault: false,
   actions: [],
   active: true,
@@ -472,8 +472,9 @@ export default function EmailTemplatesClient() {
                 }}
               />
               <p className="text-xs text-muted">
-                Tip: links and images are supported. Subject and body accept
-                placeholders like {"{{name}}"} and {"{{loginUrl}}"}.
+                Tip: edit the body only — a branded header (logo) and footer are
+                added automatically to every email. Use placeholders like{" "}
+                {"{{name}}"} and {"{{loginUrl}}"}.
               </p>
             </div>
           </div>
