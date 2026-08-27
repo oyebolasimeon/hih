@@ -40,7 +40,7 @@ export function ThemeProvider({
   const [theme, setThemeState] = useState<Theme>(initialTheme);
   const [hydrated, setHydrated] = useState(false);
 
-  // Hydrate from session, then localStorage, then server default
+  // Hydrate from session, then localStorage, then default to dark
   useEffect(() => {
     const fromSession = session?.user?.theme;
     if (fromSession === "light" || fromSession === "dark") {
@@ -52,9 +52,11 @@ export function ThemeProvider({
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored === "light" || stored === "dark") {
         setThemeState(stored);
+      } else {
+        setThemeState("dark");
       }
     } catch {
-      /* ignore */
+      setThemeState("dark");
     }
     setHydrated(true);
   }, [session?.user?.theme]);

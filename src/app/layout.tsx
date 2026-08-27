@@ -30,16 +30,15 @@ const themeInitScript = `
 (function () {
   try {
     var t = localStorage.getItem('hih-theme');
-    if (t === 'dark') {
-      document.documentElement.classList.add('dark');
-      document.documentElement.dataset.theme = 'dark';
-      document.documentElement.style.colorScheme = 'dark';
-    } else if (t === 'light') {
-      document.documentElement.classList.add('light');
-      document.documentElement.dataset.theme = 'light';
-      document.documentElement.style.colorScheme = 'light';
-    }
-  } catch (e) {}
+    var theme = t === 'light' ? 'light' : 'dark';
+    document.documentElement.classList.add(theme);
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+  } catch (e) {
+    document.documentElement.classList.add('dark');
+    document.documentElement.dataset.theme = 'dark';
+    document.documentElement.style.colorScheme = 'dark';
+  }
 })();
 `;
 
@@ -51,7 +50,8 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${jetbrainsMono.variable} h-full antialiased`}
+      className={`${jetbrainsMono.variable} dark h-full antialiased`}
+      data-theme="dark"
       data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
