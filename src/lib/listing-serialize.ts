@@ -56,6 +56,9 @@ export function serializeListing(
     verificationStatus: doc.verificationStatus,
     featured: Boolean(doc.featured),
     publishedAt: doc.publishedAt || null,
+    legalSettings: (doc as { legalSettings?: unknown }).legalSettings || {
+      provider: "hih",
+    },
     createdAt: doc.createdAt || null,
     updatedAt: doc.updatedAt || null,
     ownerVerified: extras?.ownerVerified ?? false,

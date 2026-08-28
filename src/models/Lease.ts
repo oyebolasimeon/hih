@@ -8,6 +8,7 @@ export type LeaseStatus =
   | "expired";
 
 export type LeasePaymentPeriod = "monthly" | "yearly" | "term";
+export type LeaseLegalProvider = "hih" | "own_legal";
 
 export interface ILease {
   _id: mongoose.Types.ObjectId;
@@ -28,6 +29,13 @@ export interface ILease {
   signedAt?: Date;
   tenantSignedAt?: Date;
   landlordSignedAt?: Date;
+  legalProvider: LeaseLegalProvider;
+  legalCompanyName?: string;
+  agreementFeePercent: number;
+  agreementFeeAmount: number;
+  agreementFeePaidAt?: Date;
+  agreementFeePaymentId?: mongoose.Types.ObjectId;
+  documentNumber?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -77,6 +85,20 @@ const LeaseSchema = new Schema<ILease>(
     signedAt: { type: Date },
     tenantSignedAt: { type: Date },
     landlordSignedAt: { type: Date },
+    legalProvider: {
+      type: String,
+      enum: ["hih", "own_legal"],
+      default: "hih",
+    },
+    legalCompanyName: { type: String, trim: true },
+    agreementFeePercent: { type: Number, default: 10, min: 0, max: 100 },
+    agreementFeeAmount: { type: Number, default: 0, min: 0 },
+    agreementFeePaidAt: { type: Date },
+    agreementFeePaymentId: {
+      type: Schema.Types.ObjectId,
+      ref: "Payment",
+    },
+    documentNumber: { type: String, trim: true },
   },
   { timestamps: true }
 );

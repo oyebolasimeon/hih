@@ -40,10 +40,19 @@ type WithdrawalRow = {
   amount: number;
   fee: number;
   netAmount: number;
+  paidAmount: number | null;
   currency: string;
   bankName: string;
+  accountName: string;
   accountNumberLast4: string;
+  payoutProvider: string;
   status: string;
+  providerRef: string | null;
+  sessionId: string | null;
+  transferReceiptUrl: string | null;
+  hihReceiptNumber: string | null;
+  disputeStatus: string;
+  disputeReason: string | null;
   createdAt: string;
   completedAt: string | null;
 };
@@ -104,12 +113,23 @@ type BankOption = { code: string; name: string };
 type ReceiptData = {
   receiptNumber: string | null;
   paymentId: string;
+  purpose: string;
+  purposeLabel: string;
   amount: number;
   currency: string;
+  grossAmount: number;
+  platformFeeAmount: number;
+  agreementFeeAmount: number;
+  netPayeeAmount: number;
   paidAt: string | null;
   providerRef: string | null;
-  listing: { title: string; address?: { city?: string; state?: string } } | null;
+  receiptPdfUrl: string | null;
+  rentPeriodLabel: string | null;
+  breakdown: Array<{ label: string; amount: number; kind: string }>;
+  listing: { title: string; address?: string } | null;
   payee: { name: string; type: string } | null;
+  payer: { name: string } | null;
+  signatures: Array<{ role: string; name: string; signedAt?: string | null }>;
   lease: { paymentPeriod: string } | null;
 };
 
@@ -158,7 +178,11 @@ export default function PaymentsClient() {
   const [transactions, setTransactions] = useState<WalletTx[]>([]);
   const [withdrawals, setWithdrawals] = useState<WithdrawalRow[]>([]);
   const [banks, setBanks] = useState<BankOption[]>([]);
-  const [limits, setLimits] = useState({ minWithdrawal: 1000, withdrawalFee: 0 });
+  const [limits, setLimits] = useState({
+    minWithdrawal: 1000,
+    withdrawalFee: 50,
+    payoutProvider: "paystack" as "paystack" | "manual",
+  });
   const [rentLocks, setRentLocks] = useState<RentLockRow[]>([]);
   const [rentStatus, setRentStatus] = useState<RentStatus | null>(null);
 
@@ -183,6 +207,9 @@ export default function PaymentsClient() {
   const [accountNumber, setAccountNumber] = useState("");
   const [accountName, setAccountName] = useState("");
   const [showBankForm, setShowBankForm] = useState(false);
+  const [disputeId, setDisputeId] = useState("");
+  const [disputeReason, setDisputeReason] = useState("");
+  const [disputing, setDisputing] = useState(false);
 
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [receiptLoading, setReceiptLoading] = useState(false);
@@ -197,7 +224,13 @@ export default function PaymentsClient() {
     setTransactions(data.transactions || []);
     setWithdrawals(data.withdrawals || []);
     setRentLocks(data.rentLocks || []);
-    setLimits(data.limits || { minWithdrawal: 1000, withdrawalFee: 0 });
+    setLimits(
+      data.limits || {
+        minWithdrawal: 1000,
+        withdrawalFee: 50,
+        payoutProvider: "paystack",
+      }
+    );
   }, []);
 
   const loadRentStatus = useCallback(async (selectedLeaseId: string) => {
@@ -492,10 +525,43 @@ export default function PaymentsClient() {
       setError(data.error || "Withdrawal failed.");
       return;
     }
-    setMessage("Withdrawal submitted successfully.");
+    setMessage(
+      data.message ||
+        (data.mode === "manual"
+          ? "Withdrawal submitted. Our team will process your bank transfer manually."
+          : "Withdrawal submitted successfully.")
+    );
     setWithdrawAmount("");
     await load();
   }
+
+  async function onDispute(e: FormEvent) {
+    e.preventDefault();
+    if (!disputeId) return;
+    setDisputing(true);
+    setError("");
+    const res = await fetch(`/api/portal/wallet/withdrawals/${disputeId}/dispute`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: disputeReason }),
+    });
+    const data = await res.json();
+    setDisputing(false);
+    if (!res.ok) {
+      setError(data.error || "Could not open dispute.");
+      return;
+    }
+    setMessage("Dispute submitted. Our team will review your withdrawal.");
+    setDisputeId("");
+    setDisputeReason("");
+    await load();
+  }
+
+  const withdrawPreviewNet = (() => {
+    const amount = Number(withdrawAmount);
+    if (!amount || amount <= 0) return null;
+    return Math.max(0, amount - limits.withdrawalFee);
+  })();
 
   if (loading || profileLoading) {
     return (
@@ -594,34 +660,112 @@ export default function PaymentsClient() {
               </button>
             </div>
             {receipt ? (
-              <dl className="grid sm:grid-cols-2 gap-3 text-sm">
-                <div>
-                  <dt className="text-muted">Amount</dt>
-                  <dd className="font-semibold">
-                    {formatMoney(receipt.amount, receipt.currency)}
-                  </dd>
+              <div className="space-y-5">
+                <dl className="grid sm:grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <dt className="text-muted">Purpose</dt>
+                    <dd className="font-semibold">{receipt.purposeLabel}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted">Paid on</dt>
+                    <dd>
+                      {receipt.paidAt
+                        ? new Date(receipt.paidAt).toLocaleString()
+                        : "—"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted">Payer</dt>
+                    <dd>{receipt.payer?.name || "—"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted">Payee</dt>
+                    <dd>{receipt.payee?.name || "—"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted">Property</dt>
+                    <dd>{receipt.listing?.title || "—"}</dd>
+                  </div>
+                  {receipt.rentPeriodLabel ? (
+                    <div>
+                      <dt className="text-muted">Rent period</dt>
+                      <dd>{receipt.rentPeriodLabel}</dd>
+                    </div>
+                  ) : null}
+                </dl>
+
+                <div className="rounded-lg border border-border/60 overflow-hidden">
+                  <div className="px-4 py-3 bg-gradient-to-r from-brand/10 to-teal/10 border-b border-border/60">
+                    <p className="text-sm font-semibold">Cost breakdown</p>
+                  </div>
+                  <ul className="divide-y divide-border/60">
+                    {receipt.breakdown.map((line) => (
+                      <li
+                        key={line.label}
+                        className="px-4 py-3 flex items-center justify-between text-sm"
+                      >
+                        <span
+                          className={
+                            line.kind === "total" ? "font-semibold" : "text-muted"
+                          }
+                        >
+                          {line.label}
+                        </span>
+                        <span
+                          className={
+                            line.kind === "total" ? "font-display font-semibold" : ""
+                          }
+                        >
+                          {formatMoney(line.amount, receipt.currency)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <div>
-                  <dt className="text-muted">Paid on</dt>
-                  <dd>
-                    {receipt.paidAt
-                      ? new Date(receipt.paidAt).toLocaleString()
-                      : "—"}
-                  </dd>
+
+                {receipt.signatures.length > 0 ? (
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {receipt.signatures.map((sig) => (
+                      <div
+                        key={sig.role}
+                        className="rounded-lg border border-border/60 p-3 bg-surface/40"
+                      >
+                        <p className="text-xs uppercase tracking-wider text-muted">
+                          {sig.role}
+                        </p>
+                        <p className="font-medium mt-1">{sig.name}</p>
+                        {sig.signedAt ? (
+                          <p className="text-xs text-muted mt-1">
+                            {new Date(sig.signedAt).toLocaleString()}
+                          </p>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+
+                <div className="flex flex-wrap gap-2">
+                  {receipt.receiptPdfUrl ? (
+                    <a
+                      href={receipt.receiptPdfUrl}
+                      className="app-btn app-btn-primary text-xs"
+                    >
+                      Download PDF
+                    </a>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="app-btn app-btn-secondary text-xs"
+                  >
+                    Print
+                  </button>
                 </div>
-                <div>
-                  <dt className="text-muted">Property</dt>
-                  <dd>{receipt.listing?.title || "—"}</dd>
-                </div>
-                <div>
-                  <dt className="text-muted">Landlord</dt>
-                  <dd>{receipt.payee?.name || "—"}</dd>
-                </div>
-                <div className="sm:col-span-2">
-                  <dt className="text-muted">Reference</dt>
-                  <dd className="font-mono text-xs">{receipt.providerRef || "—"}</dd>
-                </div>
-              </dl>
+
+                <p className="text-xs text-muted font-mono">
+                  Ref {receipt.providerRef || "—"}
+                </p>
+              </div>
             ) : receiptLoading ? null : (
               <p className="text-sm text-muted">Receipt not available.</p>
             )}
@@ -854,15 +998,35 @@ export default function PaymentsClient() {
 
                     {wallet?.bankDetails ? (
                       <form onSubmit={onWithdraw} className="space-y-3">
-                        <input
-                          type="number"
-                          min={limits.minWithdrawal}
-                          className="app-input w-full"
-                          value={withdrawAmount}
-                          onChange={(e) => setWithdrawAmount(e.target.value)}
-                          placeholder={`Min ${limits.minWithdrawal}`}
-                          required
-                        />
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">
+                            Amount (min {formatMoney(limits.minWithdrawal)})
+                          </label>
+                          <input
+                            type="number"
+                            min={limits.minWithdrawal}
+                            className="app-input w-full"
+                            value={withdrawAmount}
+                            onChange={(e) => setWithdrawAmount(e.target.value)}
+                            placeholder={`Min ${limits.minWithdrawal}`}
+                            required
+                          />
+                          {limits.withdrawalFee > 0 ? (
+                            <p className="text-xs text-muted mt-1">
+                              Fee: {formatMoney(limits.withdrawalFee)} (deducted from
+                              amount)
+                              {withdrawPreviewNet != null
+                                ? ` · You receive ${formatMoney(withdrawPreviewNet)}`
+                                : ""}
+                            </p>
+                          ) : null}
+                          {limits.payoutProvider === "manual" ? (
+                            <p className="text-xs text-muted mt-1">
+                              Transfers are processed manually by our team. You will
+                              receive bank and House In Hand receipts when complete.
+                            </p>
+                          ) : null}
+                        </div>
                         <button
                           type="submit"
                           disabled={
@@ -973,7 +1137,17 @@ export default function PaymentsClient() {
                       />
                       {limits.withdrawalFee > 0 ? (
                         <p className="text-xs text-muted mt-1">
-                          Fee: {formatMoney(limits.withdrawalFee)}
+                          Fee: {formatMoney(limits.withdrawalFee)} (deducted from
+                          amount)
+                          {withdrawPreviewNet != null
+                            ? ` · You receive ${formatMoney(withdrawPreviewNet)}`
+                            : ""}
+                        </p>
+                      ) : null}
+                      {limits.payoutProvider === "manual" ? (
+                        <p className="text-xs text-muted mt-1">
+                          Transfers are processed manually. Status will show as
+                          processing until our team completes the bank transfer.
                         </p>
                       ) : null}
                     </div>
@@ -1035,25 +1209,120 @@ export default function PaymentsClient() {
         )}
       </section>
 
-      {isLandlordLike && withdrawals.length > 0 ? (
+      {withdrawals.length > 0 ? (
         <section className="space-y-4">
           <h2 className="font-display text-lg font-semibold">Withdrawal history</h2>
           <ul className="space-y-2">
             {withdrawals.map((w) => (
-              <li key={w.id} className="app-card p-4 flex flex-wrap justify-between gap-3">
-                <div>
-                  <p className="font-medium">
-                    {formatMoney(w.netAmount, w.currency)} → {w.bankName}
-                  </p>
-                  <p className="text-xs text-muted mt-1">
-                    {w.accountNumberLast4} · {new Date(w.createdAt).toLocaleString()}
-                  </p>
+              <li key={w.id} className="app-card p-4 space-y-3">
+                <div className="flex flex-wrap justify-between gap-3">
+                  <div>
+                    <p className="font-medium">
+                      {formatMoney(w.amount, w.currency)} requested →{" "}
+                      {formatMoney(w.paidAmount ?? w.netAmount, w.currency)} to{" "}
+                      {w.bankName}
+                    </p>
+                    <p className="text-xs text-muted mt-1">
+                      {w.accountName} · {w.accountNumberLast4} · Fee{" "}
+                      {formatMoney(w.fee, w.currency)}
+                    </p>
+                    <p className="text-xs text-muted">
+                      {w.providerRef ? `${w.providerRef} · ` : ""}
+                      {new Date(w.createdAt).toLocaleString()}
+                      {w.payoutProvider === "manual" ? " · Manual transfer" : ""}
+                    </p>
+                    {w.status === "pending" || w.status === "processing" ? (
+                      <p className="text-xs text-brand-dark mt-2">
+                        {w.payoutProvider === "manual"
+                          ? "Your withdrawal is being processed. We will notify you when the transfer is complete."
+                          : "Your withdrawal is being processed."}
+                      </p>
+                    ) : null}
+                    {w.status === "completed" && w.sessionId ? (
+                      <p className="text-xs text-muted mt-1">
+                        Session ID: {w.sessionId}
+                      </p>
+                    ) : null}
+                    {w.disputeStatus === "open" ? (
+                      <p className="text-xs text-danger mt-1">
+                        Dispute open — our team is reviewing
+                      </p>
+                    ) : null}
+                    {w.disputeStatus === "resolved" ? (
+                      <p className="text-xs text-muted mt-1">Dispute resolved</p>
+                    ) : null}
+                  </div>
+                  <span
+                    className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider h-fit ${statusClass(w.status)}`}
+                  >
+                    {w.status}
+                  </span>
                 </div>
-                <span
-                  className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider h-fit ${statusClass(w.status)}`}
-                >
-                  {w.status}
-                </span>
+                <div className="flex flex-wrap gap-2">
+                  {w.status === "completed" && w.transferReceiptUrl ? (
+                    <a
+                      href={w.transferReceiptUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="app-btn app-btn-secondary text-xs"
+                    >
+                      Bank receipt
+                    </a>
+                  ) : null}
+                  {w.status === "completed" ? (
+                    <a
+                      href={`/api/portal/wallet/withdrawals/${w.id}/receipt`}
+                      className="app-btn app-btn-secondary text-xs"
+                    >
+                      HIH receipt
+                    </a>
+                  ) : null}
+                  {w.status === "completed" &&
+                  w.disputeStatus !== "open" &&
+                  w.disputeStatus !== "resolved" ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDisputeId(w.id);
+                        setDisputeReason("");
+                      }}
+                      className="app-btn app-btn-secondary text-xs"
+                    >
+                      Open dispute
+                    </button>
+                  ) : null}
+                </div>
+                {disputeId === w.id ? (
+                  <form onSubmit={onDispute} className="border-t border-border/60 pt-3 space-y-2">
+                    <label className="block text-sm font-medium">
+                      Describe the issue
+                    </label>
+                    <textarea
+                      className="app-input w-full min-h-[80px]"
+                      value={disputeReason}
+                      onChange={(e) => setDisputeReason(e.target.value)}
+                      placeholder="Explain why you are disputing this withdrawal…"
+                      required
+                      minLength={10}
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        disabled={disputing}
+                        className="app-btn app-btn-primary text-xs"
+                      >
+                        {disputing ? "Submitting…" : "Submit dispute"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDisputeId("")}
+                        className="app-btn app-btn-secondary text-xs"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -1100,12 +1369,20 @@ export default function PaymentsClient() {
                   </p>
                 </div>
                 {p.status === "successful" ? (
-                  <a
-                    href={`/portal/payments?receipt=${p.id}`}
-                    className="app-btn app-btn-secondary text-xs"
-                  >
-                    Receipt
-                  </a>
+                  <div className="flex gap-2">
+                    <a
+                      href={`/portal/payments?receipt=${p.id}`}
+                      className="app-btn app-btn-secondary text-xs"
+                    >
+                      Receipt
+                    </a>
+                    <a
+                      href={`/api/portal/payments/${p.id}/receipt/pdf`}
+                      className="app-btn app-btn-secondary text-xs"
+                    >
+                      PDF
+                    </a>
+                  </div>
                 ) : null}
               </li>
             ))}

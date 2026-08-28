@@ -42,6 +42,14 @@ export interface IListingImage {
   isPrimary?: boolean;
 }
 
+export type ListingLegalProvider = "hih" | "own_legal";
+
+export interface IListingLegalSettings {
+  provider: ListingLegalProvider;
+  companyName?: string;
+  agreementFeePercent?: number;
+}
+
 export interface IListing {
   _id: mongoose.Types.ObjectId;
   ownerProfileId: mongoose.Types.ObjectId;
@@ -60,6 +68,7 @@ export interface IListing {
   verificationStatus: ListingVerificationStatus;
   featured: boolean;
   publishedAt?: Date;
+  legalSettings?: IListingLegalSettings;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -94,6 +103,19 @@ const ListingImageSchema = new Schema<IListingImage>(
     url: { type: String, required: true, trim: true },
     publicId: { type: String, trim: true },
     isPrimary: { type: Boolean, default: false },
+  },
+  { _id: false }
+);
+
+const ListingLegalSettingsSchema = new Schema<IListingLegalSettings>(
+  {
+    provider: {
+      type: String,
+      enum: ["hih", "own_legal"],
+      default: "hih",
+    },
+    companyName: { type: String, trim: true },
+    agreementFeePercent: { type: Number, min: 0, max: 100 },
   },
   { _id: false }
 );
@@ -138,6 +160,7 @@ const ListingSchema = new Schema<IListing>(
     },
     featured: { type: Boolean, default: false },
     publishedAt: { type: Date },
+    legalSettings: { type: ListingLegalSettingsSchema },
   },
   { timestamps: true }
 );

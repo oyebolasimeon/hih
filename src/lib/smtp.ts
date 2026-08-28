@@ -266,6 +266,11 @@ export async function sendMail(options: {
   subject: string;
   html: string;
   text?: string;
+  attachments?: Array<{
+    filename: string;
+    content: Buffer;
+    contentType?: string;
+  }>;
 }) {
   const candidates = buildCandidates();
   if (!candidates.length) {
@@ -288,6 +293,11 @@ export async function sendMail(options: {
           subject: options.subject,
           html: options.html,
           text: options.text,
+          attachments: options.attachments?.map((file) => ({
+            filename: file.filename,
+            content: file.content,
+            contentType: file.contentType || "application/octet-stream",
+          })),
         }),
         20_000,
         `SMTP send (${candidate.label})`

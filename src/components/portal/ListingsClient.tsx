@@ -125,6 +125,9 @@ function ListingsManager() {
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<ListingRow["images"]>([]);
   const [publishNow, setPublishNow] = useState(false);
+  const [legalProvider, setLegalProvider] = useState<"hih" | "own_legal">("hih");
+  const [legalCompanyName, setLegalCompanyName] = useState("");
+  const [agreementFeePercent, setAgreementFeePercent] = useState("");
 
   const resetForm = useCallback(() => {
     setEditingId(null);
@@ -143,6 +146,9 @@ function ListingsManager() {
     setImageFiles([]);
     setExistingImages([]);
     setPublishNow(false);
+    setLegalProvider("hih");
+    setLegalCompanyName("");
+    setAgreementFeePercent("");
     setShowCreate(false);
   }, []);
 
@@ -256,6 +262,15 @@ function ListingsManager() {
         sizeSqm: sizeSqm ? Number(sizeSqm) : null,
         amenities,
         images,
+        legalSettings: {
+          provider: legalProvider,
+          ...(legalProvider === "own_legal" && legalCompanyName.trim()
+            ? { companyName: legalCompanyName.trim() }
+            : {}),
+          ...(agreementFeePercent
+            ? { agreementFeePercent: Number(agreementFeePercent) }
+            : {}),
+        },
         ...(editingId
           ? publishNow
             ? { availabilityStatus: "available" as const }
@@ -631,6 +646,56 @@ function ListingsManager() {
                   onChange={setImageFiles}
                   helpText="First photo becomes the cover image."
                 />
+              </div>
+
+              <div className="space-y-4 rounded-lg border border-border/60 p-4 bg-surface/40">
+                <p className="text-sm font-semibold">Legal & agreement handling</p>
+                <Select
+                  label="Who handles the tenancy agreement?"
+                  value={legalProvider}
+                  onChange={(v) => setLegalProvider(v as "hih" | "own_legal")}
+                  options={[
+                    { value: "hih", label: "House In Hand handles legal" },
+                    { value: "own_legal", label: "My own legal company" },
+                  ]}
+                />
+                {legalProvider === "own_legal" ? (
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">
+                      Legal company name
+                    </label>
+                    <input
+                      className="app-input w-full"
+                      value={legalCompanyName}
+                      onChange={(e) => setLegalCompanyName(e.target.value)}
+                      placeholder="e.g. Smith & Partners Legal"
+                      required
+                    />
+                    <p className="text-xs text-muted mt-1">
+                      Tenants pay the agreement fee to you. House In Hand charges a
+                      platform fee (min 1%) on rent.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted">
+                    Tenants pay the agreement fee to House In Hand. We prepare and
+                    manage all legal documents.
+                  </p>
+                )}
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">
+                    Agreement fee (% of rent, optional override)
+                  </label>
+                  <input
+                    className="app-input w-full"
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={agreementFeePercent}
+                    onChange={(e) => setAgreementFeePercent(e.target.value)}
+                    placeholder="Default set by admin (10%)"
+                  />
+                </div>
               </div>
 
               <label className="flex items-start gap-3 rounded-lg border border-border/60 p-3 text-sm cursor-pointer">

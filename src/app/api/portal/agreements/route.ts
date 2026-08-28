@@ -28,6 +28,12 @@ function serializeLease(
     tenantSignedAt: l.tenantSignedAt || null,
     landlordSignedAt: l.landlordSignedAt || null,
     signedAt: l.signedAt || null,
+    legalProvider: l.legalProvider || "hih",
+    legalCompanyName: l.legalCompanyName || "",
+    agreementFeePercent: l.agreementFeePercent ?? 10,
+    agreementFeeAmount: l.agreementFeeAmount ?? 0,
+    agreementFeePaidAt: l.agreementFeePaidAt || null,
+    documentNumber: l.documentNumber || null,
     createdAt: l.createdAt,
     updatedAt: l.updatedAt,
     listing: listing

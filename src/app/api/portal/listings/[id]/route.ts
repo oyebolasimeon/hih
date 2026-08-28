@@ -45,6 +45,13 @@ const patchSchema = z.object({
   bathrooms: z.number().int().min(0).max(50).nullable().optional(),
   sizeSqm: z.number().positive().max(100000).nullable().optional(),
   images: z.array(imageSchema).max(20).optional(),
+  legalSettings: z
+    .object({
+      provider: z.enum(["hih", "own_legal"]),
+      companyName: z.string().trim().max(160).optional(),
+      agreementFeePercent: z.number().min(0).max(100).optional(),
+    })
+    .optional(),
   availabilityStatus: z
     .enum(["available", "pending", "occupied", "draft"])
     .optional(),

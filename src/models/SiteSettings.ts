@@ -20,6 +20,18 @@ export interface ISiteSettings {
   seoDefaults?: Record<string, unknown>;
   /** Branding — logo, auth bg, colors, fonts */
   branding?: Partial<BrandingSettings>;
+  /** Platform fee percentages */
+  fees?: {
+    agreementFeePercent?: number;
+    platformFeeMinPercent?: number;
+    platformFeePercentOwnLegal?: number;
+  };
+  /** Withdrawal payout provider and fee */
+  payoutSettings?: {
+    provider?: "paystack" | "manual";
+    withdrawalFee?: number;
+  };
+  platformWalletProfileId?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -39,6 +51,9 @@ const SiteSettingsSchema = new Schema<ISiteSettings>(
     footerLinkGroups: { type: Schema.Types.Mixed },
     seoDefaults: { type: Schema.Types.Mixed },
     branding: { type: Schema.Types.Mixed },
+    fees: { type: Schema.Types.Mixed },
+    payoutSettings: { type: Schema.Types.Mixed },
+    platformWalletProfileId: { type: Schema.Types.ObjectId, ref: "Profile" },
   },
   { timestamps: true }
 );

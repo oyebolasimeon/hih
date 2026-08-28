@@ -14,6 +14,7 @@ import { Lease } from "@/models/Lease";
 import { Listing } from "@/models/Listing";
 import { Profile } from "@/models/Profile";
 import { User } from "@/models/User";
+import { getPlatformFees, computeAgreementFee } from "@/lib/platform-fees";
 
 const patchSchema = z.object({
   status: z.enum(["approved", "rejected", "under_review"]),
@@ -99,12 +100,27 @@ export async function PATCH(req: Request, ctx: RouteCtx) {
       endDate.setMonth(endDate.getMonth() + 12);
     }
 
+    const fees = await getPlatformFees();
+    const legalProvider = listing.legalSettings?.provider || "hih";
+    const agreementFeePercent =
+      listing.legalSettings?.agreementFeePercent ?? fees.agreementFeePercent;
+    const agreementFeeAmount = computeAgreementFee(
+      listing.price.amount,
+      fees.agreementFeePercent,
+      agreementFeePercent
+    );
+
     const termsText = [
       `Tenancy agreement for ${listing.title}`,
       `Address: ${listing.address.street}, ${listing.address.city}, ${listing.address.state}`,
       `Rent: ${listing.price.currency} ${listing.price.amount.toLocaleString()} per ${listing.price.period}`,
       `Start: ${startDate.toISOString().slice(0, 10)}`,
       `End: ${endDate.toISOString().slice(0, 10)}`,
+      "",
+      legalProvider === "hih"
+        ? "Legal handling: House In Hand will prepare and manage the tenancy documents."
+        : `Legal handling: ${listing.legalSettings?.companyName || "Landlord-appointed legal firm"}.`,
+      `Agreement fee (${agreementFeePercent}%): ${listing.price.currency} ${agreementFeeAmount.toLocaleString()} — payable by tenant before signing.`,
       "",
       "Both parties agree to the House In Hand platform terms and applicable Nigerian tenancy laws.",
       "Signatures below confirm acceptance of these terms.",
@@ -122,6 +138,10 @@ export async function PATCH(req: Request, ctx: RouteCtx) {
       currency: listing.price.currency || "NGN",
       paymentPeriod: listing.price.period,
       termsText,
+      legalProvider,
+      legalCompanyName: listing.legalSettings?.companyName,
+      agreementFeePercent,
+      agreementFeeAmount,
     });
     leaseId = String(lease._id);
 

@@ -43,6 +43,8 @@ export async function POST(req: Request) {
         availableBalance: result.wallet.availableBalance,
         totalWithdrawn: result.wallet.totalWithdrawn,
       },
+      message: result.message,
+      mode: result.mode,
     });
   } catch (err) {
     return NextResponse.json(

@@ -5,6 +5,7 @@ import { assertUser } from "@/lib/api-auth";
 import { connectDB } from "@/lib/db";
 import { actorFromUser, writeAudit } from "@/lib/audit";
 import { notifyUser } from "@/lib/profile-context";
+import { finalizeSignedAgreement } from "@/lib/agreement-document";
 import { Lease } from "@/models/Lease";
 import { Listing } from "@/models/Listing";
 import { Profile } from "@/models/Profile";
@@ -63,6 +64,15 @@ export async function POST(req: Request, ctx: RouteCtx) {
         { status: 409 }
       );
     }
+    if (!lease.agreementFeePaidAt) {
+      return NextResponse.json(
+        {
+          error: "Pay the agreement fee before signing as tenant.",
+          code: "AGREEMENT_FEE_REQUIRED",
+        },
+        { status: 402 }
+      );
+    }
     lease.tenantSignatureName = parsed.data.signatureName;
     lease.tenantSignedAt = new Date();
   } else {
@@ -96,6 +106,14 @@ export async function POST(req: Request, ctx: RouteCtx) {
   }
 
   await lease.save();
+
+  if (bothSigned) {
+    try {
+      await finalizeSignedAgreement(lease);
+    } catch (err) {
+      console.warn("Agreement document email failed:", err);
+    }
+  }
 
   const tenantProfile = await Profile.findById(lease.tenantProfileId)
     .select("userId displayName")

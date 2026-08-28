@@ -38,6 +38,13 @@ const createSchema = z.object({
   bathrooms: z.number().int().min(0).max(50).optional(),
   sizeSqm: z.number().positive().max(100000).optional(),
   images: z.array(imageSchema).max(20).default([]),
+  legalSettings: z
+    .object({
+      provider: z.enum(["hih", "own_legal"]).default("hih"),
+      companyName: z.string().trim().max(160).optional(),
+      agreementFeePercent: z.number().min(0).max(100).optional(),
+    })
+    .optional(),
   availabilityStatus: z
     .enum(["available", "pending", "occupied", "draft"])
     .optional()
@@ -131,6 +138,13 @@ export async function POST(req: Request) {
     verificationStatus: publishing ? "pending" : "unverified",
     featured: false,
     publishedAt: publishing ? new Date() : undefined,
+    legalSettings: data.legalSettings
+      ? {
+          provider: data.legalSettings.provider,
+          companyName: data.legalSettings.companyName,
+          agreementFeePercent: data.legalSettings.agreementFeePercent,
+        }
+      : { provider: "hih" as const },
   });
 
   await writeAudit({

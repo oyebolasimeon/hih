@@ -1,12 +1,18 @@
 import mongoose, { Schema, models, model } from "mongoose";
 
-export type WalletOwnerType = "tenant" | "student" | "landlord" | "estate_manager";
+export type WalletOwnerType =
+  | "tenant"
+  | "student"
+  | "landlord"
+  | "estate_manager"
+  | "platform";
 
 export interface IWalletBankDetails {
   bankCode: string;
   bankName: string;
   accountName: string;
   accountNumberLast4: string;
+  accountNumber?: string;
   paystackRecipientCode?: string;
 }
 
@@ -32,6 +38,7 @@ const WalletBankDetailsSchema = new Schema<IWalletBankDetails>(
     bankName: { type: String, required: true, trim: true },
     accountName: { type: String, required: true, trim: true },
     accountNumberLast4: { type: String, required: true, trim: true },
+    accountNumber: { type: String, trim: true, select: false },
     paystackRecipientCode: { type: String, trim: true },
   },
   { _id: false }
@@ -54,7 +61,7 @@ const WalletSchema = new Schema<IWallet>(
     },
     ownerType: {
       type: String,
-      enum: ["tenant", "student", "landlord", "estate_manager"],
+      enum: ["tenant", "student", "landlord", "estate_manager", "platform"],
       required: true,
     },
     currency: { type: String, default: "NGN", trim: true },

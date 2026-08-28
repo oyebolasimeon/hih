@@ -1,4 +1,6 @@
 import { notifyUser } from "@/lib/profile-context";
+import { sendPaymentReceiptEmail } from "@/lib/receipt-email";
+import { settleAgreementFeePayment } from "@/lib/platform-wallet";
 import { creditWalletDeposit, settleRentPaymentWallets } from "@/lib/wallet";
 import { generateReceiptNumber } from "@/lib/wallet-utils";
 import { Payment } from "@/models/Payment";
@@ -11,6 +13,8 @@ export async function markPaymentSuccessful(
   if (payment.status === "successful") {
     if (payment.purpose === "wallet_deposit" && !payment.tenantWalletTxId) {
       await creditWalletDeposit(payment);
+    } else if (payment.purpose === "agreement_fee" && !payment.landlordWalletTxId && !payment.platformProfileId) {
+      await settleAgreementFeePayment(payment);
     } else if (
       payment.purpose === "rent" &&
       !payment.landlordWalletTxId &&
@@ -27,12 +31,16 @@ export async function markPaymentSuccessful(
   );
   payment.status = "successful";
   payment.paidAt = new Date();
-  if (!payment.receiptNumber && payment.purpose === "rent") {
+
+  if (!payment.receiptNumber && payment.purpose !== "wallet_deposit") {
     payment.receiptNumber = generateReceiptNumber();
   }
-  if (payment.purpose === "rent") {
+
+  if (payment.purpose === "rent" || payment.purpose === "agreement_fee") {
     payment.receiptUrl = `${appUrl}/portal/payments?receipt=${payment._id}`;
+    payment.receiptPdfUrl = `${appUrl}/api/portal/payments/${payment._id}/receipt/pdf`;
   }
+
   await payment.save();
 
   if (payment.purpose === "wallet_deposit") {
@@ -40,7 +48,11 @@ export async function markPaymentSuccessful(
     return payment;
   }
 
-  await settleRentPaymentWallets(payment);
+  if (payment.purpose === "agreement_fee") {
+    await settleAgreementFeePayment(payment);
+  } else {
+    await settleRentPaymentWallets(payment);
+  }
 
   const payee = payment.payeeProfileId
     ? await Profile.findById(payment.payeeProfileId).select("userId displayName").lean()
@@ -52,14 +64,22 @@ export async function markPaymentSuccessful(
     ? await User.findById(payee.userId).select("email").lean()
     : null;
 
+  if (payer?.email) {
+    try {
+      await sendPaymentReceiptEmail(String(payment._id), String(payment.payerUserId));
+    } catch (err) {
+      console.warn("Receipt email failed:", err);
+    }
+  }
+
   if (payer) {
-    const isDeposit = payment.purpose === "wallet_deposit";
+    const isAgreement = payment.purpose === "agreement_fee";
     await notifyUser({
       userId: String(payer._id),
-      type: isDeposit ? "wallet.deposit" : "payment.successful",
-      title: isDeposit ? "Wallet deposit successful" : "Rent payment successful",
-      body: isDeposit
-        ? `${payment.currency} ${payment.amount.toLocaleString()} was added to your wallet.`
+      type: isAgreement ? "agreement.fee_paid" : "payment.successful",
+      title: isAgreement ? "Agreement fee paid" : "Payment successful",
+      body: isAgreement
+        ? `Your agreement fee of ${payment.currency} ${payment.amount.toLocaleString()} was received. You can now sign the agreement.`
         : `Your payment of ${payment.currency} ${payment.amount.toLocaleString()} was successful.`,
       link: payment.receiptUrl || "/portal/payments",
       meta: {
@@ -67,14 +87,10 @@ export async function markPaymentSuccessful(
         reference: payment.providerRef,
         receiptNumber: payment.receiptNumber,
       },
-      email: payer.email
-        ? {
-            to: payer.email,
-            subject: isDeposit ? "Wallet deposit confirmed" : "Rent payment receipt",
-          }
-        : undefined,
+      email: undefined,
     });
   }
+
   if (
     landlord &&
     String(landlord._id) !== String(payment.payerUserId) &&
@@ -84,7 +100,7 @@ export async function markPaymentSuccessful(
       userId: String(landlord._id),
       type: "payment.received",
       title: "Rent payment received",
-      body: `${payment.currency} ${payment.amount.toLocaleString()} was credited to your wallet.`,
+      body: `${payment.currency} ${(payment.netPayeeAmount ?? payment.amount).toLocaleString()} was credited to your wallet.`,
       link: "/portal/payments",
       meta: {
         paymentId: String(payment._id),

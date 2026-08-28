@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { assertUser } from "@/lib/api-auth";
 import { connectDB } from "@/lib/db";
-import { buildFullPaymentReceipt } from "@/lib/receipt-document";
+import {
+  buildFullPaymentReceipt,
+  fullReceiptToPdfInput,
+} from "@/lib/receipt-document";
+import { generateReceiptPdf } from "@/lib/receipt-pdf";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -21,5 +25,14 @@ export async function GET(_req: Request, ctx: Ctx) {
     return NextResponse.json({ error: "Receipt not found." }, { status: 404 });
   }
 
-  return NextResponse.json({ receipt });
+  const pdf = await generateReceiptPdf(fullReceiptToPdfInput(receipt));
+  const filename = `${receipt.receiptNumber || receipt.paymentId}.pdf`;
+
+  return new NextResponse(new Uint8Array(pdf), {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Cache-Control": "private, max-age=3600",
+    },
+  });
 }

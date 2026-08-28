@@ -27,6 +27,12 @@ import {
   getRentPeriodBounds,
   isRentPeriodPaid,
 } from "@/lib/rent-period";
+import {
+  computePlatformFee,
+  getPlatformFees,
+  type LegalProvider,
+} from "@/lib/platform-fees";
+import { creditPlatformFeeFromRent } from "@/lib/platform-wallet";
 
 const LANDLORD_TYPES = new Set<ProfileType>(["landlord", "estate_manager"]);
 const TENANT_TYPES = new Set<ProfileType>(["tenant", "student"]);
@@ -63,16 +69,33 @@ export async function settleRentPaymentWallets(
     return settleRentFromWalletLock(payment, actor);
   }
 
-  const [payeeProfile, payerProfile] = await Promise.all([
+  const [payeeProfile, leaseDoc] = await Promise.all([
     Profile.findById(payment.payeeProfileId),
     payment.leaseId
-      ? Lease.findById(payment.leaseId).select("tenantProfileId").lean()
+      ? Lease.findById(payment.leaseId)
+          .select("tenantProfileId legalProvider")
+          .lean()
       : null,
   ]);
 
   if (!payeeProfile || !LANDLORD_TYPES.has(payeeProfile.type)) {
     return payment;
   }
+
+  const fees = await getPlatformFees();
+  const legalProvider = (leaseDoc?.legalProvider ||
+    payment.legalProvider ||
+    "hih") as LegalProvider;
+  const grossAmount = payment.grossAmount ?? payment.amount;
+  const platformFee =
+    payment.platformFeeAmount ??
+    computePlatformFee(grossAmount, fees, legalProvider);
+  const landlordNet = payment.netPayeeAmount ?? grossAmount - platformFee;
+
+  payment.grossAmount = grossAmount;
+  payment.platformFeeAmount = platformFee;
+  payment.netPayeeAmount = landlordNet;
+  payment.legalProvider = legalProvider;
 
   const landlordWallet = await getOrCreateWallet(payeeProfile._id);
   const landlordWalletBefore = landlordWallet.availableBalance;
@@ -81,8 +104,8 @@ export async function settleRentPaymentWallets(
     { _id: landlordWallet._id },
     {
       $inc: {
-        availableBalance: payment.amount,
-        totalCredited: payment.amount,
+        availableBalance: landlordNet,
+        totalCredited: landlordNet,
       },
     },
     { new: true }
@@ -95,25 +118,34 @@ export async function settleRentPaymentWallets(
     userId: payeeProfile.userId,
     type: "rent_credit",
     direction: "in",
-    amount: payment.amount,
+    amount: landlordNet,
     currency: payment.currency,
     balanceAfter: landlordWalletAfter.availableBalance,
     status: "completed",
     reference: generateWalletTxReference("wtx"),
-    description: `Rent received · ${payment.currency} ${payment.amount.toLocaleString()}`,
+    description:
+      platformFee > 0
+        ? `Rent received (net) · ${payment.currency} ${landlordNet.toLocaleString()}`
+        : `Rent received · ${payment.currency} ${landlordNet.toLocaleString()}`,
     paymentId: payment._id,
-    counterpartyProfileId: payerProfile?.tenantProfileId,
+    counterpartyProfileId: leaseDoc?.tenantProfileId,
     metadata: {
       providerRef: payment.providerRef,
       leaseId: payment.leaseId ? String(payment.leaseId) : undefined,
+      grossAmount,
+      platformFee,
     },
   });
 
   payment.landlordWalletTxId = landlordTx._id;
 
+  if (platformFee > 0) {
+    await creditPlatformFeeFromRent(payment, platformFee);
+  }
+
   let tenantTxId: mongoose.Types.ObjectId | undefined;
-  if (payerProfile?.tenantProfileId) {
-    const tenantProfile = await Profile.findById(payerProfile.tenantProfileId);
+  if (leaseDoc?.tenantProfileId) {
+    const tenantProfile = await Profile.findById(leaseDoc.tenantProfileId);
     if (tenantProfile && TENANT_TYPES.has(tenantProfile.type)) {
       const tenantWallet = await getOrCreateWallet(tenantProfile._id);
       const tenantTx = await WalletTransaction.create({
@@ -648,39 +680,15 @@ export async function saveWalletBankDetails(input: {
   accountNumber: string;
   accountName: string;
 }) {
-  const profile = await Profile.findOne({
-    _id: input.profileId,
-    userId: input.userId,
+  const { getPayoutSettings } = await import("@/lib/payout-settings");
+  const { saveWalletBankDetailsWithPayout } = await import(
+    "@/lib/withdrawal-service"
+  );
+  const payoutSettings = await getPayoutSettings();
+  return saveWalletBankDetailsWithPayout({
+    ...input,
+    payoutProvider: payoutSettings.provider,
   });
-  if (
-    !profile ||
-    (!LANDLORD_TYPES.has(profile.type) && !TENANT_TYPES.has(profile.type))
-  ) {
-    throw new Error("Profile cannot set payout bank details.");
-  }
-
-  const accountNumber = input.accountNumber.replace(/\D/g, "");
-  if (accountNumber.length < 10) {
-    throw new Error("Enter a valid account number.");
-  }
-
-  const recipient = await paystackCreateRecipient({
-    name: input.accountName.trim(),
-    accountNumber,
-    bankCode: input.bankCode,
-  });
-
-  const wallet = await getOrCreateWallet(profile._id);
-  wallet.bankDetails = {
-    bankCode: input.bankCode,
-    bankName: input.bankName.trim(),
-    accountName: input.accountName.trim(),
-    accountNumberLast4: maskAccountNumber(accountNumber),
-    paystackRecipientCode: recipient.recipient_code,
-  };
-  await wallet.save();
-
-  return wallet;
 }
 
 export async function requestWithdrawal(input: {
@@ -689,157 +697,13 @@ export async function requestWithdrawal(input: {
   amount: number;
   actor: AuditActor;
 }) {
-  const profile = await Profile.findOne({
-    _id: input.profileId,
-    userId: input.userId,
-  });
-  if (!profile || (!LANDLORD_TYPES.has(profile.type) && !TENANT_TYPES.has(profile.type))) {
-    throw new Error("This profile cannot withdraw.");
-  }
-  if (profile.status !== "verified") {
-    throw new Error("Verify your profile before withdrawing funds.");
-  }
-
-  const minAmount = withdrawalMinAmount();
-  if (input.amount < minAmount) {
-    throw new Error(`Minimum withdrawal is NGN ${minAmount.toLocaleString()}.`);
-  }
-
-  const wallet = await getOrCreateWallet(profile._id);
-  if (!wallet.bankDetails?.paystackRecipientCode) {
-    throw new Error("Add your bank account before withdrawing.");
-  }
-
-  const fee = withdrawalFee();
-  const totalDebit = input.amount;
-  if (wallet.availableBalance < totalDebit) {
-    throw new Error("Insufficient available balance. Unlock reserved funds first.");
-  }
-
-  const providerRef = generateWithdrawalReference();
-  const walletAfter = await Wallet.findOneAndUpdate(
-    {
-      _id: wallet._id,
-      availableBalance: { $gte: totalDebit },
-    },
-    {
-      $inc: {
-        availableBalance: -totalDebit,
-        totalWithdrawn: totalDebit,
-      },
-    },
-    { new: true }
+  const { requestWithdrawal: requestWithdrawalImpl } = await import(
+    "@/lib/withdrawal-service"
   );
-  if (!walletAfter) {
-    throw new Error("Insufficient wallet balance.");
-  }
-
-  const withdrawal = await Withdrawal.create({
-    walletId: wallet._id,
-    profileId: profile._id,
-    userId: profile.userId,
-    amount: input.amount,
-    fee,
-    netAmount: input.amount - fee,
-    currency: wallet.currency,
-    bankName: wallet.bankDetails.bankName,
-    accountName: wallet.bankDetails.accountName,
-    accountNumberLast4: wallet.bankDetails.accountNumberLast4,
-    status: "processing",
-    providerRef,
-  });
-
-  const walletTx = await WalletTransaction.create({
-    walletId: wallet._id,
-    profileId: profile._id,
-    userId: profile.userId,
-    type: "withdrawal",
-    direction: "out",
-    amount: totalDebit,
-    currency: wallet.currency,
-    balanceAfter: walletAfter.availableBalance,
-    status: "pending",
-    reference: generateWalletTxReference("wtx"),
-    description: `Withdrawal to ${wallet.bankDetails.bankName} ${wallet.bankDetails.accountNumberLast4}`,
-    withdrawalId: withdrawal._id,
-    metadata: { fee, netAmount: input.amount - fee },
-  });
-
-  withdrawal.walletTransactionId = walletTx._id;
-  await withdrawal.save();
-
-  try {
-    const transfer = await paystackInitiateTransfer({
-      amountKobo: Math.round((input.amount - fee) * 100),
-      recipientCode: wallet.bankDetails.paystackRecipientCode,
-      reference: providerRef,
-      reason: LANDLORD_TYPES.has(profile.type)
-        ? "House In Hand rent payout"
-        : "House In Hand wallet withdrawal",
-    });
-
-    withdrawal.transferCode = transfer.transfer_code;
-    withdrawal.status =
-      transfer.status === "success" || transfer.status === "pending"
-        ? "completed"
-        : "processing";
-    if (withdrawal.status === "completed") {
-      withdrawal.completedAt = new Date();
-    }
-    await withdrawal.save();
-
-    walletTx.status = withdrawal.status === "completed" ? "completed" : "pending";
-    await walletTx.save();
-
-    await writeAudit({
-      action: "wallet.withdraw",
-      summary: `Withdrawal of ${wallet.currency} ${input.amount.toLocaleString()} initiated`,
-      actor: input.actor,
-      entityType: "withdrawal",
-      entityId: String(withdrawal._id),
-      metadata: {
-        profileId: String(profile._id),
-        providerRef,
-        transferCode: transfer.transfer_code,
-        balanceAfter: walletAfter.availableBalance,
-      },
-    });
-
-    return { withdrawal, wallet: walletAfter, walletTransaction: walletTx };
-  } catch (err) {
-    await Wallet.findByIdAndUpdate(wallet._id, {
-      $inc: {
-        availableBalance: totalDebit,
-        totalWithdrawn: -totalDebit,
-      },
-    });
-
-    withdrawal.status = "failed";
-    withdrawal.failureReason =
-      err instanceof Error ? err.message : "Withdrawal failed.";
-    await withdrawal.save();
-
-    walletTx.status = "failed";
-    await walletTx.save();
-
-    await WalletTransaction.create({
-      walletId: wallet._id,
-      profileId: profile._id,
-      userId: profile.userId,
-      type: "withdrawal_refund",
-      direction: "in",
-      amount: totalDebit,
-      currency: wallet.currency,
-      balanceAfter: walletAfter.availableBalance + totalDebit,
-      status: "completed",
-      reference: generateWalletTxReference("wtx"),
-      description: "Withdrawal refund — transfer failed",
-      withdrawalId: withdrawal._id,
-    });
-
-    throw err;
-  }
+  return requestWithdrawalImpl(input);
 }
+
+export { serializeWithdrawalPublic as serializeWithdrawal } from "@/lib/withdrawal-service";
 
 export async function buildPaymentReceipt(paymentId: string, userId: string) {
   const payment = await Payment.findById(paymentId).lean();
@@ -952,23 +816,5 @@ export function serializeWalletTransaction(
     paymentId: tx.paymentId ? String(tx.paymentId) : null,
     withdrawalId: tx.withdrawalId ? String(tx.withdrawalId) : null,
     createdAt: tx.createdAt,
-  };
-}
-
-export function serializeWithdrawal(w: InstanceType<typeof Withdrawal>) {
-  return {
-    id: String(w._id),
-    amount: w.amount,
-    fee: w.fee,
-    netAmount: w.netAmount,
-    currency: w.currency,
-    bankName: w.bankName,
-    accountName: w.accountName,
-    accountNumberLast4: w.accountNumberLast4,
-    status: w.status,
-    providerRef: w.providerRef || null,
-    failureReason: w.failureReason || null,
-    createdAt: w.createdAt,
-    completedAt: w.completedAt || null,
   };
 }

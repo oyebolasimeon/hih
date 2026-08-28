@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import EmptyState from "@/components/ui/EmptyState";
 import { TableSkeleton } from "@/components/ui/Skeleton";
 
@@ -18,18 +19,29 @@ type Agreement = {
   signedAt: string | null;
   startDate: string;
   endDate: string | null;
+  legalProvider: "hih" | "own_legal";
+  legalCompanyName: string;
+  agreementFeePercent: number;
+  agreementFeeAmount: number;
+  agreementFeePaidAt: string | null;
+  documentUrl: string | null;
+  documentNumber: string | null;
   listing: { id: string; title: string; city?: string; state?: string } | null;
 };
 
+function formatMoney(amount: number, currency = "NGN") {
+  return `${currency} ${amount.toLocaleString()}`;
+}
+
 export default function AgreementsClient() {
+  const searchParams = useSearchParams();
   const [rows, setRows] = useState<Agreement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [signatureName, setSignatureName] = useState<Record<string, string>>(
-    {}
-  );
+  const [signatureName, setSignatureName] = useState<Record<string, string>>({});
   const [busyKey, setBusyKey] = useState("");
+  const [payingFeeId, setPayingFeeId] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -47,6 +59,45 @@ export default function AgreementsClient() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    const feePaid = searchParams.get("fee_paid");
+    const mockRef = searchParams.get("mock_ref");
+    const ref = mockRef || searchParams.get("reference");
+    if (feePaid === "1" && ref) {
+      void (async () => {
+        setError("");
+        const res = await fetch(
+          `/api/portal/payments/verify?reference=${encodeURIComponent(ref)}`
+        );
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || "Could not verify agreement fee.");
+          return;
+        }
+        setMessage("Agreement fee paid. You can now sign as tenant.");
+        await load();
+      })();
+    }
+  }, [searchParams, load]);
+
+  async function payFee(id: string) {
+    setPayingFeeId(id);
+    setError("");
+    setMessage("");
+    const res = await fetch(`/api/portal/agreements/${id}/pay-fee`, {
+      method: "POST",
+    });
+    const data = await res.json();
+    setPayingFeeId("");
+    if (!res.ok) {
+      setError(data.error || "Could not start agreement fee payment.");
+      return;
+    }
+    if (data.authorization_url) {
+      window.location.href = data.authorization_url;
+    }
+  }
 
   async function sign(
     e: FormEvent,
@@ -75,7 +126,7 @@ export default function AgreementsClient() {
     }
     setMessage(
       data.agreement?.status === "active"
-        ? "Both parties signed — lease is active."
+        ? "Both parties signed — lease is active. Signed PDF emailed to both parties."
         : "Signature recorded."
     );
     await load();
@@ -107,12 +158,53 @@ export default function AgreementsClient() {
                     {a.listing?.title || "Property"} · {a.status}
                   </p>
                   <p className="text-xs text-muted mt-1">
-                    {a.currency} {a.rentAmount.toLocaleString()} / {a.paymentPeriod}
+                    {formatMoney(a.rentAmount, a.currency)} / {a.paymentPeriod}
                     {a.endDate
                       ? ` · until ${new Date(a.endDate).toLocaleDateString()}`
                       : ""}
                   </p>
+                  <p className="text-xs text-muted mt-1">
+                    Legal:{" "}
+                    {a.legalProvider === "hih"
+                      ? "House In Hand"
+                      : a.legalCompanyName || "Landlord legal partner"}
+                  </p>
                 </div>
+                {a.documentUrl ? (
+                  <a
+                    href={a.documentUrl}
+                    className="app-btn app-btn-secondary text-xs"
+                  >
+                    Download signed PDF
+                  </a>
+                ) : null}
+              </div>
+
+              <div className="rounded-lg border border-border/60 bg-surface/40 p-3 text-sm space-y-2">
+                <p className="font-medium">Agreement fee (tenant pays first)</p>
+                <p className="text-muted text-xs">
+                  {a.agreementFeePercent}% of rent ={" "}
+                  {formatMoney(a.agreementFeeAmount, a.currency)}
+                  {a.legalProvider === "hih"
+                    ? " → House In Hand wallet"
+                    : " → Landlord wallet"}
+                </p>
+                {a.agreementFeePaidAt ? (
+                  <p className="text-brand-dark text-xs font-medium">
+                    Paid on {new Date(a.agreementFeePaidAt).toLocaleString()}
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => void payFee(a.id)}
+                    disabled={payingFeeId === a.id}
+                    className="app-btn app-btn-primary text-xs"
+                  >
+                    {payingFeeId === a.id
+                      ? "Redirecting…"
+                      : `Pay ${formatMoney(a.agreementFeeAmount, a.currency)}`}
+                  </button>
+                )}
               </div>
 
               {a.termsText ? (
@@ -134,6 +226,11 @@ export default function AgreementsClient() {
                       onSubmit={(e) => void sign(e, a.id, "tenant")}
                       className="space-y-2"
                     >
+                      {!a.agreementFeePaidAt ? (
+                        <p className="text-xs text-muted">
+                          Pay the agreement fee before signing.
+                        </p>
+                      ) : null}
                       <input
                         className="app-input w-full text-sm"
                         placeholder="Full name"
@@ -144,11 +241,14 @@ export default function AgreementsClient() {
                             [`${a.id}-tenant`]: e.target.value,
                           })
                         }
+                        disabled={!a.agreementFeePaidAt}
                       />
                       <button
                         type="submit"
-                        disabled={busyKey === `${a.id}-tenant`}
-                        className="app-btn app-btn-primary text-xs"
+                        disabled={
+                          busyKey === `${a.id}-tenant` || !a.agreementFeePaidAt
+                        }
+                        className="app-btn app-btn-primary text-xs disabled:opacity-50"
                       >
                         Sign as tenant
                       </button>

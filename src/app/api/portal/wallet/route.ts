@@ -6,7 +6,9 @@ import {
   getOrCreateWallet,
   serializeWallet,
 } from "@/lib/wallet";
-import { withdrawalMinAmount, withdrawalFee } from "@/lib/wallet-utils";
+import { getPayoutSettings } from "@/lib/payout-settings";
+import { serializeWithdrawalPublic } from "@/lib/withdrawal-service";
+import { withdrawalMinAmount } from "@/lib/wallet-utils";
 import { Profile } from "@/models/Profile";
 import { RentLock } from "@/models/RentLock";
 import { WalletTransaction } from "@/models/WalletTransaction";
@@ -43,6 +45,8 @@ export async function GET(req: Request) {
       .lean(),
   ]);
 
+  const payoutSettings = await getPayoutSettings();
+
   return NextResponse.json({
     wallet: serializeWallet(wallet),
     transactions: transactions.map((tx) => ({
@@ -59,24 +63,13 @@ export async function GET(req: Request) {
       withdrawalId: tx.withdrawalId ? String(tx.withdrawalId) : null,
       createdAt: tx.createdAt,
     })),
-    withdrawals: withdrawals.map((w) => ({
-      id: String(w._id),
-      amount: w.amount,
-      fee: w.fee,
-      netAmount: w.netAmount,
-      currency: w.currency,
-      bankName: w.bankName,
-      accountName: w.accountName,
-      accountNumberLast4: w.accountNumberLast4,
-      status: w.status,
-      providerRef: w.providerRef || null,
-      failureReason: w.failureReason || null,
-      createdAt: w.createdAt,
-      completedAt: w.completedAt || null,
-    })),
+    withdrawals: withdrawals.map((w) =>
+      serializeWithdrawalPublic(w as unknown as InstanceType<typeof Withdrawal>)
+    ),
     limits: {
       minWithdrawal: withdrawalMinAmount(),
-      withdrawalFee: withdrawalFee(),
+      withdrawalFee: payoutSettings.withdrawalFee,
+      payoutProvider: payoutSettings.provider,
     },
     rentLocks: rentLocks.map((lock) => ({
       id: String(lock._id),
