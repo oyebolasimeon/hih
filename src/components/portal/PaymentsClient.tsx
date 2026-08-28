@@ -12,13 +12,21 @@ type PaymentRow = {
   id: string;
   leaseId: string | null;
   amount: number;
+  netPayeeAmount: number | null;
   currency: string;
   status: string;
+  purpose: string | null;
+  source: string;
   providerRef: string | null;
   receiptUrl: string | null;
   receiptNumber: string | null;
+  rentPeriodLabel: string | null;
+  refundAmount: number | null;
+  refundReason: string | null;
+  refundedAt: string | null;
   paidAt: string | null;
   createdAt: string;
+  canRefund: boolean;
 };
 
 type WalletTx = {
@@ -108,6 +116,53 @@ type AgreementOption = {
   listing: { title: string } | null;
 };
 
+type PaymentMethodRow = {
+  id: string;
+  cardType: string;
+  last4: string;
+  expMonth: string | null;
+  expYear: string | null;
+  bank: string | null;
+  isDefault: boolean;
+};
+
+type AutoPayState = {
+  enabled: boolean;
+  includeRent: boolean;
+  includeServiceDues: boolean;
+  paymentMethodId: string | null;
+  lastRunAt: string | null;
+  lastRunStatus: string | null;
+  lastRunError: string | null;
+};
+
+type DefaulterRow = {
+  leaseId: string;
+  tenant: { profileId: string; name: string; userId: string };
+  listing: { id: string; title: string; address?: string };
+  rent: {
+    paid: boolean;
+    overdue: boolean;
+    dueSoon: boolean;
+    periodLabel: string;
+    periodEnd: string;
+    amount: number;
+    currency: string;
+    daysUntilDue: number;
+    daysOverdue: number;
+  } | null;
+  serviceDues: Array<{
+    chargeId: string;
+    serviceName: string;
+    amount: number;
+    currency: string;
+    dueDate: string;
+    daysOverdue: number;
+    overdue: boolean;
+  }>;
+  isDefaulter: boolean;
+};
+
 type BankOption = { code: string; name: string };
 
 type ReceiptData = {
@@ -177,6 +232,9 @@ function statusClass(status: string) {
   if (status === "successful" || status === "completed") {
     return "bg-teal/15 text-brand-dark border-teal/30";
   }
+  if (status === "refunded") {
+    return "bg-amber-500/10 text-amber-900 dark:text-amber-100 border-amber-500/30";
+  }
   if (status === "pending" || status === "processing") {
     return "bg-brand/10 text-brand-dark border-brand/25";
   }
@@ -193,6 +251,8 @@ function txLabel(type: string) {
   if (type === "rent_lock_apply") return "Rent from reserve";
   if (type === "withdrawal") return "Withdrawal";
   if (type === "withdrawal_refund") return "Withdrawal refund";
+  if (type === "rent_refund") return "Rent refund";
+  if (type === "service_due") return "Service due";
   return type.replace(/_/g, " ");
 }
 
@@ -238,6 +298,16 @@ export default function PaymentsClient() {
   const [disputeId, setDisputeId] = useState("");
   const [disputeReason, setDisputeReason] = useState("");
   const [disputing, setDisputing] = useState(false);
+  const [refundId, setRefundId] = useState("");
+  const [refundReason, setRefundReason] = useState("");
+  const [refunding, setRefunding] = useState(false);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodRow[]>([]);
+  const [autoPay, setAutoPay] = useState<AutoPayState | null>(null);
+  const [attachingCard, setAttachingCard] = useState(false);
+  const [savingAutoPay, setSavingAutoPay] = useState(false);
+  const [defaulters, setDefaulters] = useState<DefaulterRow[]>([]);
+  const [dueSoonTenants, setDueSoonTenants] = useState<DefaulterRow[]>([]);
+  const [defaultersLoading, setDefaultersLoading] = useState(false);
 
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [receiptLoading, setReceiptLoading] = useState(false);
@@ -273,6 +343,37 @@ export default function PaymentsClient() {
     if (res.ok) setRentStatus(data.rentStatus || null);
   }, []);
 
+  const loadAutoPay = useCallback(async (selectedLeaseId: string) => {
+    if (!selectedLeaseId) {
+      setAutoPay(null);
+      return;
+    }
+    const res = await fetch(
+      `/api/portal/auto-pay?leaseId=${encodeURIComponent(selectedLeaseId)}`
+    );
+    const data = await res.json();
+    if (res.ok) setAutoPay(data.autoPay || null);
+  }, []);
+
+  const loadPaymentMethods = useCallback(async (profileId: string) => {
+    const res = await fetch(
+      `/api/portal/payments/methods?profileId=${encodeURIComponent(profileId)}`
+    );
+    const data = await res.json();
+    if (res.ok) setPaymentMethods(data.methods || []);
+  }, []);
+
+  const loadDefaulters = useCallback(async () => {
+    setDefaultersLoading(true);
+    const res = await fetch("/api/portal/payments/defaulters?includeDueSoon=1");
+    const data = await res.json();
+    setDefaultersLoading(false);
+    if (res.ok) {
+      setDefaulters(data.defaulters || []);
+      setDueSoonTenants(data.dueSoon || []);
+    }
+  }, []);
+
   const load = useCallback(async () => {
     if (!profile?.id) return;
     setLoading(true);
@@ -297,12 +398,28 @@ export default function PaymentsClient() {
     if (!leaseId && mineAsTenant[0]?.id) setLeaseId(mineAsTenant[0].id);
 
     await loadWallet(profile.id);
-  }, [leaseId, profile?.id, loadWallet]);
+    if (isTenantLike) {
+      await loadPaymentMethods(profile.id);
+    }
+    if (isLandlordLike) {
+      await loadDefaulters();
+    }
+  }, [leaseId, profile?.id, isTenantLike, isLandlordLike, loadWallet, loadPaymentMethods, loadDefaulters]);
 
   useEffect(() => {
     if (profileLoading) return;
     void load();
   }, [profileLoading, profile?.id, load]);
+
+  useEffect(() => {
+    if (!isTenantLike || !leaseId) return;
+    void loadAutoPay(leaseId);
+  }, [isTenantLike, leaseId, loadAutoPay]);
+
+  useEffect(() => {
+    if (!isTenantLike || !leaseId) return;
+    void loadRentStatus(leaseId);
+  }, [isTenantLike, leaseId, loadRentStatus]);
 
   useEffect(() => {
     if (!isLandlordLike && !isTenantLike) return;
@@ -314,16 +431,12 @@ export default function PaymentsClient() {
   }, [isLandlordLike, isTenantLike]);
 
   useEffect(() => {
-    if (!isTenantLike || !leaseId) return;
-    void loadRentStatus(leaseId);
-  }, [isTenantLike, leaseId, loadRentStatus]);
-
-  useEffect(() => {
     const paid = searchParams.get("paid");
     const deposit = searchParams.get("deposit");
+    const card = searchParams.get("card");
     const mockRef = searchParams.get("mock_ref");
     const ref = mockRef || searchParams.get("reference");
-    if ((paid === "1" || deposit === "1") && ref) {
+    if ((paid === "1" || deposit === "1" || card === "1") && ref) {
       void (async () => {
         setVerifying(true);
         setError("");
@@ -337,9 +450,11 @@ export default function PaymentsClient() {
           return;
         }
         setMessage(
-          deposit === "1"
-            ? "Deposit confirmed — funds added to your wallet."
-            : "Payment verified and wallet updated."
+          card === "1"
+            ? "Card saved for auto-pay."
+            : deposit === "1"
+              ? "Deposit confirmed — funds added to your wallet."
+              : "Payment verified and wallet updated."
         );
         await load();
         if (leaseId) await loadRentStatus(leaseId);
@@ -511,6 +626,85 @@ export default function PaymentsClient() {
     }
   }
 
+  async function onAttachCard() {
+    if (!profile?.id) return;
+    setAttachingCard(true);
+    setError("");
+    setMessage("");
+    const res = await fetch("/api/portal/payments/methods", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profileId: profile.id }),
+    });
+    const data = await res.json();
+    setAttachingCard(false);
+    if (!res.ok) {
+      setError(data.error || "Could not start card setup.");
+      return;
+    }
+    if (data.authorization_url) {
+      window.location.href = data.authorization_url;
+    }
+  }
+
+  async function onRemoveCard(methodId: string) {
+    setError("");
+    setMessage("");
+    const res = await fetch(`/api/portal/payments/methods/${methodId}`, {
+      method: "DELETE",
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error || "Could not remove card.");
+      return;
+    }
+    setMessage("Card removed.");
+    if (profile?.id) await loadPaymentMethods(profile.id);
+  }
+
+  async function onSetDefaultCard(methodId: string) {
+    setError("");
+    const res = await fetch(`/api/portal/payments/methods/${methodId}`, {
+      method: "PATCH",
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error || "Could not update default card.");
+      return;
+    }
+    if (profile?.id) await loadPaymentMethods(profile.id);
+  }
+
+  async function onSaveAutoPay(patch: Partial<AutoPayState>) {
+    if (!leaseId) {
+      setError("Select an active lease.");
+      return;
+    }
+    if (patch.enabled && paymentMethods.length === 0) {
+      setError("Attach a card before enabling auto-pay.");
+      return;
+    }
+    setSavingAutoPay(true);
+    setError("");
+    setMessage("");
+    const res = await fetch("/api/portal/auto-pay", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        leaseId,
+        ...patch,
+      }),
+    });
+    const data = await res.json();
+    setSavingAutoPay(false);
+    if (!res.ok) {
+      setError(data.error || "Could not save auto-pay settings.");
+      return;
+    }
+    setAutoPay(data.autoPay || null);
+    setMessage("Auto-pay settings saved.");
+  }
+
   async function onSaveBank(e: FormEvent) {
     e.preventDefault();
     if (!profile?.id || !selectedBank) {
@@ -596,6 +790,38 @@ export default function PaymentsClient() {
     await load();
   }
 
+  async function onRefund(e: FormEvent) {
+    e.preventDefault();
+    if (!refundId || !profile?.id) return;
+    setRefunding(true);
+    setError("");
+    const res = await fetch(`/api/portal/payments/${refundId}/refund`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        profileId: profile.id,
+        reason: refundReason,
+      }),
+    });
+    const data = await res.json();
+    setRefunding(false);
+    if (!res.ok) {
+      setError(data.error || "Could not issue refund.");
+      return;
+    }
+    setMessage(
+      `Refund of ${formatMoney(data.payment?.refundAmount || 0)} issued. Tenant has been notified.`
+    );
+    setRefundId("");
+    setRefundReason("");
+    await load();
+  }
+
+  const rentPayments = useMemo(
+    () => rows.filter((p) => p.purpose === "rent"),
+    [rows]
+  );
+
   const withdrawPreviewNet = (() => {
     const amount = Number(withdrawAmount);
     if (!amount || amount <= 0) return null;
@@ -674,6 +900,111 @@ export default function PaymentsClient() {
             </div>
           </Reveal>
         </section>
+      ) : null}
+
+      {isLandlordLike ? (
+        <Reveal>
+          <section className="app-card overflow-hidden">
+            <div className="px-5 py-6 border-b border-border/60 bg-gradient-to-br from-danger/5 to-amber-500/10">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="font-display text-lg font-semibold">Payment defaulters</h2>
+                  <p className="text-sm text-muted mt-1">
+                    Tenants with overdue rent or service dues. Reminders are sent automatically.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void loadDefaulters()}
+                  disabled={defaultersLoading}
+                  className="app-btn app-btn-secondary text-xs"
+                >
+                  {defaultersLoading ? "Refreshing…" : "Refresh"}
+                </button>
+              </div>
+            </div>
+            <div className="p-5 space-y-4">
+              {defaultersLoading && defaulters.length === 0 && dueSoonTenants.length === 0 ? (
+                <p className="text-sm text-muted">Loading tenant payment status…</p>
+              ) : defaulters.length === 0 && dueSoonTenants.length === 0 ? (
+                <p className="text-sm text-muted">
+                  No overdue payments. All active tenants are up to date.
+                </p>
+              ) : (
+                <>
+                  {defaulters.length > 0 ? (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-danger">
+                        Overdue ({defaulters.length})
+                      </p>
+                      <ul className="space-y-2">
+                        {defaulters.map((d) => (
+                          <li
+                            key={d.leaseId}
+                            className="rounded-lg border border-danger/20 bg-danger/5 p-3 text-sm"
+                          >
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <div>
+                                <p className="font-medium">{d.tenant.name}</p>
+                                <p className="text-muted text-xs mt-0.5">
+                                  {d.listing.title}
+                                  {d.listing.address ? ` · ${d.listing.address}` : ""}
+                                </p>
+                              </div>
+                              <span className="rounded-full border border-danger/30 bg-danger/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-danger">
+                                Overdue
+                              </span>
+                            </div>
+                            <ul className="mt-2 space-y-1 text-xs">
+                              {d.rent?.overdue ? (
+                                <li>
+                                  Rent {formatMoney(d.rent.amount, d.rent.currency)} ·{" "}
+                                  {d.rent.periodLabel} · {d.rent.daysOverdue} day(s) late
+                                </li>
+                              ) : null}
+                              {d.serviceDues.map((s) => (
+                                <li key={s.chargeId}>
+                                  {s.serviceName}{" "}
+                                  {formatMoney(s.amount, s.currency)} · {s.daysOverdue} day(s)
+                                  late
+                                </li>
+                              ))}
+                            </ul>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+
+                  {dueSoonTenants.length > 0 ? (
+                    <div className="space-y-2 border-t border-border/60 pt-4">
+                      <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                        Due soon ({dueSoonTenants.length})
+                      </p>
+                      <ul className="space-y-2">
+                        {dueSoonTenants.map((d) => (
+                          <li
+                            key={d.leaseId}
+                            className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 text-sm"
+                          >
+                            <p className="font-medium">{d.tenant.name}</p>
+                            <p className="text-muted text-xs mt-0.5">{d.listing.title}</p>
+                            {d.rent ? (
+                              <p className="text-xs mt-1">
+                                Rent {formatMoney(d.rent.amount, d.rent.currency)} due in{" "}
+                                {d.rent.daysUntilDue} day(s) · {d.rent.periodLabel}
+                              </p>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </>
+              )}
+            </div>
+          </section>
+        </Reveal>
       ) : null}
 
       {receiptId ? (
@@ -933,6 +1264,150 @@ export default function PaymentsClient() {
                   )}
                 </div>
               </form>
+
+              <div className="app-card overflow-hidden h-fit">
+                <div className="px-5 py-6 border-b border-border/60 bg-gradient-to-br from-brand/5 to-teal/10">
+                  <h2 className="font-display text-lg font-semibold">Auto-pay</h2>
+                  <p className="text-sm text-muted mt-1">
+                    When rent or service dues are due, we debit your wallet first, then your saved card for any remainder. Funds go to your landlord&apos;s wallet.
+                  </p>
+                </div>
+                <div className="p-5 space-y-4">
+                  {tenantLeases.length === 0 ? (
+                    <p className="text-sm text-muted">
+                      Complete an agreement to enable auto-pay.
+                    </p>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Saved cards</p>
+                        {paymentMethods.length === 0 ? (
+                          <p className="text-sm text-muted">
+                            No card on file. A small verification charge (NGN 100) is used to save your card securely.
+                          </p>
+                        ) : (
+                          <ul className="space-y-2">
+                            {paymentMethods.map((m) => (
+                              <li
+                                key={m.id}
+                                className="rounded-lg border border-border/60 bg-surface/40 p-3 text-sm flex flex-wrap items-center justify-between gap-2"
+                              >
+                                <div>
+                                  <p className="font-medium capitalize">
+                                    {m.cardType || "Card"} ···· {m.last4}
+                                    {m.isDefault ? (
+                                      <span className="ml-2 text-xs text-brand font-normal">Default</span>
+                                    ) : null}
+                                  </p>
+                                  {m.expMonth && m.expYear ? (
+                                    <p className="text-xs text-muted mt-0.5">
+                                      Expires {m.expMonth}/{m.expYear}
+                                      {m.bank ? ` · ${m.bank}` : ""}
+                                    </p>
+                                  ) : null}
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  {!m.isDefault ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => onSetDefaultCard(m.id)}
+                                      className="app-btn app-btn-secondary text-xs"
+                                    >
+                                      Make default
+                                    </button>
+                                  ) : null}
+                                  <button
+                                    type="button"
+                                    onClick={() => onRemoveCard(m.id)}
+                                    className="app-btn app-btn-secondary text-xs text-danger"
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        <button
+                          type="button"
+                          onClick={onAttachCard}
+                          disabled={attachingCard || verifying}
+                          className="app-btn app-btn-secondary text-sm"
+                        >
+                          {attachingCard || verifying
+                            ? "Redirecting…"
+                            : paymentMethods.length
+                              ? "Add another card"
+                              : "Attach card"}
+                        </button>
+                      </div>
+
+                      {leaseId ? (
+                        <div className="border-t border-border/60 pt-4 space-y-3">
+                          <label className="flex items-start gap-3 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="mt-1"
+                              checked={autoPay?.enabled ?? false}
+                              disabled={savingAutoPay}
+                              onChange={(e) =>
+                                void onSaveAutoPay({ enabled: e.target.checked })
+                              }
+                            />
+                            <span className="text-sm">
+                              <span className="font-medium block">Enable auto-pay for this lease</span>
+                              <span className="text-muted">
+                                Automatically collect when rent or service dues are due.
+                              </span>
+                            </span>
+                          </label>
+
+                          {autoPay?.enabled ? (
+                            <div className="pl-7 space-y-2">
+                              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={autoPay.includeRent}
+                                  disabled={savingAutoPay}
+                                  onChange={(e) =>
+                                    void onSaveAutoPay({ includeRent: e.target.checked })
+                                  }
+                                />
+                                Monthly rent
+                              </label>
+                              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={autoPay.includeServiceDues}
+                                  disabled={savingAutoPay}
+                                  onChange={(e) =>
+                                    void onSaveAutoPay({ includeServiceDues: e.target.checked })
+                                  }
+                                />
+                                Service dues (monthly / yearly)
+                              </label>
+                            </div>
+                          ) : null}
+
+                          {autoPay?.lastRunAt ? (
+                            <p className="text-xs text-muted pl-7">
+                              Last run: {new Date(autoPay.lastRunAt).toLocaleString()}
+                              {autoPay.lastRunStatus
+                                ? ` · ${autoPay.lastRunStatus}`
+                                : ""}
+                              {autoPay.lastRunError ? (
+                                <span className="block text-danger mt-0.5">
+                                  {autoPay.lastRunError}
+                                </span>
+                              ) : null}
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </>
+                  )}
+                </div>
+              </div>
 
               <div className="app-card overflow-hidden h-fit">
                 <div className="px-5 py-6 border-b border-border/60 bg-gradient-to-br from-teal/10 to-transparent">
@@ -1434,7 +1909,7 @@ export default function PaymentsClient() {
         <Reveal>
           <h2 className="font-display text-lg font-semibold">Rent payments</h2>
         </Reveal>
-        {rows.length === 0 ? (
+        {rentPayments.length === 0 ? (
           <EmptyState
             title="No payments yet"
             description={
@@ -1445,45 +1920,116 @@ export default function PaymentsClient() {
           />
         ) : (
           <ul className="space-y-2">
-            {rows.map((p) => (
+            {rentPayments.map((p) => (
               <li
                 key={p.id}
-                className="app-card p-4 flex flex-wrap items-center justify-between gap-3"
+                className="app-card p-4 space-y-3"
               >
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-medium">
-                      {formatMoney(p.amount, p.currency)}
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium">
+                        {formatMoney(p.amount, p.currency)}
+                        {isLandlordLike && p.netPayeeAmount != null ? (
+                          <span className="text-sm text-muted font-normal">
+                            {" "}
+                            · net {formatMoney(p.netPayeeAmount, p.currency)}
+                          </span>
+                        ) : null}
+                      </p>
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${statusClass(p.status)}`}
+                      >
+                        {p.status}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted mt-1">
+                      {p.receiptNumber ? `${p.receiptNumber} · ` : ""}
+                      {p.rentPeriodLabel ? `${p.rentPeriodLabel} · ` : ""}
+                      {p.providerRef ? `Ref ${p.providerRef}` : "Online payment"}
+                      {p.paidAt
+                        ? ` · ${new Date(p.paidAt).toLocaleString()}`
+                        : ` · ${new Date(p.createdAt).toLocaleString()}`}
                     </p>
-                    <span
-                      className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${statusClass(p.status)}`}
-                    >
-                      {p.status}
-                    </span>
+                    {p.status === "refunded" && p.refundAmount ? (
+                      <p className="text-xs text-muted mt-1">
+                        Refunded {formatMoney(p.refundAmount, p.currency)}
+                        {p.refundedAt
+                          ? ` · ${new Date(p.refundedAt).toLocaleString()}`
+                          : ""}
+                      </p>
+                    ) : null}
                   </div>
-                  <p className="text-xs text-muted mt-1">
-                    {p.receiptNumber ? `${p.receiptNumber} · ` : ""}
-                    {p.providerRef ? `Ref ${p.providerRef}` : "Online payment"}
-                    {p.paidAt
-                      ? ` · ${new Date(p.paidAt).toLocaleString()}`
-                      : ` · ${new Date(p.createdAt).toLocaleString()}`}
-                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {p.status === "successful" ? (
+                      <>
+                        <a
+                          href={`/portal/payments?receipt=${p.id}`}
+                          className="app-btn app-btn-secondary text-xs"
+                        >
+                          Receipt
+                        </a>
+                        <a
+                          href={`/api/portal/payments/${p.id}/receipt/pdf`}
+                          className="app-btn app-btn-secondary text-xs"
+                        >
+                          PDF
+                        </a>
+                        {p.canRefund ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRefundId(p.id);
+                              setRefundReason("");
+                            }}
+                            className="app-btn app-btn-secondary text-xs"
+                          >
+                            Refund tenant
+                          </button>
+                        ) : null}
+                      </>
+                    ) : null}
+                  </div>
                 </div>
-                {p.status === "successful" ? (
-                  <div className="flex gap-2">
-                    <a
-                      href={`/portal/payments?receipt=${p.id}`}
-                      className="app-btn app-btn-secondary text-xs"
-                    >
-                      Receipt
-                    </a>
-                    <a
-                      href={`/api/portal/payments/${p.id}/receipt/pdf`}
-                      className="app-btn app-btn-secondary text-xs"
-                    >
-                      PDF
-                    </a>
-                  </div>
+
+                {refundId === p.id ? (
+                  <form
+                    onSubmit={onRefund}
+                    className="border-t border-border/60 pt-3 space-y-3"
+                  >
+                    <p className="text-sm font-medium">Issue rent refund</p>
+                    <p className="text-xs text-muted">
+                      {formatMoney(p.amount, p.currency)} will be returned to the
+                      tenant&apos;s wallet.{" "}
+                      {p.netPayeeAmount != null
+                        ? `${formatMoney(p.netPayeeAmount, p.currency)} will be debited from your wallet.`
+                        : "Your wallet will be debited."}
+                    </p>
+                    <textarea
+                      className="app-input w-full min-h-[80px]"
+                      value={refundReason}
+                      onChange={(e) => setRefundReason(e.target.value)}
+                      placeholder="Reason for refund (required)"
+                      required
+                      minLength={10}
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        disabled={refunding}
+                        className="app-btn app-btn-primary text-xs"
+                      >
+                        {refunding ? "Processing…" : "Confirm refund"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRefundId("")}
+                        className="app-btn app-btn-secondary text-xs"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
                 ) : null}
               </li>
             ))}

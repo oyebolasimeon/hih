@@ -1,7 +1,7 @@
 import { notifyUser } from "@/lib/profile-context";
 import { sendPaymentReceiptEmail } from "@/lib/receipt-email";
 import { settleAgreementFeePayment } from "@/lib/platform-wallet";
-import { creditWalletDeposit, settleRentPaymentWallets } from "@/lib/wallet";
+import { creditWalletDeposit, settleRentPaymentWallets, settleServiceDuePayment } from "@/lib/wallet";
 import { generateReceiptNumber } from "@/lib/wallet-utils";
 import { Payment } from "@/models/Payment";
 import { Profile } from "@/models/Profile";
@@ -21,6 +21,12 @@ export async function markPaymentSuccessful(
       payment.payeeProfileId
     ) {
       await settleRentPaymentWallets(payment);
+    } else if (
+      payment.purpose === "service_due" &&
+      !payment.landlordWalletTxId &&
+      payment.payeeProfileId
+    ) {
+      await settleServiceDuePayment(payment);
     }
     return payment;
   }
@@ -48,8 +54,14 @@ export async function markPaymentSuccessful(
     return payment;
   }
 
+  if (payment.purpose === "card_verification") {
+    return payment;
+  }
+
   if (payment.purpose === "agreement_fee") {
     await settleAgreementFeePayment(payment);
+  } else if (payment.purpose === "service_due") {
+    await settleServiceDuePayment(payment);
   } else {
     await settleRentPaymentWallets(payment);
   }

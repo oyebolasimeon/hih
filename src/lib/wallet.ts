@@ -32,7 +32,9 @@ import {
   getPlatformFees,
   type LegalProvider,
 } from "@/lib/platform-fees";
-import { creditPlatformFeeFromRent } from "@/lib/platform-wallet";
+import { creditPlatformFeeFromRent, debitPlatformFeeFromRent } from "@/lib/platform-wallet";
+import { notifyUser } from "@/lib/profile-context";
+import { User } from "@/models/User";
 
 const LANDLORD_TYPES = new Set<ProfileType>(["landlord", "estate_manager"]);
 const TENANT_TYPES = new Set<ProfileType>(["tenant", "student"]);
@@ -165,6 +167,9 @@ export async function settleRentPaymentWallets(
         metadata: {
           providerRef: payment.providerRef,
           leaseId: payment.leaseId ? String(payment.leaseId) : undefined,
+          walletPaid: payment.walletPaidAmount ?? 0,
+          cardPaid: payment.cardPaidAmount ?? 0,
+          autoPay: payment.isAutoPay || false,
         },
       });
       tenantTxId = tenantTx._id;
@@ -332,6 +337,136 @@ export async function creditWalletDeposit(
 
   payment.tenantWalletTxId = tx._id;
   await payment.save();
+  return payment;
+}
+
+export async function debitTenantWalletForRent(input: {
+  profileId: mongoose.Types.ObjectId;
+  userId: string;
+  maxDebit: number;
+}) {
+  if (input.maxDebit <= 0) {
+    const wallet = await getOrCreateWallet(input.profileId);
+    return { debited: 0, wallet };
+  }
+
+  const wallet = await Wallet.findOne({ profileId: input.profileId });
+  if (!wallet) {
+    return { debited: 0, wallet: await getOrCreateWallet(input.profileId) };
+  }
+
+  const debited = Math.min(wallet.availableBalance, input.maxDebit);
+  if (debited <= 0) {
+    return { debited: 0, wallet };
+  }
+
+  const walletAfter = await Wallet.findOneAndUpdate(
+    { _id: wallet._id, availableBalance: { $gte: debited } },
+    { $inc: { availableBalance: -debited } },
+    { new: true }
+  );
+  if (!walletAfter) {
+    return { debited: 0, wallet };
+  }
+
+  return { debited, wallet: walletAfter };
+}
+
+export async function settleServiceDuePayment(
+  payment: InstanceType<typeof Payment>,
+  actor?: AuditActor
+) {
+  if (!payment.payeeProfileId || payment.landlordWalletTxId) {
+    return payment;
+  }
+
+  const payeeProfile = await Profile.findById(payment.payeeProfileId);
+  if (!payeeProfile || !LANDLORD_TYPES.has(payeeProfile.type)) {
+    return payment;
+  }
+
+  const walletPaid = payment.walletPaidAmount ?? 0;
+  if (walletPaid > 0 && payment.payerProfileId && !payment.tenantWalletTxId) {
+    const tenantProfile = await Profile.findById(payment.payerProfileId);
+    if (tenantProfile && TENANT_TYPES.has(tenantProfile.type)) {
+      const tenantWallet = await getOrCreateWallet(tenantProfile._id);
+      const tenantTx = await WalletTransaction.create({
+        walletId: tenantWallet._id,
+        profileId: tenantProfile._id,
+        userId: tenantProfile.userId,
+        type: "service_due",
+        direction: "out",
+        amount: walletPaid,
+        currency: payment.currency,
+        balanceAfter: tenantWallet.availableBalance,
+        status: "completed",
+        reference: generateWalletTxReference("wtx"),
+        description: `Service due · ${payment.currency} ${walletPaid.toLocaleString()}`,
+        paymentId: payment._id,
+        counterpartyProfileId: payeeProfile._id,
+      });
+      payment.tenantWalletTxId = tenantTx._id;
+    }
+  }
+
+  const landlordWallet = await getOrCreateWallet(payeeProfile._id);
+  const landlordBefore = landlordWallet.availableBalance;
+  const landlordAfter = await Wallet.findOneAndUpdate(
+    { _id: landlordWallet._id },
+    {
+      $inc: {
+        availableBalance: payment.amount,
+        totalCredited: payment.amount,
+      },
+    },
+    { new: true }
+  );
+  if (!landlordAfter) throw new Error("Could not credit landlord wallet.");
+
+  const landlordTx = await WalletTransaction.create({
+    walletId: landlordWallet._id,
+    profileId: payeeProfile._id,
+    userId: payeeProfile.userId,
+    type: "service_due",
+    direction: "in",
+    amount: payment.amount,
+    currency: payment.currency,
+    balanceAfter: landlordAfter.availableBalance,
+    status: "completed",
+    reference: generateWalletTxReference("wtx"),
+    description: `Service due received · ${payment.currency} ${payment.amount.toLocaleString()}`,
+    paymentId: payment._id,
+    counterpartyProfileId: payment.payerProfileId,
+  });
+
+  payment.landlordWalletTxId = landlordTx._id;
+  payment.netPayeeAmount = payment.amount;
+  payment.grossAmount = payment.amount;
+  if (!payment.receiptNumber) {
+    payment.receiptNumber = generateReceiptNumber();
+  }
+  await payment.save();
+
+  if (payment.serviceDueChargeId) {
+    const { ServiceDueCharge } = await import("@/models/ServiceDueCharge");
+    await ServiceDueCharge.findByIdAndUpdate(payment.serviceDueChargeId, {
+      status: "paid",
+      paymentId: payment._id,
+    });
+  }
+
+  await writeAudit({
+    action: "wallet.service_due_credit",
+    summary: `Service due ${payment.currency} ${payment.amount.toLocaleString()} credited to landlord`,
+    actor: actor || { kind: "system", name: "Auto-pay" },
+    entityType: "payment",
+    entityId: String(payment._id),
+    metadata: {
+      balanceBefore: landlordBefore,
+      balanceAfter: landlordAfter.availableBalance,
+    },
+  });
+
   return payment;
 }
 
@@ -704,6 +839,209 @@ export async function requestWithdrawal(input: {
 }
 
 export { serializeWithdrawalPublic as serializeWithdrawal } from "@/lib/withdrawal-service";
+
+function resolveRentPurpose(payment: {
+  purpose?: string;
+  leaseId?: unknown;
+}) {
+  if (payment.purpose === "rent") return "rent";
+  if (payment.leaseId) return "rent";
+  return payment.purpose || null;
+}
+
+export async function refundRentPayment(input: {
+  paymentId: mongoose.Types.ObjectId;
+  landlordUserId: string;
+  landlordProfileId: mongoose.Types.ObjectId;
+  reason: string;
+  actor: AuditActor;
+}) {
+  const payment = await Payment.findById(input.paymentId);
+  if (!payment) throw new Error("Payment not found.");
+  if (resolveRentPurpose(payment) !== "rent") {
+    throw new Error("Only rent payments can be refunded.");
+  }
+  if (payment.status !== "successful") {
+    throw new Error("This payment cannot be refunded.");
+  }
+  if (!payment.payeeProfileId) {
+    throw new Error("This payment has no payee.");
+  }
+  if (String(payment.payeeProfileId) !== String(input.landlordProfileId)) {
+    throw new Error("You cannot refund this payment.");
+  }
+  if (!payment.landlordWalletTxId) {
+    throw new Error("This payment was not settled to your wallet.");
+  }
+
+  const landlordProfile = await Profile.findOne({
+    _id: input.landlordProfileId,
+    userId: input.landlordUserId,
+  });
+  if (!landlordProfile || !LANDLORD_TYPES.has(landlordProfile.type)) {
+    throw new Error("Only landlords can issue rent refunds.");
+  }
+
+  const grossAmount = payment.grossAmount ?? payment.amount;
+  const platformFee = payment.platformFeeAmount ?? 0;
+  const landlordDebit =
+    payment.netPayeeAmount ??
+    (payment.source === "wallet_lock" ? payment.amount : grossAmount - platformFee);
+  const tenantCredit = payment.amount;
+
+  if (landlordDebit <= 0 || tenantCredit <= 0) {
+    throw new Error("Invalid refund amount.");
+  }
+
+  const lease = payment.leaseId
+    ? await Lease.findById(payment.leaseId).select("tenantProfileId listingId").lean()
+    : null;
+  const tenantProfileId = payment.payerProfileId || lease?.tenantProfileId;
+  if (!tenantProfileId) {
+    throw new Error("Tenant profile not found for this payment.");
+  }
+  const tenantProfile = await Profile.findById(tenantProfileId);
+  if (!tenantProfile || !TENANT_TYPES.has(tenantProfile.type)) {
+    throw new Error("Tenant profile not found.");
+  }
+
+  const landlordWallet = await getOrCreateWallet(landlordProfile._id);
+  const landlordBefore = landlordWallet.availableBalance;
+  const landlordAfter = await Wallet.findOneAndUpdate(
+    { _id: landlordWallet._id, availableBalance: { $gte: landlordDebit } },
+    {
+      $inc: {
+        availableBalance: -landlordDebit,
+        totalCredited: -landlordDebit,
+      },
+    },
+    { new: true }
+  );
+  if (!landlordAfter) {
+    throw new Error(
+      "Insufficient wallet balance. Withdraw less or add funds before refunding."
+    );
+  }
+
+  if (platformFee > 0) {
+    await debitPlatformFeeFromRent(payment, platformFee);
+  }
+
+  const tenantWallet = await getOrCreateWallet(tenantProfile._id);
+  const tenantBefore = tenantWallet.availableBalance;
+  const tenantAfter = await Wallet.findOneAndUpdate(
+    { _id: tenantWallet._id },
+    {
+      $inc: {
+        availableBalance: tenantCredit,
+        totalCredited: tenantCredit,
+      },
+    },
+    { new: true }
+  );
+  if (!tenantAfter) throw new Error("Could not credit tenant wallet.");
+
+  const landlordRefundTx = await WalletTransaction.create({
+    walletId: landlordWallet._id,
+    profileId: landlordProfile._id,
+    userId: landlordProfile.userId,
+    type: "rent_refund",
+    direction: "out",
+    amount: landlordDebit,
+    currency: payment.currency,
+    balanceAfter: landlordAfter.availableBalance,
+    status: "completed",
+    reference: generateWalletTxReference("wtx"),
+    description: `Rent refund issued · ${payment.currency} ${landlordDebit.toLocaleString()}`,
+    paymentId: payment._id,
+    counterpartyProfileId: tenantProfile._id,
+    metadata: {
+      reason: input.reason.trim(),
+      tenantCredit,
+      platformFeeReversed: platformFee,
+    },
+  });
+
+  const tenantRefundTx = await WalletTransaction.create({
+    walletId: tenantWallet._id,
+    profileId: tenantProfile._id,
+    userId: tenantProfile.userId,
+    type: "rent_refund",
+    direction: "in",
+    amount: tenantCredit,
+    currency: payment.currency,
+    balanceAfter: tenantAfter.availableBalance,
+    status: "completed",
+    reference: generateWalletTxReference("wtx"),
+    description: `Rent refund received · ${payment.currency} ${tenantCredit.toLocaleString()}`,
+    paymentId: payment._id,
+    counterpartyProfileId: landlordProfile._id,
+    metadata: {
+      reason: input.reason.trim(),
+      landlordDebit,
+    },
+  });
+
+  if (payment.source === "wallet_lock") {
+    await RentLock.findOneAndUpdate(
+      { paymentId: payment._id, status: "applied" },
+      { status: "released" }
+    );
+  }
+
+  payment.status = "refunded";
+  payment.refundedAt = new Date();
+  payment.refundReason = input.reason.trim();
+  payment.refundAmount = tenantCredit;
+  payment.refundLandlordWalletTxId = landlordRefundTx._id;
+  payment.refundTenantWalletTxId = tenantRefundTx._id;
+  await payment.save();
+
+  const appUrl = (process.env.AUTH_URL || "http://localhost:3000").replace(/\/$/, "");
+  const tenantUser = await User.findById(tenantProfile.userId)
+    .select("email name")
+    .lean();
+
+  await notifyUser({
+    userId: String(tenantProfile.userId),
+    type: "payment.refunded",
+    title: "Rent refund received",
+    body: `Your landlord refunded ${payment.currency} ${tenantCredit.toLocaleString()} for a rent payment. The amount is now in your wallet.`,
+    link: `${appUrl}/portal/payments`,
+    meta: { paymentId: String(payment._id) },
+    email: tenantUser?.email
+      ? {
+          to: tenantUser.email,
+          subject: `Rent refund · ${payment.currency} ${tenantCredit.toLocaleString()}`,
+        }
+      : undefined,
+  });
+
+  await writeAudit({
+    action: "payment.refund",
+    summary: `Rent refund of ${payment.currency} ${tenantCredit.toLocaleString()}`,
+    actor: input.actor,
+    entityType: "payment",
+    entityId: String(payment._id),
+    metadata: {
+      landlordProfileId: String(landlordProfile._id),
+      tenantProfileId: String(tenantProfile._id),
+      landlordDebit,
+      tenantCredit,
+      platformFee,
+      balanceBefore: landlordBefore,
+      balanceAfter: landlordAfter.availableBalance,
+      tenantBalanceBefore: tenantBefore,
+      tenantBalanceAfter: tenantAfter.availableBalance,
+    },
+  });
+
+  return {
+    payment,
+    landlordWallet: landlordAfter,
+    tenantWallet: tenantAfter,
+  };
+}
 
 export async function buildPaymentReceipt(paymentId: string, userId: string) {
   const payment = await Payment.findById(paymentId).lean();

@@ -7,10 +7,12 @@ export type WalletTxType =
   | "rent_lock"
   | "rent_unlock"
   | "rent_lock_apply"
+  | "service_due"
   | "agreement_fee"
   | "platform_fee"
   | "withdrawal"
   | "withdrawal_refund"
+  | "rent_refund"
   | "adjustment";
 
 export type WalletTxDirection = "in" | "out";
@@ -66,10 +68,12 @@ const WalletTransactionSchema = new Schema<IWalletTransaction>(
         "rent_lock",
         "rent_unlock",
         "rent_lock_apply",
+        "service_due",
         "agreement_fee",
         "platform_fee",
         "withdrawal",
         "withdrawal_refund",
+        "rent_refund",
         "adjustment",
       ],
       required: true,

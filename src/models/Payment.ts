@@ -2,8 +2,8 @@ import mongoose, { Schema, models, model } from "mongoose";
 
 export type PaymentStatus = "pending" | "successful" | "failed" | "refunded";
 export type PaymentProvider = "paystack" | "flutterwave" | "manual";
-export type PaymentPurpose = "rent" | "wallet_deposit" | "agreement_fee";
-export type PaymentSource = "paystack" | "wallet_lock";
+export type PaymentPurpose = "rent" | "wallet_deposit" | "agreement_fee" | "service_due" | "card_verification";
+export type PaymentSource = "paystack" | "wallet_lock" | "wallet" | "auto_pay";
 
 export interface IPayment {
   _id: mongoose.Types.ObjectId;
@@ -36,6 +36,15 @@ export interface IPayment {
   rentPeriodEnd?: Date;
   dueDate?: Date;
   paidAt?: Date;
+  walletPaidAmount?: number;
+  cardPaidAmount?: number;
+  isAutoPay?: boolean;
+  serviceDueChargeId?: mongoose.Types.ObjectId;
+  refundedAt?: Date;
+  refundReason?: string;
+  refundAmount?: number;
+  refundLandlordWalletTxId?: mongoose.Types.ObjectId;
+  refundTenantWalletTxId?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -88,12 +97,12 @@ const PaymentSchema = new Schema<IPayment>(
     },
     purpose: {
       type: String,
-      enum: ["rent", "wallet_deposit", "agreement_fee"],
+      enum: ["rent", "wallet_deposit", "agreement_fee", "service_due", "card_verification"],
       default: "rent",
     },
     source: {
       type: String,
-      enum: ["paystack", "wallet_lock"],
+      enum: ["paystack", "wallet_lock", "wallet", "auto_pay"],
       default: "paystack",
     },
     legalProvider: {
@@ -118,6 +127,24 @@ const PaymentSchema = new Schema<IPayment>(
     rentPeriodEnd: { type: Date },
     dueDate: { type: Date },
     paidAt: { type: Date },
+    walletPaidAmount: { type: Number, min: 0 },
+    cardPaidAmount: { type: Number, min: 0 },
+    isAutoPay: { type: Boolean, default: false, index: true },
+    serviceDueChargeId: {
+      type: Schema.Types.ObjectId,
+      ref: "ServiceDueCharge",
+    },
+    refundedAt: { type: Date },
+    refundReason: { type: String, trim: true },
+    refundAmount: { type: Number, min: 0 },
+    refundLandlordWalletTxId: {
+      type: Schema.Types.ObjectId,
+      ref: "WalletTransaction",
+    },
+    refundTenantWalletTxId: {
+      type: Schema.Types.ObjectId,
+      ref: "WalletTransaction",
+    },
   },
   { timestamps: true }
 );

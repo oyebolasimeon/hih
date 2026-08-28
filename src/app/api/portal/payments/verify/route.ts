@@ -3,9 +3,11 @@ import { assertUser } from "@/lib/api-auth";
 import { connectDB } from "@/lib/db";
 import { actorFromUser, writeAudit } from "@/lib/audit";
 import { markPaymentSuccessful } from "@/lib/payment-complete";
+import { savePaymentMethodFromAuthorization } from "@/lib/auto-pay";
 import { paystackVerify } from "@/lib/paystack";
 import { Payment } from "@/models/Payment";
 import { Profile } from "@/models/Profile";
+import { User } from "@/models/User";
 
 export async function GET(req: Request) {
   const { user, response } = await assertUser();
@@ -37,6 +39,7 @@ export async function GET(req: Request) {
       payment: {
         id: String(payment._id),
         status: payment.status,
+        purpose: payment.purpose,
         amount: payment.amount,
         currency: payment.currency,
         paidAt: payment.paidAt,
@@ -56,6 +59,49 @@ export async function GET(req: Request) {
         { error: "Payment was not successful.", status: verified.status },
         { status: 402 }
       );
+    }
+
+    if (payment.purpose === "card_verification") {
+      if (!payment.payerProfileId) {
+        return NextResponse.json({ error: "Invalid card verification." }, { status: 400 });
+      }
+      const dbUser = await User.findById(user.id).select("email").lean();
+      const email = dbUser?.email || user.email || "";
+      const authorization =
+        verified.authorization ||
+        ({
+          authorization_code: `AUTH_mock_${reference.slice(-12)}`,
+          card_type: "visa",
+          last4: "4081",
+          exp_month: "12",
+          exp_year: "2030",
+          bank: "TEST BANK",
+          reusable: true,
+        } as const);
+
+      const method = await savePaymentMethodFromAuthorization({
+        userId: user.id,
+        profileId: payment.payerProfileId,
+        email,
+        authorization,
+      });
+
+      payment.status = "successful";
+      payment.paidAt = new Date();
+      await payment.save();
+
+      return NextResponse.json({
+        payment: {
+          id: String(payment._id),
+          status: payment.status,
+          purpose: payment.purpose,
+        },
+        paymentMethod: {
+          id: String(method._id),
+          last4: method.last4,
+          cardType: method.cardType,
+        },
+      });
     }
 
     await markPaymentSuccessful(payment);

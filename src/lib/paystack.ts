@@ -17,12 +17,23 @@ export function paystackMockMode() {
   return process.env.PAYSTACK_MOCK === "true" || !secret();
 }
 
+export type PaystackAuthorization = {
+  authorization_code: string;
+  card_type?: string;
+  last4?: string;
+  exp_month?: string;
+  exp_year?: string;
+  bank?: string;
+  reusable?: boolean;
+};
+
 export async function paystackInitialize(input: {
   email: string;
   amountKobo: number;
   reference: string;
   callbackUrl: string;
   metadata?: Record<string, unknown>;
+  channels?: string[];
 }) {
   if (paystackMockMode()) {
     const appUrl = (process.env.AUTH_URL || "http://localhost:3000").replace(
@@ -52,6 +63,7 @@ export async function paystackInitialize(input: {
       callback_url: input.callbackUrl,
       currency: "NGN",
       metadata: input.metadata,
+      channels: input.channels || ["card", "bank", "ussd", "qr"],
     }),
   });
   const data = await res.json();
@@ -74,6 +86,15 @@ export async function paystackVerify(reference: string) {
       currency: "NGN",
       paid_at: new Date().toISOString(),
       mock: true,
+      authorization: {
+        authorization_code: `AUTH_mock_${reference.slice(-12)}`,
+        card_type: "visa",
+        last4: "4081",
+        exp_month: "12",
+        exp_year: "2030",
+        bank: "TEST BANK",
+        reusable: true,
+      } satisfies PaystackAuthorization,
     };
   }
 
@@ -86,6 +107,54 @@ export async function paystackVerify(reference: string) {
   const data = await res.json();
   if (!res.ok || !data.status) {
     throw new Error(data.message || "Payment could not be verified.");
+  }
+  const payload = data.data as {
+    status: string;
+    reference: string;
+    amount: number;
+    currency: string;
+    paid_at?: string;
+    authorization?: PaystackAuthorization;
+  };
+  return payload;
+}
+
+export async function paystackChargeAuthorization(input: {
+  authorizationCode: string;
+  email: string;
+  amountKobo: number;
+  reference: string;
+  metadata?: Record<string, unknown>;
+}) {
+  if (paystackMockMode()) {
+    return {
+      status: "success",
+      reference: input.reference,
+      amount: input.amountKobo,
+      currency: "NGN",
+      paid_at: new Date().toISOString(),
+      mock: true,
+    };
+  }
+
+  const res = await fetch(`${BASE}/transaction/charge_authorization`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${secret()}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      authorization_code: input.authorizationCode,
+      email: input.email,
+      amount: input.amountKobo,
+      reference: input.reference,
+      currency: "NGN",
+      metadata: input.metadata,
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.status) {
+    throw new Error(data.message || "Card charge failed.");
   }
   return data.data as {
     status: string;

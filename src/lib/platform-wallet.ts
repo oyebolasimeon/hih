@@ -212,3 +212,44 @@ export async function creditPlatformFeeFromRent(
   payment.platformProfileId = platformProfile._id;
   await payment.save();
 }
+
+export async function debitPlatformFeeFromRent(
+  payment: InstanceType<typeof Payment>,
+  platformFee: number
+) {
+  if (platformFee <= 0) return;
+  const platformWallet = await getOrCreatePlatformWallet();
+  const platformProfile = await Profile.findById(platformWallet.profileId);
+  if (!platformProfile) throw new Error("Platform wallet missing.");
+
+  const walletAfter = await Wallet.findOneAndUpdate(
+    { _id: platformWallet._id, availableBalance: { $gte: platformFee } },
+    {
+      $inc: {
+        availableBalance: -platformFee,
+        totalCredited: -platformFee,
+      },
+    },
+    { new: true }
+  );
+  if (!walletAfter) {
+    throw new Error("Platform wallet cannot cover the fee reversal for this refund.");
+  }
+
+  await WalletTransaction.create({
+    walletId: platformWallet._id,
+    profileId: platformProfile._id,
+    userId: platformProfile.userId,
+    type: "rent_refund",
+    direction: "out",
+    amount: platformFee,
+    currency: payment.currency,
+    balanceAfter: walletAfter.availableBalance,
+    status: "completed",
+    reference: generateWalletTxReference("wtx"),
+    description: `Platform fee reversed on rent refund · ${payment.currency} ${platformFee.toLocaleString()}`,
+    paymentId: payment._id,
+    counterpartyProfileId: payment.payeeProfileId,
+    metadata: { kind: "platform_fee_reversal" },
+  });
+}
