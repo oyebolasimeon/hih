@@ -42,7 +42,7 @@ export async function markPaymentSuccessful(
     payment.receiptNumber = generateReceiptNumber();
   }
 
-  if (payment.purpose === "rent" || payment.purpose === "agreement_fee") {
+  if (payment.purpose === "rent" || payment.purpose === "agreement_fee" || payment.purpose === "service_due") {
     payment.receiptUrl = `${appUrl}/portal/payments?receipt=${payment._id}`;
     payment.receiptPdfUrl = `${appUrl}/api/portal/payments/${payment._id}/receipt/pdf`;
   }
@@ -106,12 +106,13 @@ export async function markPaymentSuccessful(
   if (
     landlord &&
     String(landlord._id) !== String(payment.payerUserId) &&
-    payment.purpose === "rent"
+    (payment.purpose === "rent" || payment.purpose === "service_due")
   ) {
+    const isService = payment.purpose === "service_due";
     await notifyUser({
       userId: String(landlord._id),
       type: "payment.received",
-      title: "Rent payment received",
+      title: isService ? "Service due received" : "Rent payment received",
       body: `${payment.currency} ${(payment.netPayeeAmount ?? payment.amount).toLocaleString()} was credited to your wallet.`,
       link: "/portal/payments",
       meta: {
@@ -119,7 +120,10 @@ export async function markPaymentSuccessful(
         receiptNumber: payment.receiptNumber,
       },
       email: landlord.email
-        ? { to: landlord.email, subject: "Rent payment received" }
+        ? {
+            to: landlord.email,
+            subject: isService ? "Service due received" : "Rent payment received",
+          }
         : undefined,
     });
   }

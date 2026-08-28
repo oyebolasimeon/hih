@@ -103,7 +103,9 @@ export async function PATCH(req: Request, ctx: RouteCtx) {
     const fees = await getPlatformFees();
     const legalProvider = listing.legalSettings?.provider || "hih";
     const agreementFeePercent =
-      listing.legalSettings?.agreementFeePercent ?? fees.agreementFeePercent;
+      legalProvider === "hih"
+        ? fees.agreementFeePercent
+        : listing.legalSettings?.agreementFeePercent ?? fees.agreementFeePercent;
     const agreementFeeAmount = computeAgreementFee(
       listing.price.amount,
       fees.agreementFeePercent,

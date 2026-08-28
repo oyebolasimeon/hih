@@ -145,6 +145,20 @@ export async function PATCH(
     }));
   }
 
+  if (data.legalSettings !== undefined) {
+    listing.legalSettings = {
+      provider: data.legalSettings.provider,
+      companyName:
+        data.legalSettings.provider === "own_legal"
+          ? data.legalSettings.companyName
+          : undefined,
+      agreementFeePercent:
+        data.legalSettings.provider === "own_legal"
+          ? data.legalSettings.agreementFeePercent
+          : undefined,
+    };
+  }
+
   if (data.availabilityStatus !== undefined) {
     listing.availabilityStatus = data.availabilityStatus;
     if (data.availabilityStatus === "available") {

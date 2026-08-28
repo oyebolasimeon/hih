@@ -9,7 +9,7 @@ import {
   paystackChargeAuthorization,
   type PaystackAuthorization,
 } from "@/lib/paystack";
-import { debitTenantWalletForRent, settleServiceDuePayment } from "@/lib/wallet";
+import { debitTenantWalletForRent } from "@/lib/wallet";
 import { AutoPaySetting } from "@/models/AutoPaySetting";
 import { Lease } from "@/models/Lease";
 import { Payment } from "@/models/Payment";
@@ -181,14 +181,7 @@ export async function collectWithWalletThenCard(input: {
     serviceDueChargeId: input.paymentDraft.serviceDueChargeId,
   });
 
-  if (input.paymentDraft.purpose === "service_due") {
-    payment.status = "successful";
-    payment.paidAt = new Date();
-    await payment.save();
-    await settleServiceDuePayment(payment);
-  } else {
-    await markPaymentSuccessful(payment);
-  }
+  await markPaymentSuccessful(payment);
 
   return { payment, walletPaid, cardPaid };
 }

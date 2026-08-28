@@ -8,6 +8,7 @@ import {
   requireVerifiedProfile,
 } from "@/lib/profile-context";
 import { serializeListing } from "@/lib/listing-serialize";
+import { getPlatformFees } from "@/lib/platform-fees";
 import { actorFromUser, writeAudit } from "@/lib/audit";
 
 const imageSchema = z.object({
@@ -64,17 +65,25 @@ export async function GET() {
   }
 
   await connectDB();
-  const rows = await Listing.find({
-    $or: [
-      { ownerProfileId: active.profile._id },
-      { ownerUserId: user.id },
-    ],
-  })
-    .sort({ updatedAt: -1 })
-    .lean();
+  const [rows, fees] = await Promise.all([
+    Listing.find({
+      $or: [
+        { ownerProfileId: active.profile._id },
+        { ownerUserId: user.id },
+      ],
+    })
+      .sort({ updatedAt: -1 })
+      .lean(),
+    getPlatformFees(),
+  ]);
 
   return NextResponse.json({
     listings: rows.map((r) => serializeListing(r)),
+    fees: {
+      agreementFeePercent: fees.agreementFeePercent,
+      platformFeeMinPercent: fees.platformFeeMinPercent,
+      platformFeePercentOwnLegal: fees.platformFeePercentOwnLegal,
+    },
   });
 }
 
@@ -141,8 +150,14 @@ export async function POST(req: Request) {
     legalSettings: data.legalSettings
       ? {
           provider: data.legalSettings.provider,
-          companyName: data.legalSettings.companyName,
-          agreementFeePercent: data.legalSettings.agreementFeePercent,
+          companyName:
+            data.legalSettings.provider === "own_legal"
+              ? data.legalSettings.companyName
+              : undefined,
+          agreementFeePercent:
+            data.legalSettings.provider === "own_legal"
+              ? data.legalSettings.agreementFeePercent
+              : undefined,
         }
       : { provider: "hih" as const },
   });

@@ -136,6 +136,20 @@ type AutoPayState = {
   lastRunError: string | null;
 };
 
+type ServiceDueRow = {
+  id: string;
+  leaseId: string;
+  serviceName: string;
+  amount: number;
+  currency: string;
+  dueDate: string;
+  billingPeriodStart: string;
+  billingPeriodEnd: string;
+  status: string;
+  overdue: boolean;
+  listingTitle: string;
+};
+
 type DefaulterRow = {
   leaseId: string;
   tenant: { profileId: string; name: string; userId: string };
@@ -308,6 +322,8 @@ export default function PaymentsClient() {
   const [defaulters, setDefaulters] = useState<DefaulterRow[]>([]);
   const [dueSoonTenants, setDueSoonTenants] = useState<DefaulterRow[]>([]);
   const [defaultersLoading, setDefaultersLoading] = useState(false);
+  const [serviceDues, setServiceDues] = useState<ServiceDueRow[]>([]);
+  const [payingServiceId, setPayingServiceId] = useState("");
 
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [receiptLoading, setReceiptLoading] = useState(false);
@@ -374,6 +390,14 @@ export default function PaymentsClient() {
     }
   }, []);
 
+  const loadServiceDues = useCallback(async (profileId: string, selectedLeaseId?: string) => {
+    const params = new URLSearchParams({ profileId });
+    if (selectedLeaseId) params.set("leaseId", selectedLeaseId);
+    const res = await fetch(`/api/portal/payments/service-dues?${params}`);
+    const data = await res.json();
+    if (res.ok) setServiceDues(data.dues || []);
+  }, []);
+
   const load = useCallback(async () => {
     if (!profile?.id) return;
     setLoading(true);
@@ -415,6 +439,11 @@ export default function PaymentsClient() {
     if (!isTenantLike || !leaseId) return;
     void loadAutoPay(leaseId);
   }, [isTenantLike, leaseId, loadAutoPay]);
+
+  useEffect(() => {
+    if (!isTenantLike || !profile?.id) return;
+    void loadServiceDues(profile.id, leaseId || undefined);
+  }, [isTenantLike, profile?.id, leaseId, loadServiceDues]);
 
   useEffect(() => {
     if (!isTenantLike || !leaseId) return;
@@ -623,6 +652,32 @@ export default function PaymentsClient() {
     }
     if (data.authorization_url) {
       window.location.href = data.authorization_url;
+    }
+  }
+
+  async function onPayServiceDue(chargeId: string) {
+    setPayingServiceId(chargeId);
+    setError("");
+    setMessage("");
+    const res = await fetch("/api/portal/payments/service-dues", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chargeId }),
+    });
+    const data = await res.json();
+    setPayingServiceId("");
+    if (!res.ok) {
+      setError(data.error || "Could not pay service due.");
+      return;
+    }
+    if (data.authorization_url) {
+      window.location.href = data.authorization_url;
+      return;
+    }
+    setMessage("Service due paid successfully.");
+    await load();
+    if (profile?.id && leaseId) {
+      await loadServiceDues(profile.id, leaseId);
     }
   }
 
@@ -1264,6 +1319,60 @@ export default function PaymentsClient() {
                   )}
                 </div>
               </form>
+
+              <div className="app-card overflow-hidden h-fit">
+                <div className="px-5 py-6 border-b border-border/60 bg-gradient-to-br from-teal/10 to-transparent">
+                  <h2 className="font-display text-lg font-semibold">Service dues</h2>
+                  <p className="text-sm text-muted mt-1">
+                    Monthly or yearly charges for your property. Pay individually when due.
+                  </p>
+                </div>
+                <div className="p-5 space-y-3">
+                  {tenantLeases.length === 0 ? (
+                    <p className="text-sm text-muted">No active leases.</p>
+                  ) : serviceDues.length === 0 ? (
+                    <p className="text-sm text-muted">No service dues due for this lease.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {serviceDues.map((due) => (
+                        <li
+                          key={due.id}
+                          className={`rounded-lg border p-3 text-sm flex flex-wrap items-center justify-between gap-3 ${
+                            due.overdue
+                              ? "border-danger/25 bg-danger/5"
+                              : "border-border/60 bg-surface/40"
+                          }`}
+                        >
+                          <div>
+                            <p className="font-medium">{due.serviceName}</p>
+                            <p className="text-xs text-muted mt-0.5">
+                              {due.listingTitle} · Due{" "}
+                              {new Date(due.dueDate).toLocaleDateString()}
+                            </p>
+                            <p className="text-xs text-muted mt-0.5">
+                              {new Date(due.billingPeriodStart).toLocaleDateString()} –{" "}
+                              {new Date(due.billingPeriodEnd).toLocaleDateString()}
+                            </p>
+                            {due.overdue ? (
+                              <p className="text-xs text-danger font-medium mt-1">Overdue</p>
+                            ) : null}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => void onPayServiceDue(due.id)}
+                            disabled={payingServiceId === due.id}
+                            className="app-btn app-btn-primary text-xs shrink-0"
+                          >
+                            {payingServiceId === due.id
+                              ? "Processing…"
+                              : `Pay ${formatMoney(due.amount, due.currency)}`}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
 
               <div className="app-card overflow-hidden h-fit">
                 <div className="px-5 py-6 border-b border-border/60 bg-gradient-to-br from-brand/5 to-teal/10">

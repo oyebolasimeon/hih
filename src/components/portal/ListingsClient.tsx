@@ -23,6 +23,11 @@ type ListingRow = {
   sizeSqm: number | null;
   availabilityStatus: string;
   verificationStatus: string;
+  legalSettings?: {
+    provider?: "hih" | "own_legal";
+    companyName?: string;
+    agreementFeePercent?: number;
+  };
 };
 
 type FilterTab = "all" | "draft" | "available" | "pending" | "occupied";
@@ -128,6 +133,7 @@ function ListingsManager() {
   const [legalProvider, setLegalProvider] = useState<"hih" | "own_legal">("hih");
   const [legalCompanyName, setLegalCompanyName] = useState("");
   const [agreementFeePercent, setAgreementFeePercent] = useState("");
+  const [adminAgreementFeePercent, setAdminAgreementFeePercent] = useState(10);
 
   const resetForm = useCallback(() => {
     setEditingId(null);
@@ -163,6 +169,9 @@ function ListingsManager() {
       return;
     }
     setListings(data.listings || []);
+    if (data.fees?.agreementFeePercent != null) {
+      setAdminAgreementFeePercent(data.fees.agreementFeePercent);
+    }
   }, []);
 
   useEffect(() => {
@@ -204,6 +213,14 @@ function ListingsManager() {
     setExistingImages(l.images || []);
     setImageFiles([]);
     setPublishNow(false);
+    setLegalProvider(l.legalSettings?.provider || "hih");
+    setLegalCompanyName(l.legalSettings?.companyName || "");
+    setAgreementFeePercent(
+      l.legalSettings?.provider === "own_legal" &&
+        l.legalSettings.agreementFeePercent != null
+        ? String(l.legalSettings.agreementFeePercent)
+        : ""
+    );
     setMessage("");
     setError("");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -267,7 +284,7 @@ function ListingsManager() {
           ...(legalProvider === "own_legal" && legalCompanyName.trim()
             ? { companyName: legalCompanyName.trim() }
             : {}),
-          ...(agreementFeePercent
+          ...(legalProvider === "own_legal" && agreementFeePercent
             ? { agreementFeePercent: Number(agreementFeePercent) }
             : {}),
         },
@@ -653,7 +670,13 @@ function ListingsManager() {
                 <Select
                   label="Who handles the tenancy agreement?"
                   value={legalProvider}
-                  onChange={(v) => setLegalProvider(v as "hih" | "own_legal")}
+                  onChange={(v) => {
+                    const provider = v as "hih" | "own_legal";
+                    setLegalProvider(provider);
+                    if (provider === "hih") {
+                      setAgreementFeePercent("");
+                    }
+                  }}
                   options={[
                     { value: "hih", label: "House In Hand handles legal" },
                     { value: "own_legal", label: "My own legal company" },
@@ -682,20 +705,38 @@ function ListingsManager() {
                     manage all legal documents.
                   </p>
                 )}
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">
-                    Agreement fee (% of rent, optional override)
-                  </label>
-                  <input
-                    className="app-input w-full"
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={agreementFeePercent}
-                    onChange={(e) => setAgreementFeePercent(e.target.value)}
-                    placeholder="Default set by admin (10%)"
-                  />
-                </div>
+                {legalProvider === "hih" ? (
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">
+                      Agreement fee (% of rent)
+                    </label>
+                    <div className="app-input w-full bg-surface/60 text-foreground cursor-default">
+                      {adminAgreementFeePercent}%
+                    </div>
+                    <p className="text-xs text-muted mt-1">
+                      Set by House In Hand and applied automatically to all HIH-handled
+                      agreements.
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">
+                      Agreement fee (% of rent, optional override)
+                    </label>
+                    <input
+                      className="app-input w-full"
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={agreementFeePercent}
+                      onChange={(e) => setAgreementFeePercent(e.target.value)}
+                      placeholder={`Default ${adminAgreementFeePercent}%`}
+                    />
+                    <p className="text-xs text-muted mt-1">
+                      Leave blank to use the platform default ({adminAgreementFeePercent}%).
+                    </p>
+                  </div>
+                )}
               </div>
 
               <label className="flex items-start gap-3 rounded-lg border border-border/60 p-3 text-sm cursor-pointer">
