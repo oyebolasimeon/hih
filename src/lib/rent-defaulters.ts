@@ -38,6 +38,14 @@ function formatMoney(amount: number, currency = "NGN") {
   }
 }
 
+function formatListingAddress(
+  address?: { street?: string; city?: string; state?: string } | null
+) {
+  if (!address) return undefined;
+  const parts = [address.street, address.city, address.state].filter(Boolean);
+  return parts.length > 0 ? parts.join(", ") : undefined;
+}
+
 export type RentStatusSummary = {
   paid: boolean;
   overdue: boolean;
@@ -153,7 +161,7 @@ export async function getDefaulterRowForLease(
     listing: {
       id: String(listing?._id || lease.listingId),
       title: listing?.title || "Property",
-      address: listing?.address || undefined,
+      address: formatListingAddress(listing?.address),
     },
     rent,
     serviceDues: overdueServices,
