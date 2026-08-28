@@ -235,18 +235,28 @@ export default function SearchClient() {
   return (
     <div className="space-y-8">
       <Reveal>
-        <section className="app-card overflow-hidden">
-          <div className="relative px-6 py-8 sm:px-8 sm:py-10 bg-gradient-to-br from-brand/12 via-transparent to-teal/8 dark:from-brand/20 dark:to-teal/10">
-            <div className="relative z-10 space-y-5 max-w-3xl">
+        <section className="app-card overflow-hidden relative min-h-[280px] sm:min-h-[320px]">
+          <div className="absolute inset-0" aria-hidden>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/hero-home.jpg"
+              alt=""
+              className="h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-br from-navy/95 via-navy/88 to-navy/80" />
+            <div className="absolute inset-0 bg-gradient-to-t from-navy/60 via-transparent to-navy/30" />
+          </div>
+          <div className="relative z-10 px-6 py-8 sm:px-8 sm:py-10">
+            <div className="space-y-5 max-w-3xl">
               <div>
                 <p className="site-kicker flex items-center gap-2">
                   <span className="site-live-dot" aria-hidden />
                   Find your next home
                 </p>
-                <h1 className="mt-2 text-2xl sm:text-3xl lg:text-4xl font-display font-semibold tracking-tight">
+                <h1 className="mt-2 text-2xl sm:text-3xl lg:text-4xl font-display font-semibold tracking-tight text-white">
                   Search verified listings
                 </h1>
-                <p className="mt-2 text-sm sm:text-base text-muted leading-relaxed">
+                <p className="mt-2 text-sm sm:text-base text-white/75 leading-relaxed">
                   Browse homes, hostels, and rentals across Nigeria — filter by
                   location, price, and property type.
                 </p>
@@ -293,8 +303,8 @@ export default function SearchClient() {
                       onClick={() => pickLocation(loc)}
                       className={`rounded-full border px-3.5 py-1.5 text-sm transition-colors ${
                         active
-                          ? "border-brand bg-brand/10 font-semibold"
-                          : "border-border/80 bg-background/60 hover:border-brand/40"
+                          ? "border-brand bg-brand/20 font-semibold text-white"
+                          : "border-white/25 bg-white/10 text-white/90 hover:border-brand/50 hover:bg-white/15"
                       }`}
                     >
                       {loc.label}
