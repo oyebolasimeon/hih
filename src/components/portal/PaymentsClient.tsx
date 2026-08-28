@@ -125,13 +125,41 @@ type ReceiptData = {
   providerRef: string | null;
   receiptPdfUrl: string | null;
   rentPeriodLabel: string | null;
+  legalProvider: "hih" | "own_legal" | null;
+  legalCompanyName: string | null;
   breakdown: Array<{ label: string; amount: number; kind: string }>;
-  listing: { title: string; address?: string } | null;
+  listing: {
+    title: string;
+    address?: string;
+    listingType?: string;
+    bedrooms?: number;
+    bathrooms?: number;
+    sizeSqm?: number;
+    amenities: string[];
+    rentAmount?: number;
+    rentPeriod?: string;
+  } | null;
   payee: { name: string; type: string } | null;
   payer: { name: string } | null;
   signatures: Array<{ role: string; name: string; signedAt?: string | null }>;
-  lease: { paymentPeriod: string } | null;
+  lease: { paymentPeriod: string; rentAmount?: number; currency?: string } | null;
 };
+
+function formatLegalHandler(
+  legalProvider: "hih" | "own_legal" | null | undefined,
+  companyName?: string | null
+) {
+  if (legalProvider === "hih") return "House In Hand (HIH Legal Team)";
+  if (legalProvider === "own_legal") {
+    return companyName?.trim() || "Landlord-appointed legal firm";
+  }
+  return "—";
+}
+
+function formatListingType(type?: string) {
+  if (!type) return null;
+  return type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 function formatMoney(amount: number, currency = "NGN") {
   try {
@@ -326,10 +354,21 @@ export default function PaymentsClient() {
     }
     void (async () => {
       setReceiptLoading(true);
-      const res = await fetch(`/api/portal/payments/${receiptId}/receipt`);
-      const data = await res.json();
-      setReceiptLoading(false);
-      if (res.ok) setReceipt(data.receipt);
+      setReceipt(null);
+      try {
+        const res = await fetch(`/api/portal/payments/${receiptId}/receipt`);
+        const text = await res.text();
+        const data = text ? (JSON.parse(text) as { receipt?: ReceiptData; error?: string }) : {};
+        if (res.ok && data.receipt) {
+          setReceipt(data.receipt);
+        } else {
+          setError(data.error || "Could not load receipt.");
+        }
+      } catch {
+        setError("Could not load receipt.");
+      } finally {
+        setReceiptLoading(false);
+      }
     })();
   }, [receiptId]);
 
@@ -661,6 +700,63 @@ export default function PaymentsClient() {
             </div>
             {receipt ? (
               <div className="space-y-5">
+                {receipt.listing ? (
+                  <div className="rounded-xl border border-border/60 overflow-hidden">
+                    <div className="px-4 py-3 bg-gradient-to-r from-brand/10 to-teal/10 border-b border-border/60">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted">
+                        Property
+                      </p>
+                      <p className="font-display font-semibold mt-1">
+                        {receipt.listing.title}
+                      </p>
+                      {receipt.listing.address ? (
+                        <p className="text-sm text-muted mt-1">{receipt.listing.address}</p>
+                      ) : null}
+                    </div>
+                    <div className="p-4 space-y-3 text-sm">
+                      <div className="flex flex-wrap gap-2">
+                        {formatListingType(receipt.listing.listingType) ? (
+                          <span className="rounded-full border border-border/60 px-2.5 py-0.5 text-xs">
+                            {formatListingType(receipt.listing.listingType)}
+                          </span>
+                        ) : null}
+                        {receipt.listing.bedrooms != null ? (
+                          <span className="rounded-full border border-border/60 px-2.5 py-0.5 text-xs">
+                            {receipt.listing.bedrooms} bed
+                          </span>
+                        ) : null}
+                        {receipt.listing.bathrooms != null ? (
+                          <span className="rounded-full border border-border/60 px-2.5 py-0.5 text-xs">
+                            {receipt.listing.bathrooms} bath
+                          </span>
+                        ) : null}
+                        {receipt.listing.sizeSqm != null ? (
+                          <span className="rounded-full border border-border/60 px-2.5 py-0.5 text-xs">
+                            {receipt.listing.sizeSqm} sqm
+                          </span>
+                        ) : null}
+                      </div>
+                      {receipt.listing.amenities?.length ? (
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wider text-muted mb-2">
+                            What&apos;s in the house
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {receipt.listing.amenities.map((item) => (
+                              <span
+                                key={item}
+                                className="rounded-md bg-surface/80 border border-border/50 px-2 py-1 text-xs"
+                              >
+                                {item}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
+
                 <dl className="grid sm:grid-cols-2 gap-3 text-sm">
                   <div>
                     <dt className="text-muted">Purpose</dt>
@@ -682,16 +778,21 @@ export default function PaymentsClient() {
                     <dt className="text-muted">Payee</dt>
                     <dd>{receipt.payee?.name || "—"}</dd>
                   </div>
-                  <div>
-                    <dt className="text-muted">Property</dt>
-                    <dd>{receipt.listing?.title || "—"}</dd>
-                  </div>
                   {receipt.rentPeriodLabel ? (
                     <div>
                       <dt className="text-muted">Rent period</dt>
                       <dd>{receipt.rentPeriodLabel}</dd>
                     </div>
                   ) : null}
+                  <div className="sm:col-span-2">
+                    <dt className="text-muted">Legal handler</dt>
+                    <dd className="font-semibold text-brand-dark">
+                      {formatLegalHandler(
+                        receipt.legalProvider,
+                        receipt.legalCompanyName
+                      )}
+                    </dd>
+                  </div>
                 </dl>
 
                 <div className="rounded-lg border border-border/60 overflow-hidden">

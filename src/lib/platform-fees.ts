@@ -79,6 +79,12 @@ export function buildRentFeeBreakdown(input: {
       amount: input.platformFee,
       kind: "deduction",
     });
+  } else if (input.legalProvider === "hih") {
+    lines.push({
+      label: "Platform fee (waived — HIH legal)",
+      amount: 0,
+      kind: "deduction",
+    });
   }
   lines.push({
     label: "Net to landlord",

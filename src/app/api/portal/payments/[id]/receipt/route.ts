@@ -15,11 +15,19 @@ export async function GET(_req: Request, ctx: Ctx) {
     return NextResponse.json({ error: "Invalid payment." }, { status: 400 });
   }
 
-  await connectDB();
-  const receipt = await buildFullPaymentReceipt(id, user.id);
-  if (!receipt) {
-    return NextResponse.json({ error: "Receipt not found." }, { status: 404 });
-  }
+  try {
+    await connectDB();
+    const receipt = await buildFullPaymentReceipt(id, user.id);
+    if (!receipt) {
+      return NextResponse.json({ error: "Receipt not found." }, { status: 404 });
+    }
 
-  return NextResponse.json({ receipt });
+    return NextResponse.json({ receipt });
+  } catch (err) {
+    console.error("payment receipt error:", err);
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Could not load receipt." },
+      { status: 500 }
+    );
+  }
 }

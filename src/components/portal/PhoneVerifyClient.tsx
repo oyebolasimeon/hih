@@ -67,76 +67,93 @@ export default function PhoneVerifyClient({
   }
 
   return (
-    <section className="app-card p-5 space-y-4">
-      <div>
-        <h2 className="font-semibold">Verify phone</h2>
-        <p className="text-xs text-muted mt-1">
-          OTP is sent to your account email when SMS is not configured.
+    <section className="app-card overflow-hidden">
+      <div className="px-5 py-5 border-b border-border/60 bg-gradient-to-br from-teal/10 to-transparent">
+        <h2 className="font-display text-lg font-semibold">Verify phone</h2>
+        <p className="text-sm text-muted mt-1">
+          Confirm your number for rent alerts and account security. OTP is sent
+          to your email when SMS is not configured.
         </p>
       </div>
 
-      {error ? (
-        <p className="text-sm text-danger" role="alert">
-          {error}
-        </p>
-      ) : null}
-      {message ? <p className="text-sm text-brand-dark">{message}</p> : null}
-      {verified ? (
-        <p className="text-sm text-muted">Phone number verified for this account.</p>
-      ) : (
-        <>
-          <form onSubmit={sendOtp} className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium mb-1.5" htmlFor="otp-phone">
-                Phone number
-              </label>
-              <input
-                id="otp-phone"
-                type="tel"
-                className="app-input w-full"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+234 801 234 5678"
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={busy}
-              className="app-btn app-btn-secondary text-sm"
-            >
-              {busy && !sent ? "Sending…" : "Send OTP"}
-            </button>
-          </form>
+      <div className="p-5 space-y-4">
+        {error ? (
+          <p
+            className="text-sm text-danger rounded-md border border-danger/20 bg-danger/5 px-3 py-2"
+            role="alert"
+          >
+            {error}
+          </p>
+        ) : null}
+        {message ? (
+          <p className="text-sm text-brand-dark rounded-md border border-brand/20 bg-brand/5 px-3 py-2">
+            {message}
+          </p>
+        ) : null}
 
-          {sent ? (
-            <form onSubmit={verifyOtp} className="space-y-3 border-t border-border pt-4">
-              <p className="text-xs text-muted">
-                Enter the 6-digit code
-                {channel === "email" ? " from your email" : ""}.
-              </p>
-              <input
-                className="app-input w-full tracking-widest"
-                inputMode="numeric"
-                maxLength={6}
-                value={otp}
-                onChange={(e) =>
-                  setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
-                }
-                placeholder="123456"
-                required
-              />
+        {verified ? (
+          <p className="text-sm text-muted">
+            Phone number verified for this account.
+          </p>
+        ) : (
+          <>
+            <form onSubmit={sendOtp} className="space-y-3 max-w-md">
+              <div>
+                <label className="block text-sm font-medium mb-1.5" htmlFor="otp-phone">
+                  Phone number
+                </label>
+                <input
+                  id="otp-phone"
+                  type="tel"
+                  className="app-input w-full"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+234 801 234 5678"
+                  required
+                />
+              </div>
               <button
                 type="submit"
                 disabled={busy}
-                className="app-btn app-btn-primary text-sm"
+                className="app-btn app-btn-secondary text-sm"
               >
-                {busy ? "Verifying…" : "Verify phone"}
+                {busy && !sent ? "Sending…" : "Send OTP"}
               </button>
             </form>
-          ) : null}
-        </>
-      )}
+
+            {sent ? (
+              <form
+                onSubmit={verifyOtp}
+                className="space-y-3 border-t border-border/60 pt-4 max-w-md"
+              >
+                <p className="text-sm text-muted">
+                  Enter the 6-digit code
+                  {channel === "email" ? " from your email" : ""}.
+                </p>
+                <input
+                  className="app-input w-full tracking-widest text-center text-lg"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={otp}
+                  onChange={(e) =>
+                    setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                  }
+                  placeholder="123456"
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="app-btn app-btn-primary text-sm"
+                >
+                  {busy ? "Verifying…" : "Verify phone"}
+                </button>
+              </form>
+            ) : null}
+          </>
+        )}
+      </div>
     </section>
   );
 }
+

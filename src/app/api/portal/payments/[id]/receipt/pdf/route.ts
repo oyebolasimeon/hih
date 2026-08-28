@@ -19,20 +19,28 @@ export async function GET(_req: Request, ctx: Ctx) {
     return NextResponse.json({ error: "Invalid payment." }, { status: 400 });
   }
 
-  await connectDB();
-  const receipt = await buildFullPaymentReceipt(id, user.id);
-  if (!receipt) {
-    return NextResponse.json({ error: "Receipt not found." }, { status: 404 });
+  try {
+    await connectDB();
+    const receipt = await buildFullPaymentReceipt(id, user.id);
+    if (!receipt) {
+      return NextResponse.json({ error: "Receipt not found." }, { status: 404 });
+    }
+
+    const pdf = await generateReceiptPdf(fullReceiptToPdfInput(receipt));
+    const filename = `${receipt.receiptNumber || receipt.paymentId}.pdf`;
+
+    return new NextResponse(new Uint8Array(pdf), {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Cache-Control": "private, max-age=3600",
+      },
+    });
+  } catch (err) {
+    console.error("payment receipt pdf error:", err);
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Could not generate receipt." },
+      { status: 500 }
+    );
   }
-
-  const pdf = await generateReceiptPdf(fullReceiptToPdfInput(receipt));
-  const filename = `${receipt.receiptNumber || receipt.paymentId}.pdf`;
-
-  return new NextResponse(new Uint8Array(pdf), {
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${filename}"`,
-      "Cache-Control": "private, max-age=3600",
-    },
-  });
 }

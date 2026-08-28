@@ -32,7 +32,17 @@ export type FullReceipt = {
   breakdown: Array<{ label: string; amount: number; kind: string }>;
   payer: { name: string; email?: string | null } | null;
   payee: { name: string; type: string } | null;
-  listing: { title: string; address?: string } | null;
+  listing: {
+    title: string;
+    address?: string;
+    listingType?: string;
+    bedrooms?: number;
+    bathrooms?: number;
+    sizeSqm?: number;
+    amenities: string[];
+    rentAmount?: number;
+    rentPeriod?: string;
+  } | null;
   lease: {
     id: string;
     rentAmount: number;
@@ -46,11 +56,38 @@ export type FullReceipt = {
   signatures: Array<{ role: string; name: string; signedAt?: string | null }>;
 };
 
-function purposeLabel(purpose: string) {
+function purposeLabel(purpose?: string | null) {
+  if (!purpose) return "Payment";
   if (purpose === "agreement_fee") return "Agreement & legal fee";
   if (purpose === "wallet_deposit") return "Wallet deposit";
   if (purpose === "rent") return "Rent payment";
   return purpose.replace(/_/g, " ");
+}
+
+function formatLegalHandler(
+  legalProvider: LegalProvider,
+  companyName?: string | null
+) {
+  if (legalProvider === "hih") {
+    return "House In Hand (HIH Legal Team)";
+  }
+  return companyName?.trim() || "Landlord-appointed legal firm";
+}
+
+function resolvePaymentPurpose(payment: {
+  purpose?: string | null;
+  leaseId?: unknown;
+  agreementFeeAmount?: number | null;
+}): "rent" | "wallet_deposit" | "agreement_fee" {
+  if (payment.purpose === "rent" || payment.purpose === "wallet_deposit") {
+    return payment.purpose;
+  }
+  if (payment.purpose === "agreement_fee") return "agreement_fee";
+  if (payment.agreementFeeAmount && payment.agreementFeeAmount > 0) {
+    return "agreement_fee";
+  }
+  if (payment.leaseId) return "rent";
+  return "rent";
 }
 
 export async function buildFullPaymentReceipt(
@@ -78,20 +115,25 @@ export async function buildFullPaymentReceipt(
       ? Lease.findById(payment.leaseId).lean()
       : null,
     payment.listingId
-      ? Listing.findById(payment.listingId).select("title address").lean()
+      ? Listing.findById(payment.listingId)
+          .select(
+            "title address listingType bedrooms bathrooms sizeSqm amenities price"
+          )
+          .lean()
       : null,
   ]);
 
   const legalProvider = (lease?.legalProvider ||
     payment.legalProvider ||
     "hih") as LegalProvider;
+  const purpose = resolvePaymentPurpose(payment);
   const grossAmount = payment.grossAmount ?? payment.amount;
   const platformFeeAmount = payment.platformFeeAmount ?? 0;
   const agreementFeeAmount = payment.agreementFeeAmount ?? 0;
   const netPayeeAmount = payment.netPayeeAmount ?? payment.amount;
 
   const breakdown =
-    payment.purpose === "agreement_fee"
+    purpose === "agreement_fee"
       ? buildAgreementFeeBreakdown({
           rentAmount: lease?.rentAmount || grossAmount,
           agreementFee: agreementFeeAmount || payment.amount,
@@ -143,8 +185,8 @@ export async function buildFullPaymentReceipt(
   return {
     receiptNumber: payment.receiptNumber || null,
     paymentId: String(payment._id),
-    purpose: payment.purpose,
-    purposeLabel: purposeLabel(payment.purpose),
+    purpose,
+    purposeLabel: purposeLabel(purpose),
     amount: payment.amount,
     currency: payment.currency,
     grossAmount,
@@ -165,7 +207,7 @@ export async function buildFullPaymentReceipt(
       : null,
     payee: payeeProfile
       ? { name: payeeProfile.displayName, type: payeeProfile.type }
-      : payment.purpose === "agreement_fee" && legalProvider === "hih"
+      : purpose === "agreement_fee" && legalProvider === "hih"
         ? { name: "House In Hand", type: "platform" }
         : null,
     listing: listing
@@ -174,6 +216,13 @@ export async function buildFullPaymentReceipt(
           address: listing.address
             ? `${listing.address.street}, ${listing.address.city}, ${listing.address.state}`
             : undefined,
+          listingType: listing.listingType,
+          bedrooms: listing.bedrooms,
+          bathrooms: listing.bathrooms,
+          sizeSqm: listing.sizeSqm,
+          amenities: listing.amenities || [],
+          rentAmount: listing.price?.amount,
+          rentPeriod: listing.price?.period,
         }
       : null,
     lease: lease
@@ -205,6 +254,21 @@ export function fullReceiptToPdfInput(receipt: FullReceipt): ReceiptDocumentInpu
     payeeName: receipt.payee?.name || "Payee",
     propertyTitle: receipt.listing?.title,
     propertyAddress: receipt.listing?.address,
+    propertyDetails: receipt.listing
+      ? {
+          listingType: receipt.listing.listingType,
+          bedrooms: receipt.listing.bedrooms,
+          bathrooms: receipt.listing.bathrooms,
+          sizeSqm: receipt.listing.sizeSqm,
+          amenities: receipt.listing.amenities,
+          rentAmount: receipt.listing.rentAmount,
+          rentPeriod: receipt.listing.rentPeriod,
+        }
+      : undefined,
+    legalHandler: receipt.legalProvider
+      ? formatLegalHandler(receipt.legalProvider, receipt.legalCompanyName)
+      : undefined,
+    legalProvider: receipt.legalProvider || undefined,
     reference: receipt.providerRef || undefined,
     currency: receipt.currency,
     lines: receipt.breakdown.map((line) => ({
