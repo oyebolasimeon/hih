@@ -110,6 +110,14 @@ const WalletTransactionSchema = new Schema<IWalletTransaction>(
 
 WalletTransactionSchema.index({ profileId: 1, createdAt: -1 });
 
-export const WalletTransaction =
-  models.WalletTransaction ||
-  model<IWalletTransaction>("WalletTransaction", WalletTransactionSchema);
+const MODEL_NAME = "WalletTransaction";
+
+// Next.js hot reload can keep a stale schema — re-register when the model already exists.
+if (models[MODEL_NAME]) {
+  delete models[MODEL_NAME];
+}
+
+export const WalletTransaction = model<IWalletTransaction>(
+  MODEL_NAME,
+  WalletTransactionSchema
+);
