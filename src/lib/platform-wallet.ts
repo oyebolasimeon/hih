@@ -181,9 +181,13 @@ export async function settleAgreementFeePayment(
     payment.platformProfileId = platformProfile._id;
   }
 
-  lease.agreementFeePaidAt = payment.paidAt || new Date();
-  lease.agreementFeePaymentId = payment._id;
-  await lease.save();
+  // Atomic $set so concurrent landlord/tenant signatures are not overwritten.
+  await Lease.findByIdAndUpdate(lease._id, {
+    $set: {
+      agreementFeePaidAt: payment.paidAt || new Date(),
+      agreementFeePaymentId: payment._id,
+    },
+  });
   await payment.save();
 
   void actor;

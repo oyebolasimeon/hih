@@ -48,6 +48,7 @@ export function serializeListing(
       url: img.url,
       publicId: img.publicId || "",
       isPrimary: Boolean(img.isPrimary),
+      mediaType: img.mediaType === "video" ? "video" : "image",
     })),
     bedrooms: doc.bedrooms ?? null,
     bathrooms: doc.bathrooms ?? null,
@@ -68,10 +69,13 @@ export function serializeListing(
 
 /** Public teaser — no owner PII */
 export function serializePublicTeaser(doc: ListingLean) {
-  const primary =
-    (doc.images || []).find((i) => i.isPrimary)?.url ||
-    (doc.images || [])[0]?.url ||
-    "";
+  const media = doc.images || [];
+  const primaryImage =
+    media.find((i) => i.isPrimary && i.mediaType !== "video") ||
+    media.find((i) => i.mediaType !== "video") ||
+    media.find((i) => i.isPrimary) ||
+    media[0];
+  const primary = primaryImage?.url || "";
   return {
     id: String(doc._id),
     listingType: doc.listingType,

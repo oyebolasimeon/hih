@@ -62,7 +62,10 @@ function ListingApplyPreview({
   onClear?: () => void;
 }) {
   const img =
-    listing.images.find((i) => i.isPrimary)?.url || listing.images[0]?.url;
+    listing.images.find((i) => i.isPrimary && (i as { mediaType?: string }).mediaType !== "video")?.url ||
+    listing.images.find((i) => (i as { mediaType?: string }).mediaType !== "video")?.url ||
+    listing.images.find((i) => i.isPrimary)?.url ||
+    listing.images[0]?.url;
 
   return (
     <div className="rounded-lg border border-border overflow-hidden bg-surface">

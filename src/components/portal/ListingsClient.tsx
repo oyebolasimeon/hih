@@ -17,7 +17,12 @@ type ListingRow = {
   address: { street: string; city: string; state: string; country: string };
   price: { amount: number; currency: string; period: string };
   amenities: string[];
-  images: { url: string; publicId?: string; isPrimary?: boolean }[];
+  images: {
+    url: string;
+    publicId?: string;
+    isPrimary?: boolean;
+    mediaType?: "image" | "video";
+  }[];
   bedrooms: number | null;
   bathrooms: number | null;
   sizeSqm: number | null;
@@ -79,7 +84,20 @@ function typeLabel(type: string) {
 }
 
 function listingImage(l: ListingRow) {
-  return l.images.find((i) => i.isPrimary)?.url || l.images[0]?.url;
+  const photos = l.images.filter((i) => i.mediaType !== "video");
+  return (
+    photos.find((i) => i.isPrimary)?.url ||
+    photos[0]?.url ||
+    l.images.find((i) => i.isPrimary)?.url ||
+    l.images[0]?.url
+  );
+}
+
+function isVideoMedia(item: { mediaType?: string; url?: string; name?: string }) {
+  if (item.mediaType === "video") return true;
+  if (item.mediaType === "image") return false;
+  const url = item.url || item.name || "";
+  return /\.(mp4|webm|mov|m4v)(\?|$)/i.test(url);
 }
 
 function availabilityClass(status: string) {
@@ -227,7 +245,12 @@ function ListingsManager() {
   }
 
   async function uploadImages(files: File[]) {
-    const uploaded: { url: string; publicId: string; isPrimary: boolean }[] = [];
+    const uploaded: {
+      url: string;
+      publicId: string;
+      isPrimary: boolean;
+      mediaType: "image" | "video";
+    }[] = [];
     for (let i = 0; i < files.length; i++) {
       const form = new FormData();
       form.append("file", files[i]);
@@ -236,8 +259,13 @@ function ListingsManager() {
         body: form,
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Image upload failed.");
-      uploaded.push({ url: data.url, publicId: data.publicId, isPrimary: false });
+      if (!res.ok) throw new Error(data.error || "Media upload failed.");
+      uploaded.push({
+        url: data.url,
+        publicId: data.publicId,
+        isPrimary: false,
+        mediaType: data.mediaType === "video" ? "video" : "image",
+      });
     }
     return uploaded;
   }
@@ -250,13 +278,23 @@ function ListingsManager() {
     try {
       const newImages = await uploadImages(imageFiles);
       const images = [
-        ...existingImages.map((img, i) => ({
+        ...existingImages.map((img) => ({
           url: img.url,
           publicId: img.publicId || "",
-          isPrimary: img.isPrimary ?? i === 0,
+          isPrimary: false,
+          mediaType: (img.mediaType === "video" ? "video" : "image") as
+            | "image"
+            | "video",
         })),
         ...newImages,
-      ].map((img, i) => ({ ...img, isPrimary: i === 0 }));
+      ];
+      const coverIdx = Math.max(
+        0,
+        images.findIndex((img) => img.mediaType !== "video")
+      );
+      images.forEach((img, i) => {
+        img.isPrimary = i === coverIdx;
+      });
 
       const amenities = amenitiesText
         .split(",")
@@ -631,17 +669,31 @@ function ListingsManager() {
               </div>
 
               <div className="space-y-4">
-                <p className="text-sm font-semibold">Photos</p>
+                <p className="text-sm font-semibold">Photos &amp; video</p>
                 {existingImages.length ? (
                   <div className="flex flex-wrap gap-2">
                     {existingImages.map((img) => (
                       <div key={img.url} className="relative">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={img.url}
-                          alt=""
-                          className="h-24 w-32 rounded-lg object-cover border border-border"
-                        />
+                        {isVideoMedia(img) ? (
+                          <video
+                            src={img.url}
+                            className="h-24 w-32 rounded-lg object-cover border border-border bg-black"
+                            muted
+                            playsInline
+                          />
+                        ) : (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={img.url}
+                            alt=""
+                            className="h-24 w-32 rounded-lg object-cover border border-border"
+                          />
+                        )}
+                        {isVideoMedia(img) ? (
+                          <span className="absolute left-1 bottom-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-white">
+                            Video
+                          </span>
+                        ) : null}
                         <button
                           type="button"
                           className="absolute -top-1.5 -right-1.5 rounded-full bg-navy text-sand text-[10px] px-2 py-0.5 shadow"
@@ -658,10 +710,10 @@ function ListingsManager() {
                   </div>
                 ) : null}
                 <ImageFilePicker
-                  label={editingId ? "Add more photos" : "Property photos"}
+                  label={editingId ? "Add more photos or video" : "Property photos & video"}
                   value={imageFiles}
                   onChange={setImageFiles}
-                  helpText="First photo becomes the cover image."
+                  helpText="Upload photos and optionally one property walkthrough video (MP4/WebM/MOV, up to 80MB). First photo is the cover."
                 />
               </div>
 

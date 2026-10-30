@@ -51,10 +51,13 @@ export async function POST(req: Request, ctx: RouteCtx) {
   const profiles = await Profile.find({ userId: user.id }).select("_id type").lean();
   const profileIds = new Set(profiles.map((p) => String(p._id)));
 
+  const isTenant = profileIds.has(String(lease.tenantProfileId));
+  const isLandlord = profileIds.has(String(lease.landlordProfileId));
+
   if (parsed.data.role === "tenant") {
-    if (!profileIds.has(String(lease.tenantProfileId))) {
+    if (!isTenant) {
       return NextResponse.json(
-        { error: "Only the tenant can sign as tenant." },
+        { error: "Only the tenant on this agreement can sign as tenant." },
         { status: 403 }
       );
     }
@@ -64,7 +67,8 @@ export async function POST(req: Request, ctx: RouteCtx) {
         { status: 409 }
       );
     }
-    if (!lease.agreementFeePaidAt) {
+    const feeRequired = (lease.agreementFeeAmount || 0) > 0;
+    if (feeRequired && !lease.agreementFeePaidAt) {
       return NextResponse.json(
         {
           error: "Pay the agreement fee before signing as tenant.",
@@ -73,12 +77,15 @@ export async function POST(req: Request, ctx: RouteCtx) {
         { status: 402 }
       );
     }
+    if (!feeRequired && !lease.agreementFeePaidAt) {
+      lease.agreementFeePaidAt = new Date();
+    }
     lease.tenantSignatureName = parsed.data.signatureName;
     lease.tenantSignedAt = new Date();
   } else {
-    if (!profileIds.has(String(lease.landlordProfileId))) {
+    if (!isLandlord) {
       return NextResponse.json(
-        { error: "Only the landlord can sign as landlord." },
+        { error: "Only the landlord on this agreement can sign as landlord." },
         { status: 403 }
       );
     }
@@ -92,20 +99,25 @@ export async function POST(req: Request, ctx: RouteCtx) {
     lease.landlordSignedAt = new Date();
   }
 
+  // Re-read after role updates so a prior landlord signature is never lost
+  // when the tenant signs second (and vice versa).
   const bothSigned = Boolean(lease.tenantSignedAt && lease.landlordSignedAt);
   if (bothSigned) {
     lease.status = "active";
     lease.signedAt = new Date();
-    const listing = await Listing.findById(lease.listingId);
-    if (listing) {
-      listing.availabilityStatus = "occupied";
-      await listing.save();
-    }
-  } else if (lease.status === "draft") {
+  } else if (lease.status === "draft" || lease.status === "pending_signature") {
     lease.status = "pending_signature";
   }
 
   await lease.save();
+
+  if (bothSigned) {
+    const listing = await Listing.findById(lease.listingId);
+    if (listing && listing.availabilityStatus !== "occupied") {
+      listing.availabilityStatus = "occupied";
+      await listing.save();
+    }
+  }
 
   if (bothSigned) {
     try {

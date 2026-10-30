@@ -26,6 +26,9 @@ type Agreement = {
   agreementFeePaidAt: string | null;
   documentUrl: string | null;
   documentNumber: string | null;
+  viewerRole: "tenant" | "landlord" | "both" | null;
+  canSignAsTenant: boolean;
+  canSignAsLandlord: boolean;
   listing: { id: string; title: string; city?: string; state?: string } | null;
 };
 
@@ -127,7 +130,9 @@ export default function AgreementsClient() {
     setMessage(
       data.agreement?.status === "active"
         ? "Both parties signed — lease is active. Signed PDF emailed to both parties."
-        : "Signature recorded."
+        : role === "landlord"
+          ? "Your signature is recorded. Waiting for the tenant to pay the fee (if required) and sign."
+          : "Your signature is recorded. Waiting for the landlord to sign."
     );
     await load();
   }
@@ -150,147 +155,212 @@ export default function AgreementsClient() {
         />
       ) : (
         <ul className="space-y-4">
-          {rows.map((a) => (
-            <li key={a.id} className="app-card p-4 sm:p-5 space-y-4">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                  <p className="font-medium">
-                    {a.listing?.title || "Property"} · {a.status}
-                  </p>
-                  <p className="text-xs text-muted mt-1">
-                    {formatMoney(a.rentAmount, a.currency)} / {a.paymentPeriod}
-                    {a.endDate
-                      ? ` · until ${new Date(a.endDate).toLocaleDateString()}`
-                      : ""}
-                  </p>
-                  <p className="text-xs text-muted mt-1">
-                    Legal:{" "}
-                    {a.legalProvider === "hih"
-                      ? "House In Hand"
-                      : a.legalCompanyName || "Landlord legal partner"}
-                  </p>
-                </div>
-                {a.documentUrl ? (
-                  <a
-                    href={a.documentUrl}
-                    className="app-btn app-btn-secondary text-xs"
-                  >
-                    Download signed PDF
-                  </a>
-                ) : null}
-              </div>
+          {rows.map((a) => {
+            const isTenantViewer =
+              a.viewerRole === "tenant" || a.viewerRole === "both";
+            const isLandlordViewer =
+              a.viewerRole === "landlord" || a.viewerRole === "both";
+            const feeRequired = (a.agreementFeeAmount || 0) > 0;
+            const feePaid = Boolean(a.agreementFeePaidAt) || !feeRequired;
+            const awaitingSignatures =
+              a.status === "draft" || a.status === "pending_signature";
 
-              <div className="rounded-lg border border-border/60 bg-surface/40 p-3 text-sm space-y-2">
-                <p className="font-medium">Agreement fee (tenant pays first)</p>
-                <p className="text-muted text-xs">
-                  {a.agreementFeePercent}% of rent ={" "}
-                  {formatMoney(a.agreementFeeAmount, a.currency)}
-                  {a.legalProvider === "hih"
-                    ? " → House In Hand wallet"
-                    : " → Landlord wallet"}
-                </p>
-                {a.agreementFeePaidAt ? (
-                  <p className="text-brand-dark text-xs font-medium">
-                    Paid on {new Date(a.agreementFeePaidAt).toLocaleString()}
-                  </p>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => void payFee(a.id)}
-                    disabled={payingFeeId === a.id}
-                    className="app-btn app-btn-primary text-xs"
-                  >
-                    {payingFeeId === a.id
-                      ? "Redirecting…"
-                      : `Pay ${formatMoney(a.agreementFeeAmount, a.currency)}`}
-                  </button>
-                )}
-              </div>
-
-              {a.termsText ? (
-                <pre className="text-xs text-muted whitespace-pre-wrap rounded-md border border-border bg-surface-dark/40 p-3 max-h-48 overflow-auto">
-                  {a.termsText}
-                </pre>
-              ) : null}
-
-              <div className="grid sm:grid-cols-2 gap-3 text-sm">
-                <div className="rounded-md border border-border p-3 space-y-2">
-                  <p className="font-medium">Tenant</p>
-                  {a.tenantSignedAt ? (
-                    <p className="text-xs text-muted">
-                      Signed by {a.tenantSignatureName} on{" "}
-                      {new Date(a.tenantSignedAt).toLocaleString()}
+            return (
+              <li key={a.id} className="app-card p-4 sm:p-5 space-y-4">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <p className="font-medium">
+                      {a.listing?.title || "Property"} · {a.status}
                     </p>
-                  ) : (
-                    <form
-                      onSubmit={(e) => void sign(e, a.id, "tenant")}
-                      className="space-y-2"
-                    >
-                      {!a.agreementFeePaidAt ? (
-                        <p className="text-xs text-muted">
-                          Pay the agreement fee before signing.
-                        </p>
-                      ) : null}
-                      <input
-                        className="app-input w-full text-sm"
-                        placeholder="Full name"
-                        value={signatureName[`${a.id}-tenant`] || ""}
-                        onChange={(e) =>
-                          setSignatureName({
-                            ...signatureName,
-                            [`${a.id}-tenant`]: e.target.value,
-                          })
-                        }
-                        disabled={!a.agreementFeePaidAt}
-                      />
-                      <button
-                        type="submit"
-                        disabled={
-                          busyKey === `${a.id}-tenant` || !a.agreementFeePaidAt
-                        }
-                        className="app-btn app-btn-primary text-xs disabled:opacity-50"
-                      >
-                        Sign as tenant
-                      </button>
-                    </form>
-                  )}
-                </div>
-                <div className="rounded-md border border-border p-3 space-y-2">
-                  <p className="font-medium">Landlord</p>
-                  {a.landlordSignedAt ? (
-                    <p className="text-xs text-muted">
-                      Signed by {a.landlordSignatureName} on{" "}
-                      {new Date(a.landlordSignedAt).toLocaleString()}
+                    <p className="text-xs text-muted mt-1">
+                      {formatMoney(a.rentAmount, a.currency)} / {a.paymentPeriod}
+                      {a.endDate
+                        ? ` · until ${new Date(a.endDate).toLocaleDateString()}`
+                        : ""}
                     </p>
-                  ) : (
-                    <form
-                      onSubmit={(e) => void sign(e, a.id, "landlord")}
-                      className="space-y-2"
+                    <p className="text-xs text-muted mt-1">
+                      Legal:{" "}
+                      {a.legalProvider === "hih"
+                        ? "House In Hand"
+                        : a.legalCompanyName || "Landlord legal partner"}
+                    </p>
+                  </div>
+                  {a.documentUrl ? (
+                    <a
+                      href={a.documentUrl}
+                      className="app-btn app-btn-secondary text-xs"
                     >
-                      <input
-                        className="app-input w-full text-sm"
-                        placeholder="Full name"
-                        value={signatureName[`${a.id}-landlord`] || ""}
-                        onChange={(e) =>
-                          setSignatureName({
-                            ...signatureName,
-                            [`${a.id}-landlord`]: e.target.value,
-                          })
-                        }
-                      />
+                      Download signed PDF
+                    </a>
+                  ) : null}
+                </div>
+
+                {isTenantViewer ? (
+                  <div className="rounded-lg border border-border/60 bg-surface/40 p-3 text-sm space-y-2">
+                    <p className="font-medium">Agreement fee (tenant pays first)</p>
+                    <p className="text-muted text-xs">
+                      {a.agreementFeePercent}% of rent ={" "}
+                      {formatMoney(a.agreementFeeAmount, a.currency)}
+                      {a.legalProvider === "hih"
+                        ? " → House In Hand wallet"
+                        : " → Landlord wallet"}
+                    </p>
+                    {feePaid ? (
+                      <p className="text-brand-dark text-xs font-medium">
+                        {a.agreementFeePaidAt
+                          ? `Paid on ${new Date(a.agreementFeePaidAt).toLocaleString()}`
+                          : "No fee due for this agreement."}
+                      </p>
+                    ) : (
                       <button
-                        type="submit"
-                        disabled={busyKey === `${a.id}-landlord`}
+                        type="button"
+                        onClick={() => void payFee(a.id)}
+                        disabled={payingFeeId === a.id}
                         className="app-btn app-btn-primary text-xs"
                       >
-                        Sign as landlord
+                        {payingFeeId === a.id
+                          ? "Redirecting…"
+                          : `Pay ${formatMoney(a.agreementFeeAmount, a.currency)}`}
                       </button>
-                    </form>
-                  )}
+                    )}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-border/60 bg-surface/40 p-3 text-sm space-y-1">
+                    <p className="font-medium">Agreement fee</p>
+                    <p className="text-xs text-muted">
+                      {formatMoney(a.agreementFeeAmount, a.currency)} (
+                      {a.agreementFeePercent}% of rent)
+                      {feePaid
+                        ? " — paid by tenant"
+                        : " — waiting for tenant payment"}
+                    </p>
+                  </div>
+                )}
+
+                {a.termsText ? (
+                  <pre className="text-xs text-muted whitespace-pre-wrap rounded-md border border-border bg-surface-dark/40 p-3 max-h-48 overflow-auto">
+                    {a.termsText}
+                  </pre>
+                ) : null}
+
+                {awaitingSignatures ? (
+                  <p className="text-xs text-muted">
+                    {!a.tenantSignedAt && !a.landlordSignedAt
+                      ? "Either party can sign once the agreement fee is settled. Both signatures are required to activate the lease."
+                      : a.tenantSignedAt && !a.landlordSignedAt
+                        ? "Tenant has signed. Waiting for landlord signature."
+                        : !a.tenantSignedAt && a.landlordSignedAt
+                          ? "Landlord has signed. Waiting for tenant to pay the fee (if required) and sign."
+                          : null}
+                  </p>
+                ) : null}
+
+                <div className="grid sm:grid-cols-2 gap-3 text-sm">
+                  <div className="rounded-md border border-border p-3 space-y-2">
+                    <p className="font-medium">Tenant</p>
+                    {a.tenantSignedAt ? (
+                      <p className="text-xs text-muted">
+                        Signed by {a.tenantSignatureName} on{" "}
+                        {new Date(a.tenantSignedAt).toLocaleString()}
+                      </p>
+                    ) : a.canSignAsTenant ? (
+                      <form
+                        onSubmit={(e) => void sign(e, a.id, "tenant")}
+                        className="space-y-2"
+                      >
+                        {!feePaid ? (
+                          <p className="text-xs text-muted">
+                            Pay the agreement fee before signing.
+                          </p>
+                        ) : a.landlordSignedAt ? (
+                          <p className="text-xs text-brand-dark">
+                            Landlord already signed — add your signature to activate.
+                          </p>
+                        ) : null}
+                        <input
+                          className="app-input w-full text-sm"
+                          placeholder="Full name"
+                          value={signatureName[`${a.id}-tenant`] || ""}
+                          onChange={(e) =>
+                            setSignatureName({
+                              ...signatureName,
+                              [`${a.id}-tenant`]: e.target.value,
+                            })
+                          }
+                          disabled={!feePaid}
+                        />
+                        <button
+                          type="submit"
+                          disabled={busyKey === `${a.id}-tenant` || !feePaid}
+                          className="app-btn app-btn-primary text-xs disabled:opacity-50"
+                        >
+                          {busyKey === `${a.id}-tenant`
+                            ? "Signing…"
+                            : "Sign as tenant"}
+                        </button>
+                      </form>
+                    ) : (
+                      <p className="text-xs text-muted">
+                        {isLandlordViewer && !isTenantViewer
+                          ? "Waiting for tenant signature."
+                          : "Tenant signature pending."}
+                      </p>
+                    )}
+                  </div>
+                  <div className="rounded-md border border-border p-3 space-y-2">
+                    <p className="font-medium">Landlord</p>
+                    {a.landlordSignedAt ? (
+                      <p className="text-xs text-muted">
+                        Signed by {a.landlordSignatureName} on{" "}
+                        {new Date(a.landlordSignedAt).toLocaleString()}
+                      </p>
+                    ) : a.canSignAsLandlord ? (
+                      <form
+                        onSubmit={(e) => void sign(e, a.id, "landlord")}
+                        className="space-y-2"
+                      >
+                        {a.tenantSignedAt ? (
+                          <p className="text-xs text-brand-dark">
+                            Tenant already signed — add your signature to activate.
+                          </p>
+                        ) : (
+                          <p className="text-xs text-muted">
+                            You can sign before or after the tenant.
+                          </p>
+                        )}
+                        <input
+                          className="app-input w-full text-sm"
+                          placeholder="Full name"
+                          value={signatureName[`${a.id}-landlord`] || ""}
+                          onChange={(e) =>
+                            setSignatureName({
+                              ...signatureName,
+                              [`${a.id}-landlord`]: e.target.value,
+                            })
+                          }
+                        />
+                        <button
+                          type="submit"
+                          disabled={busyKey === `${a.id}-landlord`}
+                          className="app-btn app-btn-primary text-xs"
+                        >
+                          {busyKey === `${a.id}-landlord`
+                            ? "Signing…"
+                            : "Sign as landlord"}
+                        </button>
+                      </form>
+                    ) : (
+                      <p className="text-xs text-muted">
+                        {isTenantViewer && !isLandlordViewer
+                          ? "Waiting for landlord signature."
+                          : "Landlord signature pending."}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

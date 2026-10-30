@@ -22,7 +22,7 @@ type ListingDetail = {
   };
   price: { amount: number; currency: string; period: string };
   amenities: string[];
-  images: { url: string; isPrimary?: boolean }[];
+  images: { url: string; isPrimary?: boolean; mediaType?: "image" | "video" }[];
   bedrooms: number | null;
   bathrooms: number | null;
   sizeSqm: number | null;
@@ -122,7 +122,11 @@ export default function ListingDetailClient({ id }: { id: string }) {
     );
   }
 
-  const mainImage = images[activeImage]?.url;
+  const activeMedia = images[activeImage];
+  const mainImage = activeMedia?.url;
+  const mainIsVideo =
+    activeMedia?.mediaType === "video" ||
+    /\.(mp4|webm|mov|m4v)(\?|$)/i.test(mainImage || "");
   const locationLine = [
     listing.address.street,
     listing.address.city,
@@ -228,13 +232,26 @@ export default function ListingDetailClient({ id }: { id: string }) {
             <section className="space-y-3">
               {mainImage ? (
                 <div className="relative aspect-[16/10] sm:aspect-[2/1] overflow-hidden rounded-xl border border-border bg-surface">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={mainImage}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none" />
+                  {mainIsVideo ? (
+                    <video
+                      key={mainImage}
+                      src={mainImage}
+                      className="h-full w-full object-cover bg-black"
+                      controls
+                      playsInline
+                      preload="metadata"
+                    />
+                  ) : (
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={mainImage}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none" />
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="aspect-[16/10] sm:aspect-[2/1] rounded-xl border border-border bg-gradient-to-br from-surface to-surface-dark flex items-center justify-center">
@@ -244,25 +261,45 @@ export default function ListingDetailClient({ id }: { id: string }) {
 
               {images.length > 1 ? (
                 <div className="flex gap-2 overflow-x-auto pb-1">
-                  {images.map((img, i) => (
-                    <button
-                      key={`${img.url}-${i}`}
-                      type="button"
-                      onClick={() => setActiveImage(i)}
-                      className={`relative shrink-0 h-16 w-24 overflow-hidden rounded-lg border-2 transition-all ${
-                        activeImage === i
-                          ? "border-brand ring-2 ring-brand/30"
-                          : "border-border opacity-80 hover:opacity-100"
-                      }`}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={img.url}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                    </button>
-                  ))}
+                  {images.map((img, i) => {
+                    const thumbIsVideo =
+                      img.mediaType === "video" ||
+                      /\.(mp4|webm|mov|m4v)(\?|$)/i.test(img.url);
+                    return (
+                      <button
+                        key={`${img.url}-${i}`}
+                        type="button"
+                        onClick={() => setActiveImage(i)}
+                        className={`relative shrink-0 h-16 w-24 overflow-hidden rounded-lg border-2 transition-all ${
+                          activeImage === i
+                            ? "border-brand ring-2 ring-brand/30"
+                            : "border-border opacity-80 hover:opacity-100"
+                        }`}
+                      >
+                        {thumbIsVideo ? (
+                          <>
+                            <video
+                              src={img.url}
+                              className="h-full w-full object-cover bg-black"
+                              muted
+                              playsInline
+                              preload="metadata"
+                            />
+                            <span className="absolute inset-x-0 bottom-0 bg-black/60 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white">
+                              Video
+                            </span>
+                          </>
+                        ) : (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={img.url}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               ) : null}
             </section>

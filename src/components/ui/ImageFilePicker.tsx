@@ -24,15 +24,19 @@ function revokeAll(items: PendingFile[]) {
   items.forEach((p) => URL.revokeObjectURL(p.previewUrl));
 }
 
+function isVideoFile(file: File) {
+  return file.type.startsWith("video/") || /\.(mp4|webm|mov|m4v)$/i.test(file.name);
+}
+
 export default function ImageFilePicker({
   label = "Images",
   multiple = true,
-  accept = "image/*",
+  accept = "image/*,video/mp4,video/webm,video/quicktime",
   disabled = false,
   value = [],
   onChange,
   className = "",
-  helpText = "Select images, preview them, then confirm to attach for upload.",
+  helpText = "Select photos or a property video, preview them, then confirm to attach for upload.",
 }: Props) {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -120,9 +124,9 @@ export default function ImageFilePicker({
             <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
           </svg>
         </span>
-        <span className="text-sm font-semibold">Choose images</span>
+        <span className="text-sm font-semibold">Choose photos or video</span>
         <span className="text-xs text-muted">
-          PNG, JPG, or WebP — preview before upload
+          PNG, JPG, WebP, or MP4/WebM/MOV — preview before upload
         </span>
       </button>
 
@@ -155,7 +159,7 @@ export default function ImageFilePicker({
             <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
               <div>
                 <h2 className="font-display text-lg font-semibold">
-                  Preview images
+                  Preview media
                 </h2>
                 <p className="text-xs text-muted">
                   Remove any you don’t want, then confirm to attach for upload.
@@ -173,7 +177,7 @@ export default function ImageFilePicker({
 
             <div className="flex-1 overflow-y-auto p-5">
               {pending.length === 0 ? (
-                <p className="text-sm text-muted">No images selected.</p>
+                <p className="text-sm text-muted">No media selected.</p>
               ) : (
                 <div className="grid sm:grid-cols-2 gap-3">
                   {pending.map((item) => (
@@ -181,14 +185,27 @@ export default function ImageFilePicker({
                       key={item.id}
                       className="overflow-hidden rounded-lg border border-border"
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={item.previewUrl}
-                        alt={item.file.name}
-                        className="aspect-[16/10] w-full object-cover"
-                      />
+                      {isVideoFile(item.file) ? (
+                        <video
+                          src={item.previewUrl}
+                          className="aspect-[16/10] w-full object-cover bg-black"
+                          controls
+                          muted
+                          playsInline
+                        />
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={item.previewUrl}
+                          alt={item.file.name}
+                          className="aspect-[16/10] w-full object-cover"
+                        />
+                      )}
                       <div className="flex items-center justify-between gap-2 px-3 py-2">
-                        <p className="truncate text-xs">{item.file.name}</p>
+                        <p className="truncate text-xs">
+                          {isVideoFile(item.file) ? "Video · " : ""}
+                          {item.file.name}
+                        </p>
                         <button
                           type="button"
                           className="text-xs text-danger hover:underline"
@@ -217,7 +234,7 @@ export default function ImageFilePicker({
                 disabled={pending.length === 0}
                 onClick={confirmModal}
               >
-                Confirm {pending.length} image{pending.length === 1 ? "" : "s"}
+                Confirm {pending.length} file{pending.length === 1 ? "" : "s"}
               </button>
             </div>
           </div>
@@ -241,11 +258,22 @@ function ConfirmedThumb({
     return () => URL.revokeObjectURL(next);
   }, [file]);
 
+  const video = isVideoFile(file);
+
   return (
     <div className="relative aspect-square overflow-hidden rounded-md border border-border bg-surface-dark">
       {url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={url} alt="" className="h-full w-full object-cover" />
+        video ? (
+          <video
+            src={url}
+            className="h-full w-full object-cover"
+            muted
+            playsInline
+          />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={url} alt="" className="h-full w-full object-cover" />
+        )
       ) : null}
       <button
         type="button"
@@ -255,6 +283,7 @@ function ConfirmedThumb({
         Remove
       </button>
       <p className="absolute inset-x-0 bottom-0 truncate bg-black/55 px-1 py-0.5 text-[10px] text-white">
+        {video ? "Video · " : ""}
         {file.name}
       </p>
     </div>

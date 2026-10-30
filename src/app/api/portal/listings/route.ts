@@ -15,6 +15,7 @@ const imageSchema = z.object({
   url: z.string().url(),
   publicId: z.string().trim().optional(),
   isPrimary: z.boolean().optional(),
+  mediaType: z.enum(["image", "video"]).optional(),
 });
 
 const createSchema = z.object({
@@ -126,6 +127,7 @@ export async function POST(req: Request) {
           url: img.url,
           publicId: img.publicId || "",
           isPrimary: img.isPrimary ?? i === 0,
+          mediaType: img.mediaType === "video" ? ("video" as const) : ("image" as const),
         }))
       : [];
 

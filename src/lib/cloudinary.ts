@@ -13,22 +13,34 @@ export function configureCloudinary() {
 export async function uploadImageBuffer(
   buffer: Buffer,
   folder = "house-in-hand/properties",
-  resourceType: "image" | "auto" | "raw" = "image"
+  resourceType: "image" | "video" | "auto" | "raw" = "image"
 ) {
   const client = configureCloudinary();
-  return new Promise<{ url: string; publicId: string }>((resolve, reject) => {
-    const stream = client.uploader.upload_stream(
-      { folder, resource_type: resourceType },
-      (error, result) => {
-        if (error || !result) {
-          reject(error || new Error("Cloudinary upload failed"));
-          return;
+  return new Promise<{ url: string; publicId: string; resourceType: string }>(
+    (resolve, reject) => {
+      const stream = client.uploader.upload_stream(
+        {
+          folder,
+          resource_type: resourceType,
+          ...(resourceType === "video"
+            ? { chunk_size: 6_000_000 }
+            : {}),
+        },
+        (error, result) => {
+          if (error || !result) {
+            reject(error || new Error("Cloudinary upload failed"));
+            return;
+          }
+          resolve({
+            url: result.secure_url,
+            publicId: result.public_id,
+            resourceType: result.resource_type || resourceType,
+          });
         }
-        resolve({ url: result.secure_url, publicId: result.public_id });
-      }
-    );
-    stream.end(buffer);
-  });
+      );
+      stream.end(buffer);
+    }
+  );
 }
 
 export async function deleteImage(publicId: string) {

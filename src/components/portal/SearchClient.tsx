@@ -14,7 +14,7 @@ type SearchListing = {
   description: string;
   address: { street: string; city: string; state: string; country: string };
   price: { amount: number; currency: string; period: string };
-  images: { url: string; isPrimary?: boolean }[];
+  images: { url: string; isPrimary?: boolean; mediaType?: "image" | "video" }[];
   bedrooms: number | null;
   bathrooms: number | null;
   verificationStatus: string;
@@ -70,7 +70,13 @@ function typeLabel(type: string) {
 }
 
 function listingImage(listing: SearchListing) {
-  return listing.images.find((i) => i.isPrimary)?.url || listing.images[0]?.url;
+  const photos = listing.images.filter((i) => i.mediaType !== "video");
+  return (
+    photos.find((i) => i.isPrimary)?.url ||
+    photos[0]?.url ||
+    listing.images.find((i) => i.isPrimary)?.url ||
+    listing.images[0]?.url
+  );
 }
 
 export default function SearchClient() {

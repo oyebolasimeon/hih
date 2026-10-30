@@ -36,10 +36,13 @@ export interface IListingPrice {
   period: ListingPricePeriod;
 }
 
+export type ListingMediaType = "image" | "video";
+
 export interface IListingImage {
   url: string;
   publicId?: string;
   isPrimary?: boolean;
+  mediaType?: ListingMediaType;
 }
 
 export type ListingLegalProvider = "hih" | "own_legal";
@@ -103,6 +106,11 @@ const ListingImageSchema = new Schema<IListingImage>(
     url: { type: String, required: true, trim: true },
     publicId: { type: String, trim: true },
     isPrimary: { type: Boolean, default: false },
+    mediaType: {
+      type: String,
+      enum: ["image", "video"],
+      default: "image",
+    },
   },
   { _id: false }
 );

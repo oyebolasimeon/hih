@@ -7,13 +7,26 @@ import { Profile } from "@/models/Profile";
 
 function serializeLease(
   l: Record<string, unknown>,
-  listing?: Record<string, unknown> | null
+  listing: Record<string, unknown> | null | undefined,
+  profileIds: Set<string>
 ) {
+  const tenantProfileId = String(l.tenantProfileId);
+  const landlordProfileId = String(l.landlordProfileId);
+  const isTenant = profileIds.has(tenantProfileId);
+  const isLandlord = profileIds.has(landlordProfileId);
+  const viewerRole = isTenant && isLandlord
+    ? "both"
+    : isTenant
+      ? "tenant"
+      : isLandlord
+        ? "landlord"
+        : null;
+
   return {
     id: String(l._id),
     listingId: String(l.listingId),
-    tenantProfileId: String(l.tenantProfileId),
-    landlordProfileId: String(l.landlordProfileId),
+    tenantProfileId,
+    landlordProfileId,
     applicationId: l.applicationId ? String(l.applicationId) : null,
     status: l.status,
     startDate: l.startDate,
@@ -34,6 +47,15 @@ function serializeLease(
     agreementFeeAmount: l.agreementFeeAmount ?? 0,
     agreementFeePaidAt: l.agreementFeePaidAt || null,
     documentNumber: l.documentNumber || null,
+    viewerRole,
+    canSignAsTenant:
+      isTenant &&
+      !l.tenantSignedAt &&
+      ["draft", "pending_signature"].includes(String(l.status)),
+    canSignAsLandlord:
+      isLandlord &&
+      !l.landlordSignedAt &&
+      ["draft", "pending_signature"].includes(String(l.status)),
     createdAt: l.createdAt,
     updatedAt: l.updatedAt,
     listing: listing
@@ -53,12 +75,13 @@ export async function GET() {
 
   await connectDB();
   const profiles = await Profile.find({ userId: user.id }).select("_id").lean();
-  const profileIds = profiles.map((p) => p._id);
+  const profileObjectIds = profiles.map((p) => p._id);
+  const profileIdSet = new Set(profiles.map((p) => String(p._id)));
 
   const rows = await Lease.find({
     $or: [
-      { tenantProfileId: { $in: profileIds } },
-      { landlordProfileId: { $in: profileIds } },
+      { tenantProfileId: { $in: profileObjectIds } },
+      { landlordProfileId: { $in: profileObjectIds } },
     ],
   })
     .sort({ createdAt: -1 })
@@ -78,7 +101,8 @@ export async function GET() {
         listingMap.get(String(l.listingId)) as unknown as Record<
           string,
           unknown
-        > | null
+        > | null,
+        profileIdSet
       )
     ),
   });

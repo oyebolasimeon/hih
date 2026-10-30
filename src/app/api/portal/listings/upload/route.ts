@@ -7,13 +7,35 @@ import {
   requireVerifiedProfile,
 } from "@/lib/profile-context";
 
-const MAX_BYTES = 8 * 1024 * 1024;
-const ALLOWED = new Set([
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 80 * 1024 * 1024;
+
+const IMAGE_TYPES = new Set([
   "image/jpeg",
   "image/jpg",
   "image/png",
   "image/webp",
 ]);
+
+const VIDEO_TYPES = new Set([
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+  "video/x-m4v",
+]);
+
+function detectMediaType(file: File): "image" | "video" | null {
+  if (IMAGE_TYPES.has(file.type) || file.type.startsWith("image/")) {
+    return "image";
+  }
+  if (VIDEO_TYPES.has(file.type) || file.type.startsWith("video/")) {
+    return "video";
+  }
+  const name = file.name.toLowerCase();
+  if (/\.(jpe?g|png|webp)$/.test(name)) return "image";
+  if (/\.(mp4|webm|mov|m4v)$/.test(name)) return "video";
+  return null;
+}
 
 export async function POST(req: Request) {
   const { user, response } = await assertUser();
@@ -49,15 +71,24 @@ export async function POST(req: Request) {
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "file is required." }, { status: 400 });
   }
-  if (file.size > MAX_BYTES) {
+
+  const mediaType = detectMediaType(file);
+  if (!mediaType) {
     return NextResponse.json(
-      { error: "File must be 8MB or smaller." },
+      { error: "Only JPEG, PNG, WebP images or MP4/WebM/MOV videos are allowed." },
       { status: 400 }
     );
   }
-  if (file.type && !ALLOWED.has(file.type) && !file.type.startsWith("image/")) {
+
+  const maxBytes = mediaType === "video" ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
+  if (file.size > maxBytes) {
     return NextResponse.json(
-      { error: "Only JPEG, PNG, or WebP uploads are allowed." },
+      {
+        error:
+          mediaType === "video"
+            ? "Video must be 80MB or smaller."
+            : "Image must be 8MB or smaller.",
+      },
       { status: 400 }
     );
   }
@@ -67,13 +98,16 @@ export async function POST(req: Request) {
   try {
     const uploaded = await uploadImageBuffer(
       buffer,
-      "house-in-hand/listings",
-      "image"
+      mediaType === "video"
+        ? "house-in-hand/listings/videos"
+        : "house-in-hand/listings",
+      mediaType
     );
     return NextResponse.json({
       url: uploaded.url,
       publicId: uploaded.publicId,
       filename: file.name,
+      mediaType,
     });
   } catch (err) {
     console.error("Listing upload failed:", err);
