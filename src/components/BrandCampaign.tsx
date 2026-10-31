@@ -56,18 +56,19 @@ export default function BrandCampaign() {
         </motion.div>
       </div>
 
-      <div className="relative mt-10">
-        <div className="relative mx-auto aspect-[4/5] max-w-3xl overflow-hidden sm:aspect-[3/4] md:aspect-[16/10] md:max-w-5xl lg:max-w-6xl">
+      <div className="relative mt-10 px-5 sm:px-6 lg:px-8">
+        {/* Assets are 819×1024 (4:5) — keep that frame so copy/logo aren’t cropped */}
+        <div className="relative mx-auto aspect-[4/5] w-full max-w-md overflow-hidden rounded-sm sm:max-w-lg md:max-w-xl lg:max-w-2xl">
           <AnimatePresence mode="wait">
             <motion.img
               key={slides[active].src}
               src={slides[active].src}
               alt={slides[active].alt}
-              className="absolute inset-0 h-full w-full object-cover object-center"
-              initial={reduce ? false : { opacity: 0, scale: 1.04 }}
-              animate={{ opacity: 1, scale: 1 }}
+              className="absolute inset-0 h-full w-full object-contain object-center"
+              initial={reduce ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
               exit={reduce ? undefined : { opacity: 0 }}
-              transition={{ duration: reduce ? 0 : 0.7, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: reduce ? 0 : 0.55, ease: [0.22, 1, 0.36, 1] }}
             />
           </AnimatePresence>
 
