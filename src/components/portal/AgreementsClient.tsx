@@ -174,7 +174,12 @@ export default function AgreementsClient() {
             const feeRequired = (a.agreementFeeAmount || 0) > 0;
             const feePaid =
               a.feePaid ?? (Boolean(a.agreementFeePaidAt) || !feeRequired);
-            const canPay = a.canPayAgreementFee ?? (isTenantViewer && !feePaid);
+            // Only the tenant on this lease pays — never show Pay to landlord viewers.
+            const canPay =
+              Boolean(a.canPayAgreementFee) &&
+              (a.viewerRole === "tenant" || a.viewerRole === "both");
+            const showTenantPayPanel =
+              a.viewerRole === "tenant" || a.viewerRole === "both";
             const awaitingSignatures =
               a.status === "draft" || a.status === "pending_signature";
 
@@ -208,9 +213,9 @@ export default function AgreementsClient() {
                   ) : null}
                 </div>
 
-                {isTenantViewer ? (
+                {showTenantPayPanel ? (
                   <div className="rounded-lg border border-border/60 bg-surface/40 p-3 text-sm space-y-2">
-                    <p className="font-medium">Agreement / legal fee</p>
+                    <p className="font-medium">Agreement / legal fee (you pay)</p>
                     <p className="text-muted text-xs">
                       {a.agreementFeePercent}% of rent ={" "}
                       {formatMoney(a.agreementFeeAmount, a.currency)}
@@ -245,11 +250,14 @@ export default function AgreementsClient() {
                   <div className="rounded-lg border border-border/60 bg-surface/40 p-3 text-sm space-y-1">
                     <p className="font-medium">Agreement / legal fee</p>
                     <p className="text-xs text-muted">
+                      Paid by the tenant — you do not pay this fee.
+                    </p>
+                    <p className="text-xs text-muted">
                       {formatMoney(a.agreementFeeAmount, a.currency)} (
                       {a.agreementFeePercent}% of rent)
                       {feePaid
-                        ? " — paid. You and the tenant can each sign independently."
-                        : " — waiting for tenant payment before either party can sign"}
+                        ? " — tenant has paid. You can sign independently."
+                        : " — waiting for the tenant to pay before signing unlocks"}
                     </p>
                   </div>
                 )}
@@ -263,7 +271,9 @@ export default function AgreementsClient() {
                 {awaitingSignatures ? (
                   <p className="text-xs text-muted">
                     {!feePaid
-                      ? "Pay the agreement fee first. After that, tenant and landlord can each sign on their own — no waiting on the other party to go first."
+                      ? showTenantPayPanel
+                        ? "Pay the agreement fee first. After that, you and the landlord can each sign independently."
+                        : "Waiting for the tenant to pay the agreement / legal fee. You do not pay this — once they pay, you can sign on your own."
                       : !a.tenantSignedAt && !a.landlordSignedAt
                         ? "Fee settled. Either party can sign now; both signatures activate the lease."
                         : a.tenantSignedAt && !a.landlordSignedAt
