@@ -11,7 +11,7 @@ export async function GET() {
     verificationStatus: "verified",
   })
     .sort({ featured: -1, publishedAt: -1, createdAt: -1 })
-    .limit(12)
+    .limit(60)
     .lean();
 
   return NextResponse.json({

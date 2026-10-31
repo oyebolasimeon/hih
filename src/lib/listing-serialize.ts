@@ -67,15 +67,28 @@ export function serializeListing(
   };
 }
 
-/** Public teaser — no owner PII */
-export function serializePublicTeaser(doc: ListingLean) {
-  const media = doc.images || [];
+function publicMedia(doc: ListingLean) {
+  return (doc.images || []).map((img) => ({
+    url: img.url,
+    isPrimary: Boolean(img.isPrimary),
+    mediaType: (img.mediaType === "video" ? "video" : "image") as
+      | "image"
+      | "video",
+  }));
+}
+
+function publicCoverUrl(doc: ListingLean) {
+  const media = publicMedia(doc);
   const primaryImage =
     media.find((i) => i.isPrimary && i.mediaType !== "video") ||
     media.find((i) => i.mediaType !== "video") ||
     media.find((i) => i.isPrimary) ||
     media[0];
-  const primary = primaryImage?.url || "";
+  return primaryImage?.url || "";
+}
+
+/** Public card teaser — no owner PII */
+export function serializePublicTeaser(doc: ListingLean) {
   return {
     id: String(doc._id),
     listingType: doc.listingType,
@@ -86,11 +99,46 @@ export function serializePublicTeaser(doc: ListingLean) {
         : doc.description,
     city: doc.address?.city || "",
     state: doc.address?.state || "",
+    street: doc.address?.street || "",
     price: doc.price,
     bedrooms: doc.bedrooms ?? null,
     bathrooms: doc.bathrooms ?? null,
-    imageUrl: primary,
+    sizeSqm: doc.sizeSqm ?? null,
+    amenities: doc.amenities || [],
+    imageUrl: publicCoverUrl(doc),
+    imageCount: (doc.images || []).length,
     verificationStatus: doc.verificationStatus,
     featured: Boolean(doc.featured),
+  };
+}
+
+/** Full public listing detail — property info only, no owner contact/PII */
+export function serializePublicListing(
+  doc: ListingLean,
+  extras?: { ownerDisplayName?: string; ownerVerified?: boolean }
+) {
+  return {
+    id: String(doc._id),
+    listingType: doc.listingType,
+    title: doc.title,
+    description: doc.description,
+    address: {
+      street: doc.address?.street || "",
+      city: doc.address?.city || "",
+      state: doc.address?.state || "",
+      country: doc.address?.country || "Nigeria",
+    },
+    price: doc.price,
+    amenities: doc.amenities || [],
+    images: publicMedia(doc),
+    bedrooms: doc.bedrooms ?? null,
+    bathrooms: doc.bathrooms ?? null,
+    sizeSqm: doc.sizeSqm ?? null,
+    availabilityStatus: doc.availabilityStatus,
+    verificationStatus: doc.verificationStatus,
+    featured: Boolean(doc.featured),
+    publishedAt: doc.publishedAt || null,
+    ownerDisplayName: extras?.ownerDisplayName || undefined,
+    ownerVerified: extras?.ownerVerified ?? false,
   };
 }
