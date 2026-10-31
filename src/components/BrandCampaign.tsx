@@ -1,9 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
-const panels = [
+const slides = [
   {
     src: "/brand/housing-story-campaign.jpg",
     alt: "House In Hand — Nigeria’s housing story is evolving, and you're part of it",
@@ -24,6 +25,19 @@ const panels = [
 
 export default function BrandCampaign() {
   const reduce = useReducedMotion();
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    if (reduce) return;
+    const id = window.setInterval(() => {
+      setActive((i) => (i + 1) % slides.length);
+    }, 6500);
+    return () => window.clearInterval(id);
+  }, [reduce]);
+
+  function go(delta: number) {
+    setActive((i) => (i + delta + slides.length) % slides.length);
+  }
 
   return (
     <section className="bg-navy" aria-label="House In Hand brand story">
@@ -42,37 +56,53 @@ export default function BrandCampaign() {
         </motion.div>
       </div>
 
-      <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-4">
-        {panels.map((panel, i) => (
-          <motion.figure
-            key={panel.src}
-            initial={reduce ? false : { opacity: 0, y: 28 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.8, delay: i * 0.12 }}
-            className="relative m-0 min-h-[70vh] overflow-hidden bg-navy"
-          >
+      <div className="relative mt-10">
+        <div className="relative mx-auto aspect-[4/5] max-w-3xl overflow-hidden sm:aspect-[3/4] md:aspect-[16/10] md:max-w-5xl lg:max-w-6xl">
+          <AnimatePresence mode="wait">
             <motion.img
-              src={panel.src}
-              alt={panel.alt}
+              key={slides[active].src}
+              src={slides[active].src}
+              alt={slides[active].alt}
               className="absolute inset-0 h-full w-full object-cover object-center"
-              animate={
-                reduce
-                  ? undefined
-                  : { scale: [1.04, 1, 1.03] }
-              }
-              transition={
-                reduce
-                  ? undefined
-                  : { duration: 22, repeat: Infinity, ease: "easeInOut", delay: i * 2 }
-              }
+              initial={reduce ? false : { opacity: 0, scale: 1.04 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={reduce ? undefined : { opacity: 0 }}
+              transition={{ duration: reduce ? 0 : 0.7, ease: [0.22, 1, 0.36, 1] }}
             />
-            <div
-              className="pointer-events-none absolute inset-0 bg-gradient-to-t from-navy/35 via-transparent to-transparent"
-              aria-hidden
+          </AnimatePresence>
+
+          <button
+            type="button"
+            onClick={() => go(-1)}
+            className="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full border border-white/25 bg-navy/55 px-3 py-2 text-sand backdrop-blur-sm transition hover:bg-navy/75 sm:left-5"
+            aria-label="Previous campaign image"
+          >
+            ←
+          </button>
+          <button
+            type="button"
+            onClick={() => go(1)}
+            className="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full border border-white/25 bg-navy/55 px-3 py-2 text-sand backdrop-blur-sm transition hover:bg-navy/75 sm:right-5"
+            aria-label="Next campaign image"
+          >
+            →
+          </button>
+        </div>
+
+        <div className="mt-6 flex items-center justify-center gap-2">
+          {slides.map((slide, i) => (
+            <button
+              key={slide.src}
+              type="button"
+              onClick={() => setActive(i)}
+              className={`h-1.5 rounded-full transition-all ${
+                i === active ? "w-8 bg-teal" : "w-4 bg-sand/35 hover:bg-sand/55"
+              }`}
+              aria-label={`Show campaign slide ${i + 1}`}
+              aria-current={i === active}
             />
-          </motion.figure>
-        ))}
+          ))}
+        </div>
       </div>
 
       <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-12 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
