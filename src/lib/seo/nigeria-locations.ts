@@ -212,24 +212,41 @@ export function getLocationBySlug(slug: string) {
   return NIGERIA_SEO_LOCATIONS.find((l) => l.slug === slug) || null;
 }
 
-/** Mongo filter for a location landing page (state and optional city). */
-export function listingFilterForLocation(loc: SeoLocation) {
-  const stateValues =
-    loc.stateMatch === "FCT" || loc.slug === "abuja"
-      ? ["FCT", "Abuja", "Federal Capital Territory"]
-      : [loc.stateMatch];
+export function stateValuesForLocation(loc: Pick<SeoLocation, "stateMatch" | "slug">) {
+  if (loc.stateMatch === "FCT" || loc.slug === "abuja") {
+    return ["FCT", "Abuja", "Federal Capital Territory"];
+  }
+  return [loc.stateMatch];
+}
 
+/** Mongo filter for a location landing page (state and optional city/area). */
+export function listingFilterForLocation(loc: SeoLocation) {
   const filter: Record<string, unknown> = {
     availabilityStatus: { $in: ["available", "pending"] },
     verificationStatus: "verified",
-    "address.state": { $in: stateValues },
+    "address.state": { $in: stateValuesForLocation(loc) },
   };
 
   if (loc.cityMatch) {
-    filter["address.city"] = new RegExp(`^${loc.cityMatch}$`, "i");
+    // Match neighbourhood in city, street, or title (e.g. "Lekki Phase 1", "Ologolo Lekki")
+    const escaped = loc.cityMatch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const area = new RegExp(escaped, "i");
+    filter.$or = [
+      { "address.city": area },
+      { "address.street": area },
+      { title: area },
+    ];
   }
 
   return filter;
+}
+
+/** Browse URL that shows public listings for this state / neighbourhood. */
+export function listingsPathForLocation(loc: SeoLocation) {
+  const params = new URLSearchParams();
+  params.set("state", loc.stateMatch);
+  if (loc.cityMatch) params.set("city", loc.cityMatch);
+  return `/listings?${params.toString()}`;
 }
 
 export function getPriorityLocations() {

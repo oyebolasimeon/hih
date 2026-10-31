@@ -7,7 +7,13 @@ import { connectDB } from "@/lib/db";
 import { Listing } from "@/models/Listing";
 import { serializePublicTeaser } from "@/lib/listing-serialize";
 import { buildPageMetadata } from "@/lib/seo/metadata";
-import { getPriorityLocations } from "@/lib/seo/nigeria-locations";
+import {
+  getLocationBySlug,
+  getPriorityLocations,
+  listingFilterForLocation,
+  NIGERIA_SEO_LOCATIONS,
+  type SeoLocation,
+} from "@/lib/seo/nigeria-locations";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Verified Homes for Rent in Nigeria | House Hunting",
@@ -40,22 +46,96 @@ function typeLabel(type: string) {
   return type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, " ");
 }
 
+function resolveLocationFilter(
+  state?: string,
+  city?: string
+): SeoLocation | null {
+  const stateRaw = (state || "").trim();
+  const cityRaw = (city || "").trim();
+  if (!stateRaw && !cityRaw) return null;
+
+  if (cityRaw) {
+    const byCity = NIGERIA_SEO_LOCATIONS.find(
+      (l) =>
+        l.cityMatch &&
+        l.cityMatch.toLowerCase() === cityRaw.toLowerCase() &&
+        (!stateRaw ||
+          l.stateMatch.toLowerCase() === stateRaw.toLowerCase() ||
+          (stateRaw.toLowerCase() === "abuja" && l.stateMatch === "FCT"))
+    );
+    if (byCity) return byCity;
+
+    return {
+      slug: cityRaw.toLowerCase().replace(/\s+/g, "-"),
+      name: cityRaw,
+      stateMatch:
+        stateRaw.toLowerCase() === "abuja" ? "FCT" : stateRaw || "Lagos",
+      cityMatch: cityRaw,
+      title: "",
+      description: "",
+      keywords: [],
+    };
+  }
+
+  const slugGuess =
+    stateRaw.toLowerCase() === "fct" || stateRaw.toLowerCase() === "abuja"
+      ? "abuja"
+      : stateRaw.toLowerCase().replace(/\s+/g, "-");
+  const bySlug = getLocationBySlug(slugGuess);
+  if (bySlug && !bySlug.cityMatch) return bySlug;
+
+  const byState = NIGERIA_SEO_LOCATIONS.find(
+    (l) =>
+      !l.cityMatch &&
+      (l.stateMatch.toLowerCase() === stateRaw.toLowerCase() ||
+        l.name.toLowerCase() === stateRaw.toLowerCase())
+  );
+  if (byState) return byState;
+
+  return {
+    slug: slugGuess,
+    name: stateRaw,
+    stateMatch: stateRaw.toLowerCase() === "abuja" ? "FCT" : stateRaw,
+    title: "",
+    description: "",
+    keywords: [],
+  };
+}
+
 export default async function PublicListingsPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ state?: string; q?: string }>;
+  searchParams?: Promise<{ state?: string; city?: string; q?: string }>;
 }) {
   let listings: ReturnType<typeof serializePublicTeaser>[] = [];
   const sp = (await searchParams) || {};
-  const stateFilter = (sp.state || "").trim();
+  const location = resolveLocationFilter(sp.state, sp.city);
+  const q = (sp.q || "").trim();
 
   try {
     await connectDB();
-    const query: Record<string, unknown> = {
-      availabilityStatus: "available",
-      verificationStatus: "verified",
-    };
-    if (stateFilter) query["address.state"] = stateFilter;
+    const query: Record<string, unknown> = location
+      ? listingFilterForLocation(location)
+      : {
+          availabilityStatus: { $in: ["available", "pending"] },
+          verificationStatus: "verified",
+        };
+
+    if (q) {
+      const term = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+      query.$and = [
+        ...(Array.isArray(query.$and) ? (query.$and as object[]) : []),
+        {
+          $or: [
+            { title: term },
+            { "address.city": term },
+            { "address.street": term },
+            { "address.state": term },
+          ],
+        },
+      ];
+    }
+
     const rows = await Listing.find(query)
       .sort({ featured: -1, publishedAt: -1, createdAt: -1 })
       .limit(60)
@@ -66,8 +146,13 @@ export default async function PublicListingsPage({
   }
 
   const priority = getPriorityLocations();
-
+  const neighbourhoods = NIGERIA_SEO_LOCATIONS.filter((l) => Boolean(l.cityMatch));
   const featured = listings[0] || null;
+  const placeLabel = location
+    ? location.cityMatch
+      ? `${location.cityMatch}, ${location.stateMatch === "FCT" ? "Abuja" : location.stateMatch}`
+      : location.name
+    : null;
 
   return (
     <div className="site-page">
@@ -88,8 +173,8 @@ export default async function PublicListingsPage({
               Verified homes
             </p>
             <h1 className="mt-3 max-w-2xl font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl">
-              {stateFilter
-                ? `Homes for rent in ${stateFilter}`
+              {placeLabel
+                ? `Homes for rent in ${placeLabel}`
                 : "House hunting across Nigeria"}
             </h1>
             <p className="mt-4 max-w-lg text-base leading-relaxed text-sand/80 sm:text-lg">
@@ -97,15 +182,35 @@ export default async function PublicListingsPage({
               then apply when you&apos;re ready.
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
-              {priority.slice(0, 5).map((loc) => (
-                <Link
-                  key={loc.slug}
-                  href={`/house-hunting/${loc.slug}`}
-                  className="rounded-sm border border-white/25 px-3 py-1.5 text-xs font-semibold text-sand/90 hover:border-teal hover:text-teal"
-                >
-                  {loc.name}
-                </Link>
-              ))}
+              <Link
+                href="/listings"
+                className={`rounded-sm border px-3 py-1.5 text-xs font-semibold ${
+                  !location
+                    ? "border-teal text-teal"
+                    : "border-white/25 text-sand/90 hover:border-teal hover:text-teal"
+                }`}
+              >
+                All Nigeria
+              </Link>
+              {priority.slice(0, 5).map((loc) => {
+                const active =
+                  location &&
+                  !location.cityMatch &&
+                  location.stateMatch === loc.stateMatch;
+                return (
+                  <Link
+                    key={loc.slug}
+                    href={`/listings?state=${encodeURIComponent(loc.stateMatch)}`}
+                    className={`rounded-sm border px-3 py-1.5 text-xs font-semibold ${
+                      active
+                        ? "border-teal text-teal"
+                        : "border-white/25 text-sand/90 hover:border-teal hover:text-teal"
+                    }`}
+                  >
+                    {loc.name}
+                  </Link>
+                );
+              })}
               <Link
                 href="/house-hunting"
                 className="rounded-sm border border-white/25 px-3 py-1.5 text-xs font-semibold text-sand/90 hover:border-teal hover:text-teal"
@@ -133,16 +238,64 @@ export default async function PublicListingsPage({
           </div>
         </section>
 
+        <section className="border-b border-border bg-surface py-6">
+          <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">
+              Neighbourhoods
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {neighbourhoods.map((loc) => {
+                const active =
+                  location?.cityMatch?.toLowerCase() ===
+                  loc.cityMatch?.toLowerCase();
+                return (
+                  <Link
+                    key={loc.slug}
+                    href={`/listings?state=${encodeURIComponent(loc.stateMatch)}&city=${encodeURIComponent(loc.cityMatch || loc.name)}`}
+                    className={`border px-3 py-1.5 text-xs font-semibold transition ${
+                      active
+                        ? "border-teal bg-teal/10 text-teal-dark"
+                        : "border-navy/15 text-navy hover:border-teal hover:text-teal-dark"
+                    }`}
+                  >
+                    {loc.name}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
         <section className="site-section site-ambient bg-sand">
           <div className="relative mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
             {listings.length === 0 ? (
               <EmptyState
-                title="Listings coming online"
-                description="Verified homes will appear here soon."
+                title={
+                  placeLabel
+                    ? `No open homes in ${placeLabel} yet`
+                    : "Listings coming online"
+                }
+                description={
+                  placeLabel
+                    ? "Try a nearby area, or browse all verified homes across Nigeria."
+                    : "Verified homes will appear here soon."
+                }
               >
-                <Link href="/register" className="site-btn site-btn-teal">
-                  Get started
-                </Link>
+                <div className="flex flex-wrap gap-3">
+                  {placeLabel ? (
+                    <Link href="/listings" className="site-btn site-btn-teal">
+                      Browse all listings
+                    </Link>
+                  ) : null}
+                  <Link
+                    href={placeLabel ? "/register" : "/register"}
+                    className={
+                      placeLabel ? "site-btn site-btn-ghost" : "site-btn site-btn-teal"
+                    }
+                  >
+                    Get started
+                  </Link>
+                </div>
               </EmptyState>
             ) : (
               <>
@@ -150,7 +303,9 @@ export default async function PublicListingsPage({
                   <div>
                     <p className="site-kicker">Browse</p>
                     <h2 className="mt-2 font-display text-3xl font-semibold tracking-tight text-navy sm:text-4xl">
-                      {listings.length} open {listings.length === 1 ? "home" : "homes"}
+                      {listings.length} open{" "}
+                      {listings.length === 1 ? "home" : "homes"}
+                      {placeLabel ? ` in ${placeLabel}` : ""}
                     </h2>
                   </div>
                 </div>

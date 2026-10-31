@@ -13,6 +13,7 @@ import { getLandmarkForSlug } from "@/lib/seo/nigeria-landmarks";
 import {
   getLocationBySlug,
   listingFilterForLocation,
+  listingsPathForLocation,
   NIGERIA_SEO_LOCATIONS,
 } from "@/lib/seo/nigeria-locations";
 import { getSiteUrl } from "@/lib/seo/site";
@@ -180,7 +181,7 @@ export default async function HouseHuntingLocationPage({ params }: PageProps) {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                href={`/listings?state=${encodeURIComponent(loc.stateMatch)}`}
+                href={listingsPathForLocation(loc)}
                 className="site-btn site-btn-teal"
               >
                 View {loc.name} listings
@@ -193,6 +194,70 @@ export default async function HouseHuntingLocationPage({ params }: PageProps) {
         </section>
 
         <section className="site-section bg-sand">
+          <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <h2 className="font-display text-2xl font-bold text-navy sm:text-3xl">
+                Verified listings in {loc.name}
+              </h2>
+              {listings.length > 0 ? (
+                <Link
+                  href={listingsPathForLocation(loc)}
+                  className="text-sm font-semibold text-teal-dark"
+                >
+                  See all in {loc.name} →
+                </Link>
+              ) : null}
+            </div>
+            {listings.length === 0 ? (
+              <p className="mt-4 text-muted">
+                New homes in {loc.name} are added regularly.{" "}
+                <Link href="/listings" className="text-teal-dark font-semibold">
+                  Browse all Nigeria listings
+                </Link>{" "}
+                or{" "}
+                <Link href="/register" className="text-teal-dark font-semibold">
+                  create an account
+                </Link>{" "}
+                to get notified.
+              </p>
+            ) : (
+              <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {listings.map((l) => (
+                  <Link
+                    key={l.id}
+                    href={`/listings/${l.id}`}
+                    className="group border border-navy/10 bg-surface overflow-hidden transition hover:border-teal"
+                  >
+                    <div className="aspect-[16/10] bg-navy/5 overflow-hidden">
+                      {l.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={l.imageUrl}
+                          alt=""
+                          className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                        />
+                      ) : null}
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-display font-semibold text-navy line-clamp-2">
+                        {l.title}
+                      </h3>
+                      <p className="mt-1 text-xs text-muted">
+                        {l.city}, {l.state}
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-teal-dark">
+                        {l.price.currency} {l.price.amount.toLocaleString()} /{" "}
+                        {l.price.period}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="site-section bg-surface">
           <div className="mx-auto max-w-3xl px-5 sm:px-6 lg:px-8 space-y-5 text-muted leading-relaxed">
             <h2 className="font-display text-2xl font-bold text-navy sm:text-3xl">
               {isLagos
@@ -241,7 +306,7 @@ export default async function HouseHuntingLocationPage({ params }: PageProps) {
           </div>
         </section>
 
-        <section className="site-section bg-surface">
+        <section className="site-section bg-sand">
           <div className="mx-auto max-w-3xl px-5 sm:px-6 lg:px-8">
             <h2 className="font-display text-2xl font-bold text-navy sm:text-3xl">
               {isLagos
@@ -258,60 +323,6 @@ export default async function HouseHuntingLocationPage({ params }: PageProps) {
                 </div>
               ))}
             </div>
-          </div>
-        </section>
-
-        <section className="site-section bg-sand">
-          <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
-            <h2 className="font-display text-2xl font-bold text-navy sm:text-3xl">
-              Verified listings in {loc.name}
-            </h2>
-            {listings.length === 0 ? (
-              <p className="mt-4 text-muted">
-                New homes in {loc.name} are added regularly.{" "}
-                <Link href="/listings" className="text-teal-dark font-semibold">
-                  Browse all Nigeria listings
-                </Link>{" "}
-                or{" "}
-                <Link href="/register" className="text-teal-dark font-semibold">
-                  create an account
-                </Link>{" "}
-                to get notified.
-              </p>
-            ) : (
-              <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {listings.map((l) => (
-                  <Link
-                    key={l.id}
-                    href={`/listings/${l.id}`}
-                    className="group border border-navy/10 bg-sand overflow-hidden transition hover:border-teal"
-                  >
-                    <div className="aspect-[16/10] bg-navy/5 overflow-hidden">
-                      {l.imageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={l.imageUrl}
-                          alt=""
-                          className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-                        />
-                      ) : null}
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-display font-semibold text-navy line-clamp-2">
-                        {l.title}
-                      </h3>
-                      <p className="mt-1 text-xs text-muted">
-                        {l.city}, {l.state}
-                      </p>
-                      <p className="mt-2 text-sm font-semibold text-teal-dark">
-                        {l.price.currency} {l.price.amount.toLocaleString()} /{" "}
-                        {l.price.period}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
           </div>
         </section>
 

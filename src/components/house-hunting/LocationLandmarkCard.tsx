@@ -66,7 +66,7 @@ export default function LocationLandmarkCard({
           {landmark.monuments.join(" · ")}
         </p>
         <p className="mt-2 text-xs text-sand/70">
-          House hunting · verified rentals
+          View listings in {name}
         </p>
       </div>
     </Link>

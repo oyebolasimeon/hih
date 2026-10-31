@@ -9,6 +9,7 @@ import { buildPageMetadata } from "@/lib/seo/metadata";
 import { getLandmarkForSlug } from "@/lib/seo/nigeria-landmarks";
 import {
   getPriorityLocations,
+  listingsPathForLocation,
   NIGERIA_SEO_LOCATIONS,
 } from "@/lib/seo/nigeria-locations";
 
@@ -99,7 +100,7 @@ export default function HouseHuntingHubPage() {
                   key={loc.slug}
                   slug={loc.slug}
                   name={loc.name}
-                  href={`/house-hunting/${loc.slug}`}
+                  href={listingsPathForLocation(loc)}
                   size="featured"
                 />
               ))}
@@ -123,7 +124,7 @@ export default function HouseHuntingHubPage() {
                   key={loc.slug}
                   slug={loc.slug}
                   name={loc.name}
-                  href={`/house-hunting/${loc.slug}`}
+                  href={listingsPathForLocation(loc)}
                 />
               ))}
             </div>
@@ -142,7 +143,7 @@ export default function HouseHuntingHubPage() {
                   key={loc.slug}
                   slug={loc.slug}
                   name={loc.name}
-                  href={`/house-hunting/${loc.slug}`}
+                  href={listingsPathForLocation(loc)}
                 />
               ))}
             </div>
