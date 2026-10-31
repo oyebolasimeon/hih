@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
+import { motion, useReducedMotion } from "framer-motion";
 
 export type PublicListing = {
   id: string;
@@ -39,28 +40,12 @@ function formatPriceAmount(p: PublicListing["price"]) {
 }
 
 function typeLabel(type: string) {
-  return type.charAt(0).toUpperCase() + type.slice(1).replace("_", " ");
+  return type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, " ");
 }
 
-function StatItem({
-  icon,
-  label,
-  value,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: string;
-}) {
+function isVideoMedia(img: { mediaType?: string; url: string }) {
   return (
-    <div className="rounded-lg border border-border/70 bg-surface/40 p-3 text-center">
-      <div className="mx-auto mb-1.5 flex h-8 w-8 items-center justify-center rounded-md bg-teal/15 text-teal-dark">
-        {icon}
-      </div>
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">
-        {label}
-      </p>
-      <p className="mt-0.5 text-sm font-semibold text-navy">{value}</p>
-    </div>
+    img.mediaType === "video" || /\.(mp4|webm|mov|m4v)(\?|$)/i.test(img.url)
   );
 }
 
@@ -69,6 +54,7 @@ export default function PublicListingDetail({
 }: {
   listing: PublicListing;
 }) {
+  const reduce = useReducedMotion();
   const [activeImage, setActiveImage] = useState(0);
 
   const images = useMemo(
@@ -78,297 +64,231 @@ export default function PublicListingDetail({
 
   const activeMedia = images[activeImage];
   const mainUrl = activeMedia?.url;
-  const mainIsVideo =
-    activeMedia?.mediaType === "video" ||
-    /\.(mp4|webm|mov|m4v)(\?|$)/i.test(mainUrl || "");
+  const mainIsVideo = activeMedia ? isVideoMedia(activeMedia) : false;
 
   const locationLine = [
     listing.address.street,
     listing.address.city,
     listing.address.state,
-    listing.address.country,
   ]
     .filter(Boolean)
     .join(", ");
 
-  const stats = [
-    {
-      key: "type",
-      label: "Type",
-      value: typeLabel(listing.listingType),
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className="h-4 w-4">
-          <path d="M4 10.5L12 4l8 6.5V20a1 1 0 01-1 1h-5v-6H10v6H5a1 1 0 01-1-1v-9.5z" strokeLinejoin="round" />
-        </svg>
-      ),
-    },
+  const facts = [
+    { label: "Type", value: typeLabel(listing.listingType) },
     listing.bedrooms != null
-      ? {
-          key: "beds",
-          label: "Bedrooms",
-          value: String(listing.bedrooms),
-          icon: (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className="h-4 w-4">
-              <path d="M4 12h16M4 12v6h16v-6M8 12V8h8v4" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          ),
-        }
+      ? { label: "Bedrooms", value: String(listing.bedrooms) }
       : null,
     listing.bathrooms != null
-      ? {
-          key: "baths",
-          label: "Bathrooms",
-          value: String(listing.bathrooms),
-          icon: (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className="h-4 w-4">
-              <path d="M6 10h12v8H6zM8 10V7a2 2 0 012-2h4a2 2 0 012 2v3" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          ),
-        }
+      ? { label: "Bathrooms", value: String(listing.bathrooms) }
       : null,
     listing.sizeSqm != null
-      ? {
-          key: "size",
-          label: "Size",
-          value: `${listing.sizeSqm} sqm`,
-          icon: (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className="h-4 w-4">
-              <path d="M4 8V4h4M4 16v4h4M16 4h4v4M16 20h4v-4" strokeLinecap="round" />
-              <rect x="8" y="8" width="8" height="8" rx="1" />
-            </svg>
-          ),
-        }
+      ? { label: "Size", value: `${listing.sizeSqm} sqm` }
       : null,
-  ].filter(Boolean) as {
-    key: string;
-    label: string;
-    value: string;
-    icon: ReactNode;
-  }[];
+  ].filter(Boolean) as { label: string; value: string }[];
+
+  const applyHref = `/register?next=${encodeURIComponent(`/portal/search/${listing.id}`)}`;
+  const loginHref = `/login?next=${encodeURIComponent(`/portal/search/${listing.id}`)}`;
 
   return (
-    <div className="pb-28 lg:pb-16">
-      <section className="bg-navy text-sand">
-        <div className="mx-auto max-w-7xl px-5 py-10 sm:px-6 lg:px-8">
+    <div className="pb-28 lg:pb-0">
+      <section className="relative min-h-[72svh] overflow-hidden bg-navy">
+        {mainUrl ? (
+          mainIsVideo ? (
+            <video
+              key={mainUrl}
+              src={mainUrl}
+              className="absolute inset-0 h-full w-full object-cover"
+              controls={false}
+              autoPlay
+              muted
+              loop
+              playsInline
+            />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={mainUrl}
+              alt={listing.title}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          )
+        ) : null}
+        <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/55 to-navy/25" />
+
+        <div className="relative mx-auto flex min-h-[72svh] max-w-7xl flex-col justify-between px-5 pb-10 pt-28 sm:px-6 lg:px-8">
           <Link
             href="/listings"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-teal hover:text-teal-light"
+            className="inline-flex w-fit items-center gap-2 text-sm font-medium text-sand/80 transition hover:text-teal"
           >
-            ← Back to listings
+            ← All listings
           </Link>
-          <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
-            <div className="max-w-3xl">
-              <div className="flex flex-wrap gap-2">
-                {listing.verificationStatus === "verified" ? (
-                  <span className="rounded-full bg-teal/20 border border-teal/30 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-teal">
-                    Verified
-                  </span>
-                ) : null}
-                {listing.featured ? (
-                  <span className="rounded-full bg-sand/15 border border-sand/25 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-sand">
-                    Featured
-                  </span>
-                ) : null}
-                <span className="rounded-full border border-sand/25 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-sand/80">
-                  {typeLabel(listing.listingType)}
-                </span>
-              </div>
-              <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
-                {listing.title}
-              </h1>
-              <p className="mt-3 text-sm text-sand/70 sm:text-base">{locationLine}</p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-white/5 px-5 py-4 backdrop-blur-sm">
-              <p className="text-xs uppercase tracking-wider text-sand/60">Rent</p>
-              <p className="mt-1 font-display text-2xl font-semibold text-sand">
-                {formatPriceAmount(listing.price)}
-                <span className="text-base font-normal text-sand/65">
-                  {" "}
-                  / {listing.price.period}
-                </span>
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      <section className="site-section">
-        <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
-          <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-10 lg:items-start">
-            <div className="space-y-8 min-w-0">
-              <div className="space-y-3">
-                {mainUrl ? (
-                  <div className="relative aspect-[16/10] sm:aspect-[2/1] overflow-hidden rounded-xl border border-border bg-surface">
-                    {mainIsVideo ? (
-                      <video
-                        key={mainUrl}
-                        src={mainUrl}
-                        className="h-full w-full object-cover bg-black"
-                        controls
-                        playsInline
-                        preload="metadata"
-                      />
-                    ) : (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={mainUrl}
-                        alt={listing.title}
-                        className="h-full w-full object-cover"
-                      />
-                    )}
-                  </div>
-                ) : (
-                  <div className="aspect-[16/10] rounded-xl border border-border bg-surface flex items-center justify-center">
-                    <span className="text-sm text-muted">No photos available</span>
-                  </div>
-                )}
-
-                {images.length > 1 ? (
-                  <div className="flex gap-2 overflow-x-auto pb-1">
-                    {images.map((img, i) => {
-                      const thumbIsVideo =
-                        img.mediaType === "video" ||
-                        /\.(mp4|webm|mov|m4v)(\?|$)/i.test(img.url);
-                      return (
-                        <button
-                          key={`${img.url}-${i}`}
-                          type="button"
-                          onClick={() => setActiveImage(i)}
-                          className={`relative shrink-0 h-16 w-24 overflow-hidden rounded-lg border-2 transition-all ${
-                            activeImage === i
-                              ? "border-teal ring-2 ring-teal/30"
-                              : "border-border opacity-80 hover:opacity-100"
-                          }`}
-                        >
-                          {thumbIsVideo ? (
-                            <>
-                              <video
-                                src={img.url}
-                                className="h-full w-full object-cover bg-black"
-                                muted
-                                playsInline
-                                preload="metadata"
-                              />
-                              <span className="absolute inset-x-0 bottom-0 bg-black/60 px-1 py-0.5 text-[9px] font-semibold uppercase text-white">
-                                Video
-                              </span>
-                            </>
-                          ) : (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={img.url}
-                              alt=""
-                              className="h-full w-full object-cover"
-                            />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : null}
-              </div>
-
-              {stats.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {stats.map((stat) => (
-                    <StatItem
-                      key={stat.key}
-                      icon={stat.icon}
-                      label={stat.label}
-                      value={stat.value}
-                    />
-                  ))}
-                </div>
+          <motion.div
+            initial={reduce ? false : { opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            className="max-w-3xl"
+          >
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-teal">
+              {listing.verificationStatus === "verified" ? (
+                <span>Verified</span>
               ) : null}
-
-              <div className="rounded-xl border border-border bg-background p-5 sm:p-6 space-y-6">
-                <div>
-                  <h2 className="font-display text-xl font-semibold text-navy">
-                    About this home
-                  </h2>
-                  <p className="mt-3 text-sm sm:text-base text-muted leading-relaxed whitespace-pre-wrap">
-                    {listing.description || "No description provided yet."}
-                  </p>
-                </div>
-
-                {listing.amenities.length > 0 ? (
-                  <div>
-                    <h3 className="text-sm font-semibold text-navy mb-3">
-                      Amenities
-                    </h3>
-                    <ul className="flex flex-wrap gap-2">
-                      {listing.amenities.map((a) => (
-                        <li
-                          key={a}
-                          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/60 px-3 py-1.5 text-xs font-medium text-navy"
-                        >
-                          <span className="h-1.5 w-1.5 rounded-full bg-teal" aria-hidden />
-                          {a}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-
-                <div>
-                  <h3 className="text-sm font-semibold text-navy mb-2">Location</h3>
-                  <p className="text-sm text-muted">{locationLine}</p>
-                </div>
-              </div>
+              {listing.featured ? <span>Featured</span> : null}
+              <span className="text-sand/60">{typeLabel(listing.listingType)}</span>
             </div>
-
-            <aside className="mt-8 lg:mt-0 space-y-4 lg:sticky lg:top-28">
-              <div className="rounded-xl border border-border bg-background p-5 space-y-4 shadow-sm">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted">
-                    Listed by
-                  </p>
-                  <p className="mt-1 font-medium text-navy">
-                    {listing.ownerDisplayName || "Property owner"}
-                  </p>
-                  {listing.ownerVerified ? (
-                    <p className="mt-1 text-xs text-teal-dark font-medium">
-                      Verified owner
-                    </p>
-                  ) : null}
-                </div>
-                <p className="text-sm text-muted leading-relaxed">
-                  Guests can browse every detail. Create a free account to apply
-                  for this home.
-                </p>
-                <Link
-                  href={`/register?next=${encodeURIComponent(`/portal/search/${listing.id}`)}`}
-                  className="site-btn site-btn-teal w-full text-center"
-                >
-                  Sign up to apply
-                </Link>
-                <Link
-                  href={`/login?next=${encodeURIComponent(`/portal/search/${listing.id}`)}`}
-                  className="site-btn site-btn-outline w-full text-center"
-                >
-                  Sign in
-                </Link>
-              </div>
-            </aside>
-          </div>
-        </div>
-      </section>
-
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur lg:hidden">
-        <div className="mx-auto flex max-w-7xl items-center gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-navy">
+            <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl">
+              {listing.title}
+            </h1>
+            <p className="mt-4 text-base text-sand/75 sm:text-lg">{locationLine}</p>
+            <p className="mt-6 font-display text-3xl font-semibold text-sand sm:text-4xl">
               {formatPriceAmount(listing.price)}
-              <span className="font-normal text-muted">
-                {" "}
+              <span className="ml-2 text-base font-normal text-sand/60">
                 / {listing.price.period}
               </span>
             </p>
+          </motion.div>
+        </div>
+      </section>
+
+      {images.length > 1 ? (
+        <div className="bg-navy">
+          <div className="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-5 py-4 sm:px-6 lg:px-8">
+            {images.map((img, i) => {
+              const video = isVideoMedia(img);
+              return (
+                <button
+                  key={`${img.url}-${i}`}
+                  type="button"
+                  onClick={() => setActiveImage(i)}
+                  className={`relative h-16 w-24 shrink-0 overflow-hidden border transition sm:h-20 sm:w-28 ${
+                    activeImage === i
+                      ? "border-teal opacity-100"
+                      : "border-transparent opacity-60 hover:opacity-90"
+                  }`}
+                >
+                  {video ? (
+                    <video
+                      src={img.url}
+                      className="h-full w-full object-cover"
+                      muted
+                      playsInline
+                      preload="metadata"
+                    />
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={img.url} alt="" className="h-full w-full object-cover" />
+                  )}
+                </button>
+              );
+            })}
           </div>
-          <Link
-            href={`/register?next=${encodeURIComponent(`/portal/search/${listing.id}`)}`}
-            className="site-btn site-btn-teal text-sm shrink-0"
-          >
+        </div>
+      ) : null}
+
+      <section className="site-section site-ambient bg-sand">
+        <div className="relative mx-auto grid max-w-7xl gap-12 px-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-16 lg:px-8">
+          <div className="space-y-12">
+            {facts.length ? (
+              <div>
+                <p className="site-kicker">At a glance</p>
+                <dl className="mt-6 grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4">
+                  {facts.map((fact) => (
+                    <div key={fact.label} className="border-t border-navy/15 pt-4">
+                      <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
+                        {fact.label}
+                      </dt>
+                      <dd className="mt-2 font-display text-2xl font-semibold text-navy">
+                        {fact.value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            ) : null}
+
+            <div>
+              <p className="site-kicker">About this home</p>
+              <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-navy">
+                The space
+              </h2>
+              <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted whitespace-pre-wrap sm:text-lg">
+                {listing.description || "No description provided yet."}
+              </p>
+            </div>
+
+            {listing.amenities.length > 0 ? (
+              <div>
+                <p className="site-kicker">Included</p>
+                <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-navy">
+                  Amenities
+                </h2>
+                <ul className="mt-6 grid gap-x-8 gap-y-3 sm:grid-cols-2">
+                  {listing.amenities.map((a) => (
+                    <li
+                      key={a}
+                      className="border-t border-navy/10 pt-3 text-sm font-medium text-navy"
+                    >
+                      {a}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            <div>
+              <p className="site-kicker">Where</p>
+              <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-navy">
+                Location
+              </h2>
+              <p className="mt-4 text-base text-muted sm:text-lg">
+                {locationLine}
+                {listing.address.country ? `, ${listing.address.country}` : ""}
+              </p>
+            </div>
+          </div>
+
+          <aside className="lg:pt-2">
+            <div className="sticky top-28 space-y-6 border-t border-navy/15 pt-6 lg:border-t-0 lg:border-l lg:border-navy/15 lg:pl-8 lg:pt-0">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
+                  Listed by
+                </p>
+                <p className="mt-2 font-display text-xl font-semibold text-navy">
+                  {listing.ownerDisplayName || "Property owner"}
+                </p>
+                {listing.ownerVerified ? (
+                  <p className="mt-1 text-sm text-teal-dark">Verified owner</p>
+                ) : null}
+              </div>
+
+              <p className="text-sm leading-relaxed text-muted">
+                You can review every detail as a guest. Sign in or create an account
+                to apply for this home.
+              </p>
+
+              <div className="flex flex-col gap-3">
+                <Link href={applyHref} className="site-btn site-btn-teal text-center">
+                  Sign up to apply
+                </Link>
+                <Link href={loginHref} className="site-btn site-btn-outline text-center">
+                  Sign in
+                </Link>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-navy/10 bg-sand/95 px-4 py-3 backdrop-blur lg:hidden">
+        <div className="mx-auto flex max-w-7xl items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-display text-lg font-semibold text-navy">
+              {formatPriceAmount(listing.price)}
+            </p>
+            <p className="text-xs text-muted">per {listing.price.period}</p>
+          </div>
+          <Link href={applyHref} className="site-btn site-btn-teal shrink-0 text-sm">
             Apply
           </Link>
         </div>
