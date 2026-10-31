@@ -20,8 +20,9 @@ export default function BrandMark({
   showLabel,
 }: Props) {
   const { branding } = useBranding();
+  // Clear-space discipline: mark stays ≥24px; padding protects the window/hand contours
   const sizes = {
-    sm: { mark: "h-8 w-8", text: "text-sm" },
+    sm: { mark: "h-7 w-7 min-h-[24px] min-w-[24px]", text: "text-sm" },
     md: { mark: "h-9 w-9", text: "text-[0.95rem]" },
     lg: { mark: "h-11 w-11", text: "text-lg" },
   }[size];
@@ -34,7 +35,7 @@ export default function BrandMark({
     <img
       src={logoSrc}
       alt=""
-      className={`${sizes.mark} shrink-0 object-contain`}
+      className={`${sizes.mark} shrink-0 object-contain p-0.5`}
     />
   );
 

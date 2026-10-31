@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
 /*
-  House In Hand brand tokens
-  Primary: Deep Navy #0B1F3A
-  Secondary: Teal #00A6A6
-  Tertiary: Warm Sand #F4E9D8
+  House In Hands Brand Identity
+  60% Navy + white + neutral · 25% Teal · 10% Warm sand · 5% Muted gold
+  Type: Inter (one family — weight for hierarchy)
+  Master line: Property. In Your Hands.
 */
 
 :root {
@@ -15,6 +15,8 @@
   --teal-light: #33b8b8;
   --sand: #f4e9d8;
   --sand-deep: #e8d9c0;
+  --slate: #475569;
+  --gold: #c9a35b;
 
   --brand: var(--teal);
   --brand-light: var(--teal-light);
@@ -24,7 +26,7 @@
   --brand-subtle: #d9f0f0;
   --surface: #fffaf3;
   --surface-dark: var(--sand-deep);
-  --muted: #5a6a7d;
+  --muted: var(--slate);
   --border: #e0d4c2;
   --border-dark: #cbbfaa;
   --card: #ffffff;
@@ -62,6 +64,8 @@ html.dark {
   --color-navy-deep: var(--navy-deep);
   --color-teal: var(--teal);
   --color-sand: var(--sand);
+  --color-slate: var(--slate);
+  --color-gold: var(--gold);
   --font-sans: var(--font-ui);
   --font-display: var(--font-display-face);
   --font-mono: var(--font-mono-face);
@@ -81,8 +85,9 @@ h1,
 h2,
 h3,
 .font-display {
-  font-family: var(--font-display), Georgia, serif;
-  letter-spacing: -0.03em;
+  font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
+  letter-spacing: -0.02em;
+  font-weight: 700;
 }
 
 .font-mono,
@@ -187,19 +192,25 @@ h3,
   color: var(--teal-dark);
 }
 
+.site-kicker-gold {
+  color: var(--gold);
+}
+
+.site-master-line {
+  font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
 /* App shell utilities */
 .app-shell {
+  /* Calm property control room — restrained teal wash, no decorative noise */
   min-height: 100vh;
   background:
     radial-gradient(
-      1200px 480px at 8% -10%,
-      color-mix(in srgb, var(--teal) 8%, transparent),
-      transparent 60%
-    ),
-    radial-gradient(
-      900px 400px at 100% 0%,
-      color-mix(in srgb, var(--brand) 6%, transparent),
-      transparent 55%
+      1000px 420px at 6% -8%,
+      color-mix(in srgb, var(--teal) 5%, transparent),
+      transparent 65%
     ),
     var(--background);
   color: var(--foreground);

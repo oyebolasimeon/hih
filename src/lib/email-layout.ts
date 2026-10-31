@@ -70,13 +70,13 @@ export function wrapEmailHtml(innerBody: string): string {
       <td align="center">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border:1px solid #D4C4AE;border-radius:8px;overflow:hidden;box-shadow:0 8px 32px rgba(11,31,58,0.08);">
           <tr>
-            <td style="background:#0B1F3A;padding:22px 24px;border-bottom:3px solid #008585;">
+            <td style="background:#0B1F3A;padding:22px 24px;border-bottom:3px solid #00A6A6;">
               <table role="presentation" cellspacing="0" cellpadding="0" width="100%">
                 <tr>
                   <td style="vertical-align:middle;width:48px;padding-right:14px;">
                     <img src="{{logoUrl}}" width="44" height="44" alt="House In Hand" style="display:block;border:0;border-radius:8px;width:44px;height:44px;object-fit:contain;" />
                   </td>
-                  <td style="vertical-align:middle;font-family:Georgia,'Times New Roman',serif;font-weight:600;color:#F4E9D8;font-size:18px;letter-spacing:-0.02em;">
+                  <td style="vertical-align:middle;font-family:Inter,Arial,Helvetica,sans-serif;font-weight:700;color:#F4E9D8;font-size:18px;letter-spacing:-0.02em;">
                     House In Hands
                   </td>
                 </tr>
@@ -84,14 +84,15 @@ export function wrapEmailHtml(innerBody: string): string {
             </td>
           </tr>
           <tr>
-            <td style="padding:28px 24px 32px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.65;color:#0B1F3A;">
+            <td style="padding:28px 24px 32px;font-family:Inter,Arial,Helvetica,sans-serif;font-size:15px;line-height:1.65;color:#0B1F3A;">
               ${innerBody}
             </td>
           </tr>
           <tr>
-            <td style="padding:20px 24px;border-top:1px solid #E0D4C2;background:#FAF6EF;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#5A6A7D;">
+            <td style="padding:20px 24px;border-top:1px solid #E0D4C2;background:#FAF6EF;font-family:Inter,Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#475569;">
               <div style="font-weight:600;color:#0B1F3A;font-size:13px;margin-bottom:6px;">House In Hands</div>
               <div>Housing you can trust — Property. In Your Hands.</div>
+              <div style="margin-top:4px;color:#C9A35B;font-size:11px;letter-spacing:0.04em;">Find it. Rent it. Manage it. Grow it.</div>
               <div style="margin-top:10px;">
                 <a href="{{portalUrl}}" style="color:#008585;text-decoration:none;">Open portal</a>
                 <span style="color:#C4B8A8;"> · </span>
@@ -115,8 +116,8 @@ export function emailButton(href: string, label: string): string {
   return `
 <table role="presentation" cellspacing="0" cellpadding="0" style="margin:8px 0 4px;">
   <tr>
-    <td style="border-radius:6px;background:#008585;">
-      <a href="${safeHref}" style="display:inline-block;padding:12px 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:6px;">
+    <td style="border-radius:6px;background:#00A6A6;">
+      <a href="${safeHref}" style="display:inline-block;padding:12px 24px;font-family:Inter,Arial,Helvetica,sans-serif;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:6px;">
         ${safeLabel}
       </a>
     </td>

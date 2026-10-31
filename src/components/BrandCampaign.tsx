@@ -49,7 +49,7 @@ export default function BrandCampaign() {
           transition={{ duration: 0.7 }}
           className="max-w-2xl"
         >
-          <p className="site-kicker text-teal">Property. In Your Hands.</p>
+          <p className="site-kicker site-kicker-gold">Property. In Your Hands.</p>
           <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-sand sm:text-4xl">
             Find it. Rent it. Manage it. Grow it.
           </h2>

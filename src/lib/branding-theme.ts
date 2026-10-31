@@ -21,6 +21,18 @@ export function normalizeHex(input: string, fallback: string): string {
   return fallback;
 }
 
+/** Previous product defaults — remap to brand-system Inter when still stored in SiteSettings */
+const LEGACY_DEFAULT_FONTS = new Set(["Manrope", "Fraunces"]);
+
+function resolveBrandFont(
+  value: string | undefined,
+  fallback: BrandFontOption
+): BrandFontOption {
+  const v = (value || "").trim();
+  if (!v || LEGACY_DEFAULT_FONTS.has(v)) return fallback;
+  return isBrandFont(v) ? v : fallback;
+}
+
 export function mergeBranding(
   partial?: Partial<BrandingSettings> | null
 ): BrandingSettings {
@@ -44,12 +56,11 @@ export function mergeBranding(
       partial?.tertiaryColor || "",
       DEFAULT_BRANDING.tertiaryColor
     ),
-    fontUi: isBrandFont(partial?.fontUi || "")
-      ? (partial!.fontUi as BrandFontOption)
-      : DEFAULT_BRANDING.fontUi,
-    fontDisplay: isBrandFont(partial?.fontDisplay || "")
-      ? (partial!.fontDisplay as BrandFontOption)
-      : DEFAULT_BRANDING.fontDisplay,
+    fontUi: resolveBrandFont(partial?.fontUi, DEFAULT_BRANDING.fontUi),
+    fontDisplay: resolveBrandFont(
+      partial?.fontDisplay,
+      DEFAULT_BRANDING.fontDisplay
+    ),
     appName: (partial?.appName || "").trim() || DEFAULT_BRANDING.appName,
   };
 }
@@ -59,6 +70,18 @@ export function brandingToCssVars(b: BrandingSettings): Record<string, string> {
   const primary = b.primaryColor;
   const secondary = b.secondaryColor;
   const tertiary = b.tertiaryColor;
+  // Prefer next/font Inter variable when brand system face is Inter
+  const sans =
+    b.fontUi === "Inter"
+      ? `var(--font-inter), "Inter", system-ui, sans-serif`
+      : `"${b.fontUi}", system-ui, sans-serif`;
+  // Brand system: Inter for UI + display (weight hierarchy). Serif fallback only if a decorative display face is chosen.
+  const displayIsSans = b.fontDisplay === b.fontUi || b.fontDisplay === "Inter";
+  const display = displayIsSans
+    ? b.fontDisplay === "Inter"
+      ? `var(--font-inter), "Inter", system-ui, sans-serif`
+      : `"${b.fontDisplay}", ${sans}`
+    : `"${b.fontDisplay}", Georgia, serif`;
 
   return {
     "--navy": primary,
@@ -68,13 +91,15 @@ export function brandingToCssVars(b: BrandingSettings): Record<string, string> {
     "--teal-light": `color-mix(in srgb, ${secondary} 75%, white)`,
     "--sand": tertiary,
     "--sand-deep": `color-mix(in srgb, ${tertiary} 88%, ${primary})`,
+    "--gold": "#C9A35B",
+    "--slate": "#475569",
     "--brand": secondary,
     "--brand-light": `color-mix(in srgb, ${secondary} 75%, white)`,
     "--brand-dark": `color-mix(in srgb, ${secondary} 82%, black)`,
-    "--font-ui": `"${b.fontUi}", system-ui, sans-serif`,
-    "--font-display-face": `"${b.fontDisplay}", Georgia, serif`,
-    "--font-display": `"${b.fontDisplay}", Georgia, serif`,
-    "--font-sans": `"${b.fontUi}", system-ui, sans-serif`,
+    "--font-ui": sans,
+    "--font-display-face": display,
+    "--font-display": display,
+    "--font-sans": sans,
   };
 }
 
@@ -91,7 +116,7 @@ export function brandingLightSemanticVars(
     "--brand-subtle": `color-mix(in srgb, ${secondary} 18%, ${tertiary})`,
     "--surface": `color-mix(in srgb, ${tertiary} 92%, white)`,
     "--surface-dark": `color-mix(in srgb, ${tertiary} 88%, ${primary})`,
-    "--muted": `color-mix(in srgb, ${primary} 45%, #7a8594)`,
+    "--muted": "#475569",
     "--border": `color-mix(in srgb, ${tertiary} 70%, ${primary})`,
     "--border-dark": `color-mix(in srgb, ${tertiary} 55%, ${primary})`,
     "--card": "#ffffff",
@@ -120,10 +145,11 @@ export function brandingDarkSemanticVars(
 
 export function googleFontsHref(b: BrandingSettings): string {
   const families = [...new Set([b.fontUi, b.fontDisplay])];
+  // Regular → Extra Bold covers body, UI, labels, headings, display
   const spec = families
     .map(
       (f) =>
-        `family=${encodeURIComponent(f).replace(/%20/g, "+")}:wght@400;500;600;700`
+        `family=${encodeURIComponent(f).replace(/%20/g, "+")}:wght@400;500;600;700;800`
     )
     .join("&");
   return `https://fonts.googleapis.com/css2?${spec}&display=swap`;

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { useBranding } from "@/components/providers/BrandingProvider";
+import { BRAND_MASTER_LINE } from "@/lib/branding-defaults";
 
 export default function Hero() {
   const { branding } = useBranding();
@@ -42,18 +43,18 @@ export default function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
         >
-          <p className="font-display text-3xl font-semibold tracking-tight text-sand sm:text-4xl lg:text-5xl">
+          <p className="font-display text-3xl font-bold tracking-tight text-sand sm:text-4xl lg:text-5xl">
             {name}
           </p>
-          <p className="mt-2 text-sm font-semibold uppercase tracking-[0.14em] text-teal">
+          <p className="mt-2 text-sm font-semibold uppercase tracking-[0.14em] text-gold">
             Housing you can trust
           </p>
-          <h1 className="mt-4 font-display text-4xl font-semibold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
-            Property. In Your Hands.
+          <h1 className="site-master-line mt-4 text-4xl leading-[1.08] text-white sm:text-5xl lg:text-6xl">
+            {BRAND_MASTER_LINE}
           </h1>
           <p className="mt-5 max-w-md text-base leading-relaxed text-sand/80 sm:text-lg">
-            Find it. Rent it. Manage it. Grow it. — one trusted digital ecosystem
-            for people, properties, payments and property intelligence.
+            Find it. Rent it. Manage it. Grow it. Clear steps for people,
+            properties, payments and property intelligence.
           </p>
           <motion.div
             className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center"

@@ -239,6 +239,10 @@ export default function BrandingAdminClient() {
         className="app-card p-4 sm:p-6 space-y-5 max-w-2xl"
       >
         <h3 className="font-semibold">Colours & typography</h3>
+        <p className="text-xs text-muted">
+          Brand system: Deep Navy · Teal · Warm Sand · Muted Gold accent · Inter
+          typeface. Ratio ≈ 60 / 25 / 10 / 5.
+        </p>
 
         <div>
           <label className="block text-sm font-medium mb-1.5">App name</label>
@@ -258,7 +262,7 @@ export default function BrandingAdminClient() {
             onChange={setPrimary}
           />
           <ColorField
-            label="Secondary (teal / proptech)"
+            label="Secondary (teal / action)"
             value={secondary}
             disabled={!canWrite}
             onChange={setSecondary}
@@ -269,6 +273,14 @@ export default function BrandingAdminClient() {
             disabled={!canWrite}
             onChange={setTertiary}
           />
+        </div>
+        <div className="flex items-center gap-3 text-xs text-muted">
+          <span
+            className="inline-block h-6 w-6 rounded border border-border"
+            style={{ background: "#C9A35B" }}
+            title="Muted gold accent"
+          />
+          Fixed accent gold #C9A35B (5% emphasis) · Slate text #475569
         </div>
 
         <div
@@ -299,7 +311,9 @@ export default function BrandingAdminClient() {
 
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1.5">UI font</label>
+            <label className="block text-sm font-medium mb-1.5">
+              UI font (brand default: Inter)
+            </label>
             <Select
               value={fontUi}
               onChange={(v) => setFontUi(v as typeof fontUi)}
@@ -308,7 +322,9 @@ export default function BrandingAdminClient() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1.5">Display font</label>
+            <label className="block text-sm font-medium mb-1.5">
+              Display font (brand default: Inter)
+            </label>
             <Select
               value={fontDisplay}
               onChange={(v) => setFontDisplay(v as typeof fontDisplay)}

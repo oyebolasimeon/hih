@@ -113,7 +113,7 @@ export default function Footer() {
             © {new Date().getFullYear()} House In Hands. All rights reserved.
           </p>
           <p className="text-xs text-sand/35">
-            Navy · Teal · Sand — trust, proptech, home.
+            Property. In Your Hands.
           </p>
         </div>
       </div>

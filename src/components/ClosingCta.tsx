@@ -41,12 +41,12 @@ export default function ClosingCta() {
         viewport={{ once: true }}
         transition={{ duration: 0.7 }}
       >
-        <p className="font-display text-3xl font-semibold tracking-tight text-white sm:text-4xl lg:text-5xl max-w-2xl">
+        <p className="site-master-line text-3xl text-white sm:text-4xl lg:text-5xl max-w-2xl">
           Property. In Your Hands.
         </p>
         <p className="mt-4 max-w-lg text-white/85 text-base sm:text-lg">
-          Find it. Rent it. Manage it. Grow it. — join the trusted digital
-          ecosystem for Nigeria&apos;s property market.
+          Find it. Rent it. Manage it. Grow it. Join a clearer, more connected
+          way to participate in Nigeria&apos;s property market.
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <Link

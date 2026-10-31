@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import Script from "next/script";
 import AuthProvider from "@/components/providers/AuthProvider";
 import { BrandingProvider } from "@/components/providers/BrandingProvider";
 import { MutationProvider } from "@/components/providers/MutationProvider";
 import { DEFAULT_BRANDING } from "@/lib/branding-defaults";
 import "./globals.css";
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600", "700", "800"],
+});
 
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-mono-face",
@@ -53,7 +60,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${jetbrainsMono.variable} dark h-full antialiased`}
+      className={`${inter.variable} ${jetbrainsMono.variable} dark h-full antialiased`}
       data-theme="dark"
       data-scroll-behavior="smooth"
       suppressHydrationWarning
