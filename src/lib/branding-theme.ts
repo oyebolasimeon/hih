@@ -25,7 +25,8 @@ export function mergeBranding(
   partial?: Partial<BrandingSettings> | null
 ): BrandingSettings {
   return {
-    logoUrl: (partial?.logoUrl || "").trim(),
+    logoUrl:
+      (partial?.logoUrl || "").trim() || DEFAULT_BRANDING.logoUrl,
     logoPublicId: (partial?.logoPublicId || "").trim(),
     authBackgroundUrl:
       (partial?.authBackgroundUrl || "").trim() ||

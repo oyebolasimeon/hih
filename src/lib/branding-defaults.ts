@@ -19,7 +19,7 @@ export const BRAND_FONT_OPTIONS = [
 export type BrandFontOption = (typeof BRAND_FONT_OPTIONS)[number];
 
 export const DEFAULT_BRANDING = {
-  logoUrl: "",
+  logoUrl: "/logo.png",
   logoPublicId: "",
   authBackgroundUrl: "/hero-home.jpg",
   authBackgroundPublicId: "",
