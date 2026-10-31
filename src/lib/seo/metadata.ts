@@ -114,7 +114,7 @@ export function rootMetadata(): Metadata {
     referrer: "origin-when-cross-origin",
     formatDetection: { telephone: true, email: true, address: true },
     verification: {
-      google: "YFCW36GXJfbIq3ujQMa7ELWGPz2KtQsVHO1K4Qpn8AI",
+      google: "96K15jb1pT0LDIlsPRt81EY2eHefnvK1kJ5is1CoM3A",
     },
     alternates: {
       ...base.alternates,

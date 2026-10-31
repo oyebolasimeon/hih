@@ -80,7 +80,7 @@ export default function RootLayout({
         {/* Explicit for Google Search Console crawlers */}
         <meta
           name="google-site-verification"
-          content="YFCW36GXJfbIq3ujQMa7ELWGPz2KtQsVHO1K4Qpn8AI"
+          content="96K15jb1pT0LDIlsPRt81EY2eHefnvK1kJ5is1CoM3A"
         />
         <Script id="hih-theme-init" strategy="beforeInteractive">
           {themeInitScript}
