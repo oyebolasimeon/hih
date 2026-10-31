@@ -30,12 +30,13 @@ export function buildPageMetadata(input: BuildMetaInput): Metadata {
   const description = input.description || DEFAULT_DESCRIPTION;
   const url = absoluteUrl(input.path || "/");
   const image = absoluteUrl(input.image || DEFAULT_OG_IMAGE);
+  // Avoid "… | House In Hands | House In Hands" when a page title already includes the brand
   const title = input.title.includes(SITE_NAME)
     ? input.title
     : `${input.title} | ${SITE_NAME}`;
 
   return {
-    title,
+    title: { absolute: title },
     description,
     keywords: [...CORE_KEYWORDS, ...(input.keywords || [])],
     authors: [{ name: SITE_NAME }],

@@ -13,11 +13,14 @@ import {
 } from "@/lib/seo/nigeria-locations";
 
 export const metadata: Metadata = buildPageMetadata({
-  title: "House Hunting in Nigeria — Lagos, Abuja, Ogun, Oyo & All States",
+  title:
+    "House Hunting Websites in Nigeria — Lagos, Abuja & All States | House In Hands",
   description:
-    "House hunting across Nigeria on House In Hands. Browse verified homes for rent in Lagos, Abuja, Ogun, Oyo, Rivers and every state — clearer listings, digital applications and trusted property tools.",
+    "House hunting websites in Lagos and across Nigeria? House In Hands helps you find verified homes for rent in Lagos, Abuja, Ogun, Oyo, Rivers and every state — clearer listings, digital applications and trusted property tools.",
   path: "/house-hunting",
   keywords: [
+    "house hunting websites in Lagos",
+    "house hunting websites Nigeria",
     "house hunting Nigeria",
     "house platforms Nigeria",
     "rent house Lagos Abuja",
@@ -62,12 +65,12 @@ export default function HouseHuntingHubPage() {
               House hunting Nigeria
             </p>
             <h1 className="mt-3 max-w-3xl font-display text-4xl font-bold tracking-tight sm:text-5xl">
-              Find homes across Lagos, Abuja and every state in Nigeria
+              House hunting websites for Lagos, Abuja and every Nigerian state
             </h1>
             <p className="mt-5 max-w-2xl text-sand/75 text-lg leading-relaxed">
-              Explore locations by their landmarks — from the Lekki–Ikoyi Link
-              Bridge and National Theatre to Olumo Rock — then browse verified
-              rentals nearby.
+              House In Hands is a trusted house hunting platform for Nigeria.
+              Start with Lagos landmarks like the Lekki–Ikoyi Link Bridge, then
+              browse verified rentals nationwide.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/listings" className="site-btn site-btn-teal">

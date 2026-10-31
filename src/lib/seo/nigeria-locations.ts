@@ -76,17 +76,78 @@ export const PRIORITY_LOCATION_SLUGS = [
   "delta",
 ] as const;
 
+/** High-intent SEO overrides for competitive state queries */
+const LOCATION_SEO_OVERRIDES: Partial<
+  Record<string, Pick<SeoLocation, "title" | "description" | "keywords">>
+> = {
+  lagos: {
+    title:
+      "House Hunting Websites in Lagos | Verified Homes for Rent | House In Hands",
+    description:
+      "Looking for house hunting websites in Lagos? House In Hands is a trusted property platform for verified rentals in Lekki, Ikeja, VI, Yaba, Surulere and across Lagos — clearer costs, direct landlords and digital tenancy.",
+    keywords: [
+      "house hunting websites in Lagos",
+      "house hunting websites Lagos",
+      "best house hunting website Lagos",
+      "house hunting Lagos Nigeria",
+      "rent apartment Lagos",
+      "verified landlords Lagos",
+      "property platform Lagos",
+      "find house Lagos without agent",
+      "houses for rent Lekki Ikeja",
+    ],
+  },
+  abuja: {
+    title:
+      "House Hunting Websites in Abuja | Verified Rentals | House In Hands",
+    description:
+      "House hunting websites in Abuja? Use House In Hands for verified apartments and houses across Gwarinpa, Wuse, Maitama and the FCT — clearer listings and digital rent tools.",
+    keywords: [
+      "house hunting websites in Abuja",
+      "house hunting Abuja",
+      "rent apartment Abuja",
+      "property platform Abuja",
+    ],
+  },
+  ogun: {
+    title: "House Hunting in Ogun State | Abeokuta & Beyond | House In Hands",
+    description:
+      "House hunting in Ogun State on House In Hands — verified homes in Abeokuta and across Ogun with clearer costs and digital applications.",
+    keywords: [
+      "house hunting Ogun",
+      "house hunting websites Ogun",
+      "rent house Abeokuta",
+    ],
+  },
+  oyo: {
+    title: "House Hunting in Oyo & Ibadan | Verified Rentals | House In Hands",
+    description:
+      "House hunting in Oyo State and Ibadan on House In Hands — verified rentals, clearer pricing and digital tenancy tools.",
+    keywords: [
+      "house hunting Oyo",
+      "house hunting Ibadan",
+      "rent apartment Ibadan",
+    ],
+  },
+};
+
 const STATE_LOCATIONS: SeoLocation[] = STATE_NAMES.map((state) => {
   const name = displayName(state);
   const slug = slugify(state);
+  const override = LOCATION_SEO_OVERRIDES[slug];
   return {
     slug,
     name,
     stateMatch: state === "FCT" ? "FCT" : state,
-    title: `House Hunting in ${name}, Nigeria | Rent & Verified Homes | House In Hands`,
-    description: `Find verified houses, apartments and hostels for rent in ${name}, Nigeria. House hunting made clearer on House In Hands — connect with landlords, apply digitally and manage rent in one trusted property platform.`,
-    keywords: [
+    title:
+      override?.title ||
+      `House Hunting in ${name}, Nigeria | Rent & Verified Homes | House In Hands`,
+    description:
+      override?.description ||
+      `Find verified houses, apartments and hostels for rent in ${name}, Nigeria. House hunting made clearer on House In Hands — connect with landlords, apply digitally and manage rent in one trusted property platform.`,
+    keywords: override?.keywords || [
       `house hunting ${name}`,
+      `house hunting websites ${name}`,
       `rent house ${name}`,
       `apartment for rent ${name}`,
       `houses for rent ${name} Nigeria`,

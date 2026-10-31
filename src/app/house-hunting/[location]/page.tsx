@@ -58,6 +58,43 @@ export default async function HouseHuntingLocationPage({ params }: PageProps) {
 
   const url = getSiteUrl();
   const landmark = getLandmarkForSlug(loc.slug);
+  const isLagos = loc.slug === "lagos";
+  const h1 = isLagos
+    ? "House hunting websites in Lagos"
+    : `House hunting in ${loc.name}, Nigeria`;
+  const heroLead = isLagos
+    ? "House In Hands is a trusted house hunting website for Lagos — verified rentals in Lekki, Ikeja, Victoria Island, Yaba, Surulere and across the state, with clearer costs and digital tenancy tools."
+    : `Search verified homes for rent in ${loc.name} on House In Hands — clearer listings, direct landlord connections and digital rent tools built for Nigeria.`;
+
+  const faqItems = isLagos
+    ? [
+        {
+          q: "What are the best house hunting websites in Lagos?",
+          a: "House In Hands is a property platform built for Nigeria that helps you find verified homes for rent in Lagos with clearer listing details, direct landlord connections and digital applications — covering Lekki, Ikeja, Victoria Island, Yaba, Surulere and more.",
+        },
+        {
+          q: "How does House In Hands help with house hunting in Lagos?",
+          a: "You browse published listings, connect with property owners or managers, apply digitally and manage rent workflows in one place — so Lagos house hunting is less about opaque fees and endless chats.",
+        },
+        {
+          q: "Can I rent in Lagos without a traditional agent on House In Hands?",
+          a: "Yes. Listings on House In Hands are designed for clearer costs and direct participation. You can still work with managers where needed, but the platform reduces guesswork common in Lagos rentals.",
+        },
+        {
+          q: "Which Lagos areas can I search on House In Hands?",
+          a: "You can hunt homes across Lagos State including popular areas such as Lekki, Ikeja, Victoria Island, Yaba, Surulere and surrounding neighbourhoods as landlords publish verified listings.",
+        },
+      ]
+    : [
+        {
+          q: `How do I start house hunting in ${loc.name}?`,
+          a: `Browse verified listings for ${loc.name} on House In Hands, connect with landlords or managers, and apply digitally with clearer costs and rent tools.`,
+        },
+        {
+          q: `Is House In Hands a house hunting website for ${loc.name}?`,
+          a: `Yes. House In Hands is a Nigeria property platform with dedicated house hunting pages and listings for ${loc.name}.`,
+        },
+      ];
 
   return (
     <div className="site-page">
@@ -73,7 +110,7 @@ export default async function HouseHuntingLocationPage({ params }: PageProps) {
         data={{
           "@context": "https://schema.org",
           "@type": "CollectionPage",
-          name: `House hunting in ${loc.name}, Nigeria`,
+          name: h1,
           description: loc.description,
           url: `${url}/house-hunting/${loc.slug}`,
           isPartOf: { "@type": "WebSite", name: "House In Hands", url },
@@ -86,6 +123,20 @@ export default async function HouseHuntingLocationPage({ params }: PageProps) {
               addressCountry: "NG",
             },
           },
+        }}
+      />
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: faqItems.map((item) => ({
+            "@type": "Question",
+            name: item.q,
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: item.a,
+            },
+          })),
         }}
       />
       <main className="pt-28">
@@ -119,15 +170,13 @@ export default async function HouseHuntingLocationPage({ params }: PageProps) {
               House hunting · {loc.name}
             </p>
             <h1 className="mt-3 max-w-3xl font-display text-4xl font-bold tracking-tight sm:text-5xl">
-              House hunting in {loc.name}, Nigeria
+              {h1}
             </h1>
             <p className="mt-3 text-sm font-medium text-gold">
               Landmark: {landmark.monuments.join(" · ")}
             </p>
             <p className="mt-4 max-w-2xl text-sand/75 text-lg leading-relaxed">
-              Search verified homes for rent in {loc.name} on House In Hands —
-              clearer listings, direct landlord connections and digital rent
-              tools built for Nigeria.
+              {heroLead}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
@@ -146,20 +195,43 @@ export default async function HouseHuntingLocationPage({ params }: PageProps) {
         <section className="site-section bg-sand">
           <div className="mx-auto max-w-3xl px-5 sm:px-6 lg:px-8 space-y-5 text-muted leading-relaxed">
             <h2 className="font-display text-2xl font-bold text-navy sm:text-3xl">
-              Why house hunters in {loc.name} use House In Hands
+              {isLagos
+                ? "Why Lagos house hunters choose House In Hands"
+                : `Why house hunters in ${loc.name} use House In Hands`}
             </h2>
-            <p>
-              Finding a home in {loc.name} should not mean opaque fees,
-              unverified agents or endless chats. House In Hands is a property
-              technology platform for Nigeria that helps tenants and landlords
-              discover, verify, agree and manage property in one place.
-            </p>
-            <p>
-              Whether you need an apartment in {loc.name}, a family house, a
-              student-friendly room or commercial space, our marketplace is
-              designed around trust, transparency and useful digital tools —
-              Property. In Your Hands.
-            </p>
+            {isLagos ? (
+              <>
+                <p>
+                  Searching for house hunting websites in Lagos usually means
+                  comparing big classified boards with opaque agent fees. House
+                  In Hands is different: a Nigeria-built property platform where
+                  tenants and landlords discover verified homes, agree terms and
+                  manage rent digitally — Property. In Your Hands.
+                </p>
+                <p>
+                  From Lekki and Ikeja to Victoria Island, Yaba and Surulere,
+                  Lagos rentals need clear pricing and trustworthy participation.
+                  Our marketplace is designed around verification, transparent
+                  listing information and tools that continue after you move in.
+                </p>
+              </>
+            ) : (
+              <>
+                <p>
+                  Finding a home in {loc.name} should not mean opaque fees,
+                  unverified agents or endless chats. House In Hands is a
+                  property technology platform for Nigeria that helps tenants and
+                  landlords discover, verify, agree and manage property in one
+                  place.
+                </p>
+                <p>
+                  Whether you need an apartment in {loc.name}, a family house, a
+                  student-friendly room or commercial space, our marketplace is
+                  designed around trust, transparency and useful digital tools —
+                  Property. In Your Hands.
+                </p>
+              </>
+            )}
             <ul className="list-disc space-y-2 pl-5">
               <li>Verified participation and clearer listing information</li>
               <li>Direct connection with property owners and managers</li>
@@ -170,6 +242,26 @@ export default async function HouseHuntingLocationPage({ params }: PageProps) {
         </section>
 
         <section className="site-section bg-surface">
+          <div className="mx-auto max-w-3xl px-5 sm:px-6 lg:px-8">
+            <h2 className="font-display text-2xl font-bold text-navy sm:text-3xl">
+              {isLagos
+                ? "FAQs about house hunting websites in Lagos"
+                : `House hunting FAQs for ${loc.name}`}
+            </h2>
+            <div className="mt-8 space-y-6">
+              {faqItems.map((item) => (
+                <div key={item.q}>
+                  <h3 className="font-display text-lg font-semibold text-navy">
+                    {item.q}
+                  </h3>
+                  <p className="mt-2 text-muted leading-relaxed">{item.a}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="site-section bg-sand">
           <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
             <h2 className="font-display text-2xl font-bold text-navy sm:text-3xl">
               Verified listings in {loc.name}

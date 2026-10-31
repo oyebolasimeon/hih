@@ -80,6 +80,9 @@ export const DEFAULT_OG_IMAGE = "/brand/stakeholder-meeting-flyer.png";
 export const CORE_KEYWORDS = [
   "House In Hands",
   "house hunting Nigeria",
+  "house hunting websites in Lagos",
+  "house hunting websites Nigeria",
+  "best house hunting platform Lagos",
   "rent house Nigeria",
   "property platform Nigeria",
   "verified landlords Nigeria",
