@@ -7,6 +7,10 @@ import { useBranding } from "@/components/providers/BrandingProvider";
 
 const HERO_IMAGES = [
   {
+    src: "/brand/housing-story-campaign.jpg",
+    alt: "House In Hand — Nigeria’s housing story is evolving, and you're part of it",
+  },
+  {
     src: "/brand/dreamed-it-campaign.jpg",
     alt: "House In Hand — You've dreamed it. Now we're building it.",
   },
