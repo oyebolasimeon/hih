@@ -5,6 +5,7 @@ import AuthProvider from "@/components/providers/AuthProvider";
 import { BrandingProvider } from "@/components/providers/BrandingProvider";
 import { MutationProvider } from "@/components/providers/MutationProvider";
 import { DEFAULT_BRANDING } from "@/lib/branding-defaults";
+import AnnouncementModal from "@/components/AnnouncementModal";
 import "./globals.css";
 
 const inter = Inter({
@@ -76,7 +77,10 @@ export default function RootLayout({
       >
         <BrandingProvider initial={DEFAULT_BRANDING}>
           <AuthProvider>
-            <MutationProvider>{children}</MutationProvider>
+            <MutationProvider>
+              {children}
+              <AnnouncementModal />
+            </MutationProvider>
           </AuthProvider>
         </BrandingProvider>
       </body>

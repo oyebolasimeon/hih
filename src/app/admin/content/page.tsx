@@ -6,6 +6,7 @@ import BrandingAdminClient from "@/components/admin/BrandingAdminClient";
 import BlogAdminClient from "@/components/admin/cms/BlogAdminClient";
 import FaqAdminClient from "@/components/admin/cms/FaqAdminClient";
 import TestimonialsAdminClient from "@/components/admin/cms/TestimonialsAdminClient";
+import AnnouncementsAdminClient from "@/components/admin/cms/AnnouncementsAdminClient";
 
 export default async function AdminSiteContentPage() {
   const session = await auth();
@@ -20,12 +21,16 @@ export default async function AdminSiteContentPage() {
           Website CMS
         </h1>
         <p className="mt-1 text-sm text-muted max-w-2xl">
-          Brand theme, logo, login background, blog, FAQ, and testimonials —
-          changes apply across the whole app.
+          Brand theme, announcements, logo, login background, blog, FAQ, and
+          testimonials — changes apply across the whole app.
         </p>
       </div>
 
       <section className="space-y-6">
+        <AnnouncementsAdminClient />
+      </section>
+
+      <section className="border-t border-border pt-8 space-y-6">
         <BrandingAdminClient />
       </section>
 
