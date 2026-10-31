@@ -1,6 +1,7 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import HowItWorksHome from "@/components/HowItWorksHome";
+import BrandCampaign from "@/components/BrandCampaign";
 import AudienceStrip from "@/components/AudienceStrip";
 import HomeStory from "@/components/HomeStory";
 import ClosingCta from "@/components/ClosingCta";
@@ -13,6 +14,7 @@ export default function Home() {
       <main>
         <Hero />
         <HowItWorksHome />
+        <BrandCampaign />
         <AudienceStrip />
         <HomeStory />
         <ClosingCta />
