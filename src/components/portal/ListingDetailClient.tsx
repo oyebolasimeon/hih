@@ -8,6 +8,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import ReviewsClient from "@/components/portal/ReviewsClient";
 import { FormSkeleton } from "@/components/ui/Skeleton";
 import { useActiveProfile } from "@/hooks/useActiveProfile";
+import ListingMap from "@/components/ListingMap";
 
 type ListingDetail = {
   id: string;
@@ -19,6 +20,8 @@ type ListingDetail = {
     city: string;
     state: string;
     country: string;
+    lat?: number;
+    lng?: number;
   };
   price: { amount: number; currency: string; period: string };
   amenities: string[];
@@ -27,6 +30,7 @@ type ListingDetail = {
   bathrooms: number | null;
   sizeSqm: number | null;
   verificationStatus: string;
+  mapEnabled?: boolean;
   ownerUserId: string;
   ownerVerified: boolean;
   ownerDisplayName?: string;
@@ -365,6 +369,21 @@ export default function ListingDetailClient({ id }: { id: string }) {
                       </li>
                     ))}
                   </ul>
+                </div>
+              ) : null}
+
+              {listing.mapEnabled ? (
+                <div>
+                  <h3 className="text-sm font-semibold mb-3">Location map</h3>
+                  <ListingMap
+                    title={listing.title}
+                    street={listing.address.street}
+                    city={listing.address.city}
+                    state={listing.address.state}
+                    country={listing.address.country}
+                    lat={listing.address.lat}
+                    lng={listing.address.lng}
+                  />
                 </div>
               ) : null}
 

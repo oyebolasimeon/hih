@@ -22,6 +22,7 @@ export type ListingLean = {
   availabilityStatus: string;
   verificationStatus: string;
   featured?: boolean;
+  mapEnabled?: boolean;
   publishedAt?: Date | null;
   createdAt?: Date;
   updatedAt?: Date;
@@ -56,6 +57,7 @@ export function serializeListing(
     availabilityStatus: doc.availabilityStatus,
     verificationStatus: doc.verificationStatus,
     featured: Boolean(doc.featured),
+    mapEnabled: Boolean(doc.mapEnabled),
     publishedAt: doc.publishedAt || null,
     legalSettings: (doc as { legalSettings?: unknown }).legalSettings || {
       provider: "hih",
@@ -127,6 +129,9 @@ export function serializePublicListing(
       city: doc.address?.city || "",
       state: doc.address?.state || "",
       country: doc.address?.country || "Nigeria",
+      ...(doc.mapEnabled && doc.address?.lat != null && doc.address?.lng != null
+        ? { lat: doc.address.lat, lng: doc.address.lng }
+        : {}),
     },
     price: doc.price,
     amenities: doc.amenities || [],
@@ -137,6 +142,7 @@ export function serializePublicListing(
     availabilityStatus: doc.availabilityStatus,
     verificationStatus: doc.verificationStatus,
     featured: Boolean(doc.featured),
+    mapEnabled: Boolean(doc.mapEnabled),
     publishedAt: doc.publishedAt || null,
     ownerDisplayName: extras?.ownerDisplayName || undefined,
     ownerVerified: extras?.ownerVerified ?? false,

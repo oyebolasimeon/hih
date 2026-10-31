@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
+import ListingMap from "@/components/ListingMap";
 
 export type PublicListing = {
   id: string;
@@ -14,6 +15,8 @@ export type PublicListing = {
     city: string;
     state: string;
     country: string;
+    lat?: number;
+    lng?: number;
   };
   price: { amount: number; currency: string; period: string };
   amenities: string[];
@@ -23,6 +26,7 @@ export type PublicListing = {
   sizeSqm: number | null;
   verificationStatus: string;
   featured: boolean;
+  mapEnabled?: boolean;
   ownerDisplayName?: string;
   ownerVerified?: boolean;
 };
@@ -245,6 +249,19 @@ export default function PublicListingDetail({
                 {locationLine}
                 {listing.address.country ? `, ${listing.address.country}` : ""}
               </p>
+              {listing.mapEnabled ? (
+                <div className="mt-6">
+                  <ListingMap
+                    title={listing.title}
+                    street={listing.address.street}
+                    city={listing.address.city}
+                    state={listing.address.state}
+                    country={listing.address.country}
+                    lat={listing.address.lat}
+                    lng={listing.address.lng}
+                  />
+                </div>
+              ) : null}
             </div>
           </div>
 

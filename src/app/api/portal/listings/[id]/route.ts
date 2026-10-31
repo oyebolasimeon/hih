@@ -30,10 +30,11 @@ const patchSchema = z.object({
       city: z.string().trim().min(1).max(100),
       state: z.string().trim().min(1).max(100),
       country: z.string().trim().min(1).max(100).default("Nigeria"),
-      lat: z.number().optional(),
-      lng: z.number().optional(),
+      lat: z.number().min(-90).max(90).optional().nullable(),
+      lng: z.number().min(-180).max(180).optional().nullable(),
     })
     .optional(),
+  mapEnabled: z.boolean().optional(),
   price: z
     .object({
       amount: z.number().positive(),
@@ -126,7 +127,18 @@ export async function PATCH(
   if (data.listingType !== undefined) listing.listingType = data.listingType;
   if (data.title !== undefined) listing.title = data.title;
   if (data.description !== undefined) listing.description = data.description;
-  if (data.address !== undefined) listing.address = data.address;
+  if (data.address !== undefined) {
+    listing.address = {
+      street: data.address.street,
+      city: data.address.city,
+      state: data.address.state,
+      country: data.address.country || "Nigeria",
+      ...(data.address.lat != null && data.address.lng != null
+        ? { lat: data.address.lat, lng: data.address.lng }
+        : {}),
+    };
+  }
+  if (data.mapEnabled !== undefined) listing.mapEnabled = data.mapEnabled;
   if (data.price !== undefined) listing.price = data.price;
   if (data.amenities !== undefined) listing.amenities = data.amenities;
   if (data.bedrooms !== undefined) {

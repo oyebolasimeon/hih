@@ -14,7 +14,14 @@ type ListingRow = {
   listingType: string;
   title: string;
   description: string;
-  address: { street: string; city: string; state: string; country: string };
+  address: {
+    street: string;
+    city: string;
+    state: string;
+    country: string;
+    lat?: number;
+    lng?: number;
+  };
   price: { amount: number; currency: string; period: string };
   amenities: string[];
   images: {
@@ -28,6 +35,7 @@ type ListingRow = {
   sizeSqm: number | null;
   availabilityStatus: string;
   verificationStatus: string;
+  mapEnabled?: boolean;
   legalSettings?: {
     provider?: "hih" | "own_legal";
     companyName?: string;
@@ -139,6 +147,9 @@ function ListingsManager() {
   const [street, setStreet] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("Lagos");
+  const [mapEnabled, setMapEnabled] = useState(false);
+  const [lat, setLat] = useState("");
+  const [lng, setLng] = useState("");
   const [amount, setAmount] = useState("");
   const [period, setPeriod] = useState("yearly");
   const [bedrooms, setBedrooms] = useState("");
@@ -161,6 +172,9 @@ function ListingsManager() {
     setStreet("");
     setCity("");
     setState("Lagos");
+    setMapEnabled(false);
+    setLat("");
+    setLng("");
     setAmount("");
     setPeriod("yearly");
     setBedrooms("");
@@ -222,6 +236,9 @@ function ListingsManager() {
     setStreet(l.address.street);
     setCity(l.address.city);
     setState(l.address.state || "Lagos");
+    setMapEnabled(Boolean(l.mapEnabled));
+    setLat(l.address.lat != null ? String(l.address.lat) : "");
+    setLng(l.address.lng != null ? String(l.address.lng) : "");
     setAmount(String(l.price.amount));
     setPeriod(l.price.period);
     setBedrooms(l.bedrooms != null ? String(l.bedrooms) : "");
@@ -310,7 +327,11 @@ function ListingsManager() {
           city: city.trim(),
           state,
           country: "Nigeria",
+          ...(mapEnabled && lat.trim() && lng.trim()
+            ? { lat: Number(lat), lng: Number(lng) }
+            : { lat: null, lng: null }),
         },
+        mapEnabled,
         price: { amount: Number(amount), currency: "NGN", period },
         bedrooms: bedrooms ? Number(bedrooms) : null,
         bathrooms: bathrooms ? Number(bathrooms) : null,
@@ -606,6 +627,66 @@ function ListingsManager() {
                     options={NIGERIA_STATES}
                   />
                 </div>
+
+                <div className="flex items-start justify-between gap-4 rounded-md border border-border bg-card px-3 py-3">
+                  <div>
+                    <p className="text-sm font-medium">Show on Google Maps</p>
+                    <p className="mt-0.5 text-xs text-muted">
+                      Toggle ON to display a map on the public property detail
+                      page. OFF keeps the location as text only.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={mapEnabled}
+                    onClick={() => setMapEnabled((v) => !v)}
+                    className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
+                      mapEnabled ? "bg-teal" : "bg-border"
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                        mapEnabled ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {mapEnabled ? (
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">
+                        Latitude (optional)
+                      </label>
+                      <input
+                        className="app-input w-full"
+                        type="number"
+                        step="any"
+                        value={lat}
+                        onChange={(e) => setLat(e.target.value)}
+                        placeholder="e.g. 6.5244"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">
+                        Longitude (optional)
+                      </label>
+                      <input
+                        className="app-input w-full"
+                        type="number"
+                        step="any"
+                        value={lng}
+                        onChange={(e) => setLng(e.target.value)}
+                        placeholder="e.g. 3.3792"
+                      />
+                    </div>
+                    <p className="sm:col-span-2 text-xs text-muted">
+                      If coordinates are blank, the map uses the street, city and
+                      state. Add lat/lng for a more precise pin.
+                    </p>
+                  </div>
+                ) : null}
               </div>
 
               <div className="space-y-4 rounded-lg border border-border/60 p-4 bg-surface/40">
@@ -888,6 +969,7 @@ function ListingsManager() {
                       </p>
                       <p className="mt-1 text-xs text-white/85">
                         {l.address.city}, {l.address.state} · {typeLabel(l.listingType)}
+                        {l.mapEnabled ? " · Map on" : ""}
                       </p>
                     </div>
                   </div>

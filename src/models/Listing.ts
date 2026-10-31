@@ -70,6 +70,8 @@ export interface IListing {
   availabilityStatus: ListingAvailabilityStatus;
   verificationStatus: ListingVerificationStatus;
   featured: boolean;
+  /** When true, show Google Map on public/portal listing detail */
+  mapEnabled: boolean;
   publishedAt?: Date;
   legalSettings?: IListingLegalSettings;
   createdAt: Date;
@@ -167,6 +169,7 @@ const ListingSchema = new Schema<IListing>(
       default: "unverified",
     },
     featured: { type: Boolean, default: false },
+    mapEnabled: { type: Boolean, default: false },
     publishedAt: { type: Date },
     legalSettings: { type: ListingLegalSettingsSchema },
   },

@@ -27,9 +27,10 @@ const createSchema = z.object({
     city: z.string().trim().min(1).max(100),
     state: z.string().trim().min(1).max(100),
     country: z.string().trim().min(1).max(100).default("Nigeria"),
-    lat: z.number().optional(),
-    lng: z.number().optional(),
+    lat: z.number().min(-90).max(90).optional().nullable(),
+    lng: z.number().min(-180).max(180).optional().nullable(),
   }),
+  mapEnabled: z.boolean().optional().default(false),
   price: z.object({
     amount: z.number().positive(),
     currency: z.string().trim().min(1).max(8).default("NGN"),
@@ -138,13 +139,19 @@ export async function POST(req: Request) {
     listingType: data.listingType,
     title: data.title,
     description: data.description,
-    address: data.address,
+    address: {
+      ...data.address,
+      ...(data.address.lat != null && data.address.lng != null
+        ? { lat: data.address.lat, lng: data.address.lng }
+        : {}),
+    },
     price: data.price,
     amenities: data.amenities,
     bedrooms: data.bedrooms,
     bathrooms: data.bathrooms,
     sizeSqm: data.sizeSqm,
     images,
+    mapEnabled: Boolean(data.mapEnabled),
     availabilityStatus,
     verificationStatus: publishing ? "pending" : "unverified",
     featured: false,
