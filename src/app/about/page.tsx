@@ -211,13 +211,39 @@ const values = [
   },
 ];
 
+const campaignVisuals = [
+  {
+    src: "/brand/housing-story-campaign.jpg",
+    caption: "Nigeria’s housing story is evolving — and you’re part of it.",
+  },
+  {
+    src: "/brand/dreamed-it-campaign.jpg",
+    caption: "You’ve dreamed it. Now we’re building it.",
+  },
+  {
+    src: "/brand/control-campaign.jpg",
+    caption: "More control over your housing experience.",
+  },
+  {
+    src: "/brand/renting-stress-campaign.jpg",
+    caption: "Easing the stressful parts of renting in Nigeria.",
+  },
+] as const;
+
 export default function AboutPage() {
   return (
     <div className="site-page">
       <Navbar />
       <main className="pt-28">
-        <section className="bg-navy text-sand">
-          <div className="mx-auto max-w-7xl px-5 py-20 sm:px-6 lg:px-8 lg:py-28">
+        <section className="relative min-h-[62svh] overflow-hidden bg-navy text-sand sm:min-h-[70svh]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/brand/housing-story-campaign.jpg"
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover object-top opacity-50"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-navy via-navy/88 to-navy/50" />
+          <div className="relative mx-auto flex min-h-[62svh] max-w-7xl flex-col justify-end px-5 pb-16 pt-28 sm:min-h-[70svh] sm:px-6 sm:pb-24 lg:px-8">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal">
               Why House In Hands?
             </p>
@@ -230,7 +256,7 @@ export default function AboutPage() {
             <p className="mt-4 text-sm font-semibold uppercase tracking-[0.12em] text-teal">
               Lagos · Nigeria · Pan-African vision
             </p>
-            <p className="mt-8 max-w-2xl text-base leading-relaxed text-sand/70 sm:text-lg">
+            <p className="mt-8 max-w-2xl text-base leading-relaxed text-sand/75 sm:text-lg">
               A better property system: direct relationships, verified
               participation, transparent processes, digital management and
               connected services.
@@ -244,47 +270,89 @@ export default function AboutPage() {
         </section>
 
         <section className="site-section bg-sand">
-          <div className="mx-auto max-w-3xl px-5 sm:px-6 lg:px-8">
-            <p className="site-kicker">The Problem</p>
-            <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-navy sm:text-4xl">
-              The way things are is fragmented
-            </h2>
-            <div className="mt-6 space-y-5 text-base leading-relaxed text-muted sm:text-lg">
-              <p>
-                The traditional property journey is fragmented. Tenants can face
-                intermediary costs, unclear listings, incomplete information and
-                weak support after moving in. Landlords can depend on agents for
-                access to tenants, rent collection and basic oversight. Property
-                managers can depend on spreadsheets and scattered conversations.
-                Developers can struggle to connect inventory, demand and market
-                intelligence. Investors often make decisions without consistent,
-                structured data.
-              </p>
-              <p>
-                The result is a market where trust is hard to establish,
-                transactions can be slow, information is fragmented and property
-                management remains unnecessarily manual.
-              </p>
-              <p>
-                House In Hands exists to rebuild that foundation around direct
-                access, verification, transparency, digital workflows and useful
-                property data.
-              </p>
+          <div className="mx-auto grid max-w-7xl items-center gap-10 px-5 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8">
+            <div>
+              <p className="site-kicker">The Problem</p>
+              <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-navy sm:text-4xl">
+                The way things are is fragmented
+              </h2>
+              <div className="mt-6 space-y-5 text-base leading-relaxed text-muted sm:text-lg">
+                <p>
+                  The traditional property journey is fragmented. Tenants can face
+                  intermediary costs, unclear listings, incomplete information and
+                  weak support after moving in. Landlords can depend on agents for
+                  access to tenants, rent collection and basic oversight. Property
+                  managers can depend on spreadsheets and scattered conversations.
+                  Developers can struggle to connect inventory, demand and market
+                  intelligence. Investors often make decisions without consistent,
+                  structured data.
+                </p>
+                <p>
+                  The result is a market where trust is hard to establish,
+                  transactions can be slow, information is fragmented and property
+                  management remains unnecessarily manual.
+                </p>
+                <p>
+                  House In Hands exists to rebuild that foundation around direct
+                  access, verification, transparency, digital workflows and useful
+                  property data.
+                </p>
+              </div>
             </div>
+            <div className="relative aspect-[4/5] overflow-hidden bg-navy/5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/brand/renting-stress-campaign.jpg"
+                alt="Easing the stressful parts of renting a home in Nigeria"
+                className="absolute inset-0 h-full w-full object-contain object-center"
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-navy py-10 sm:py-14">
+          <div className="mx-auto grid max-w-7xl gap-3 px-5 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
+            {campaignVisuals.map((v) => (
+              <figure key={v.src} className="overflow-hidden bg-navy-deep/50">
+                <div className="relative aspect-[4/5]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={v.src}
+                    alt={v.caption}
+                    className="absolute inset-0 h-full w-full object-contain object-center"
+                  />
+                </div>
+                <figcaption className="px-3 py-3 text-xs leading-relaxed text-sand/65">
+                  {v.caption}
+                </figcaption>
+              </figure>
+            ))}
           </div>
         </section>
 
         <section className="site-section bg-surface">
           <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
-            <p className="site-kicker">Our Answer</p>
-            <h2 className="mt-3 max-w-3xl font-display text-3xl font-semibold tracking-tight text-navy sm:text-4xl">
-              A trusted property technology ecosystem
-            </h2>
-            <p className="mt-4 max-w-2xl text-muted leading-relaxed">
-              Most property platforms begin and end with listings. HIH is
-              designed to connect the property lifecycle — from discovery to
-              transaction to ongoing management.
-            </p>
+            <div className="grid items-end gap-8 lg:grid-cols-[1fr_0.9fr]">
+              <div>
+                <p className="site-kicker">Our Answer</p>
+                <h2 className="mt-3 max-w-3xl font-display text-3xl font-semibold tracking-tight text-navy sm:text-4xl">
+                  A trusted property technology ecosystem
+                </h2>
+                <p className="mt-4 max-w-2xl text-muted leading-relaxed">
+                  Most property platforms begin and end with listings. HIH is
+                  designed to connect the property lifecycle — from discovery to
+                  transaction to ongoing management.
+                </p>
+              </div>
+              <div className="relative aspect-[4/5] max-w-md overflow-hidden justify-self-end lg:max-w-none">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/brand/dreamed-it-campaign.jpg"
+                  alt="You’ve dreamed it. Now we’re building it."
+                  className="absolute inset-0 h-full w-full object-contain object-center"
+                />
+              </div>
+            </div>
             <ol className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
               {lifecycle.map((item, i) => (
                 <li key={item.title} className="border-t border-navy/15 pt-6">
@@ -300,6 +368,31 @@ export default function AboutPage() {
                 </li>
               ))}
             </ol>
+          </div>
+        </section>
+
+        <section className="relative overflow-hidden bg-navy text-sand">
+          <div className="mx-auto grid max-w-7xl lg:grid-cols-2">
+            <div className="relative min-h-[320px] lg:min-h-full">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/brand/control-campaign.jpg"
+                alt="More control over your housing experience"
+                className="absolute inset-0 h-full w-full object-cover object-top"
+              />
+            </div>
+            <div className="flex flex-col justify-center px-5 py-14 sm:px-8 lg:px-12 lg:py-20">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal">
+                Property. In Your Hands.
+              </p>
+              <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+                Find it. Rent it. Manage it. Grow it.
+              </h2>
+              <p className="mt-5 max-w-md text-sand/70 leading-relaxed">
+                Control, clarity and connected services — so housing in Nigeria
+                feels organised, not chaotic.
+              </p>
+            </div>
           </div>
         </section>
 
