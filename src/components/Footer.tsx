@@ -46,6 +46,10 @@ export default function Footer() {
               <ul className="mt-4 space-y-2.5">
                 {[
                   { label: "How it works", href: "/how-it-works" },
+                  {
+                    label: "Property management",
+                    href: "/property-management",
+                  },
                   { label: "Listings", href: "/listings" },
                   { label: "Pricing", href: "/pricing" },
                   { label: "Stories", href: "/blog" },

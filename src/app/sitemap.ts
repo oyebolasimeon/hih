@@ -9,6 +9,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const paths = [
     "",
     "/how-it-works",
+    "/property-management",
     "/listings",
     "/blog",
     "/faq",

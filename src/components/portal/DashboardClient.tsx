@@ -25,12 +25,14 @@ const PROFILE_META: Record<
   },
   landlord: {
     label: "Landlord",
-    description: "List properties, review applicants, and track rent.",
+    description:
+      "One control centre for properties, tenants, rent, maintenance and performance.",
     accent: "border-navy bg-navy/5 dark:bg-white/5",
   },
   estate_manager: {
     label: "Estate Manager",
-    description: "Oversee estates, units, and resident onboarding.",
+    description:
+      "Portfolio workspace for units, occupancy, collections and maintenance.",
     accent: "border-muted bg-surface",
   },
 };
@@ -128,27 +130,50 @@ const QUICK_ACTIONS: QuickAction[] = [
   },
   {
     href: "/portal/listings",
-    label: "My listings",
-    description: "Manage your properties",
+    label: "My Properties",
+    description: "Profiles, status and portfolio overview",
     forTypes: ["landlord", "estate_manager"],
     icon: ICONS.home,
   },
   {
     href: "/portal/applications",
+    label: "Tenants & applications",
+    description: "Enquiries, leases and renewals",
+    forTypes: ["landlord", "estate_manager"],
+    icon: ICONS.file,
+  },
+  {
+    href: "/portal/applications",
     label: "Applications",
     description: "Track submissions",
+    forTypes: ["student", "tenant"],
     icon: ICONS.file,
+  },
+  {
+    href: "/portal/payments",
+    label: "Rent & collections",
+    description: "Due, paid, arrears and receipts",
+    forTypes: ["landlord", "estate_manager"],
+    icon: ICONS.payment,
   },
   {
     href: "/portal/payments",
     label: "Payments",
     description: "Rent and billing",
+    forTypes: ["student", "tenant"],
     icon: ICONS.payment,
+  },
+  {
+    href: "/portal/agreements",
+    label: "Documents",
+    description: "Leases and property records",
+    forTypes: ["landlord", "estate_manager"],
+    icon: ICONS.file,
   },
   {
     href: "/portal/messages",
     label: "Messages",
-    description: "Landlord conversations",
+    description: "Structured communication",
     icon: ICONS.message,
   },
   {
@@ -160,15 +185,15 @@ const QUICK_ACTIONS: QuickAction[] = [
   },
   {
     href: "/portal/analytics",
-    label: "Analytics",
-    description: "Portfolio insights",
+    label: "Occupancy & analytics",
+    description: "Performance and vacancy insight",
     forTypes: ["landlord", "estate_manager"],
     icon: ICONS.chart,
   },
   {
     href: "/portal/maintenance",
-    label: "Service requests",
-    description: "Repairs and upkeep",
+    label: "Maintenance",
+    description: "Report to completion workflow",
     icon: ICONS.wrench,
   },
   {
@@ -206,8 +231,8 @@ function heroCopy(profileType: ProfileType | null) {
   if (profileType === "landlord" || profileType === "estate_manager") {
     return {
       subtitle:
-        "List properties, review applicants, and track rent from one place.",
-      cta: { href: "/portal/listings", label: "Manage listings" },
+        "What is happening across your portfolio right now? Manage properties, tenants, rent, maintenance and occupancy from one control centre.",
+      cta: { href: "/portal/listings", label: "Open My Properties" },
     };
   }
   if (profileType === "student" || profileType === "tenant") {

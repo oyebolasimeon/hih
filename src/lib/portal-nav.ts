@@ -3,10 +3,22 @@ import type { ProfileType } from "@/models/Profile";
 export type PortalNavLink = {
   href: string;
   label: string;
+  /** Role-specific label override (Property Management Model naming) */
+  labelByType?: Partial<Record<ProfileType, string>>;
   exact?: boolean;
   /** When set, link only shows for these active profile types */
   forTypes?: ProfileType[];
 };
+
+export function resolveNavLabel(
+  link: PortalNavLink,
+  profileType: ProfileType | null
+) {
+  if (profileType && link.labelByType?.[profileType]) {
+    return link.labelByType[profileType]!;
+  }
+  return link.label;
+}
 
 export const PORTAL_NAV_LINKS: PortalNavLink[] = [
   { href: "/portal", label: "Dashboard", exact: true },
@@ -17,12 +29,33 @@ export const PORTAL_NAV_LINKS: PortalNavLink[] = [
   },
   {
     href: "/portal/listings",
-    label: "My listings",
+    label: "My Properties",
     forTypes: ["landlord", "estate_manager"],
   },
-  { href: "/portal/applications", label: "Applications" },
-  { href: "/portal/agreements", label: "Agreements" },
-  { href: "/portal/payments", label: "Payments" },
+  {
+    href: "/portal/applications",
+    label: "Applications",
+    labelByType: {
+      landlord: "Tenants & applications",
+      estate_manager: "Tenants & applications",
+    },
+  },
+  {
+    href: "/portal/agreements",
+    label: "Agreements",
+    labelByType: {
+      landlord: "Documents",
+      estate_manager: "Documents",
+    },
+  },
+  {
+    href: "/portal/payments",
+    label: "Payments",
+    labelByType: {
+      landlord: "Rent & collections",
+      estate_manager: "Rent & collections",
+    },
+  },
   { href: "/portal/messages", label: "Messages" },
   {
     href: "/portal/services",
@@ -41,6 +74,10 @@ export const PORTAL_NAV_LINKS: PortalNavLink[] = [
   {
     href: "/portal/analytics",
     label: "Analytics",
+    labelByType: {
+      landlord: "Occupancy & analytics",
+      estate_manager: "Occupancy & analytics",
+    },
     forTypes: ["landlord", "estate_manager"],
   },
   { href: "/portal/kyc", label: "KYC" },
@@ -54,7 +91,10 @@ export const PORTAL_NAV_LINKS: PortalNavLink[] = [
     label: "IoT",
     forTypes: ["landlord", "estate_manager", "tenant"],
   },
-  { href: "/portal/maintenance", label: "Service requests" },
+  {
+    href: "/portal/maintenance",
+    label: "Maintenance",
+  },
   { href: "/portal/complaints", label: "Complaints" },
   {
     href: "/portal/reviews",

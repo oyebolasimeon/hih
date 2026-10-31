@@ -407,10 +407,11 @@ function ListingsManager() {
       <div className="space-y-8">
         <div>
           <h1 className="text-2xl sm:text-3xl font-display font-semibold">
-            My listings
+            My Properties
           </h1>
           <p className="mt-1 text-sm text-muted max-w-2xl">
-            Create and manage property listings for tenants to discover and apply.
+            Central profiles for pricing, status, amenities, media and portfolio
+            overview — list → verify → match.
           </p>
         </div>
         <StatCardsSkeleton count={4} />
@@ -423,10 +424,11 @@ function ListingsManager() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl sm:text-3xl font-display font-semibold">
-          My listings
+          My Properties
         </h1>
         <p className="mt-1 text-sm text-muted max-w-2xl">
-          Create and manage property listings for tenants to discover and apply.
+          Central profiles for pricing, status, amenities, media and portfolio
+          overview — list → verify → match.
         </p>
       </div>
 

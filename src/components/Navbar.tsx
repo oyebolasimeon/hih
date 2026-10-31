@@ -8,6 +8,7 @@ import BrandMark from "@/components/BrandMark";
 
 const navLinks = [
   { href: "/how-it-works", label: "How it works" },
+  { href: "/property-management", label: "For landlords" },
   { href: "/listings", label: "Listings" },
   { href: "/pricing", label: "Pricing" },
   { href: "/about", label: "About" },

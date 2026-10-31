@@ -13,6 +13,7 @@ import {
   PORTAL_NAV_LINKS,
   canAccessPortalPath,
   filterPortalNav,
+  resolveNavLabel,
   type PortalNavLink,
 } from "@/lib/portal-nav";
 import type { ProfileType } from "@/models/Profile";
@@ -71,10 +72,10 @@ export default function PortalShell({ children }: { children: React.ReactNode })
   }, [pathname, profileType, profileReady, router]);
 
   const links: PortalNavLink[] = filterPortalNav(PORTAL_NAV_LINKS, profileType);
-  const drawerLinks = links.map(({ href, label, exact }) => ({
-    href,
-    label,
-    exact,
+  const drawerLinks = links.map((link) => ({
+    href: link.href,
+    label: resolveNavLabel(link, profileType),
+    exact: link.exact,
   }));
   const extraLinks = session?.user?.isAdmin
     ? [{ href: "/admin", label: "Admin Console" }]
@@ -82,6 +83,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
 
   function renderNav(items: PortalNavLink[]) {
     return items.map((link) => {
+      const label = resolveNavLabel(link, profileType);
       const active = link.exact
         ? pathname === link.href
         : pathname.startsWith(link.href);
@@ -102,7 +104,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
               transition={{ type: "spring", stiffness: 380, damping: 30 }}
             />
           ) : null}
-          {link.label}
+          {label}
         </Link>
       );
     });

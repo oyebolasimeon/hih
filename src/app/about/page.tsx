@@ -467,8 +467,11 @@ export default function AboutPage() {
               <Link href="/register" className="site-btn site-btn-teal">
                 Get started
               </Link>
-              <Link href="/how-it-works" className="site-btn site-btn-ghost">
-                How it works
+              <Link
+                href="/property-management"
+                className="site-btn site-btn-ghost"
+              >
+                Property management model
               </Link>
             </div>
             <p className="mt-10 text-sm text-sand/50">
