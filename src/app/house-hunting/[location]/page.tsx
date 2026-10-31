@@ -9,6 +9,7 @@ import { connectDB } from "@/lib/db";
 import { Listing } from "@/models/Listing";
 import { serializePublicTeaser } from "@/lib/listing-serialize";
 import { buildPageMetadata } from "@/lib/seo/metadata";
+import { getLandmarkForSlug } from "@/lib/seo/nigeria-landmarks";
 import {
   getLocationBySlug,
   listingFilterForLocation,
@@ -56,6 +57,7 @@ export default async function HouseHuntingLocationPage({ params }: PageProps) {
   }
 
   const url = getSiteUrl();
+  const landmark = getLandmarkForSlug(loc.slug);
 
   return (
     <div className="site-page">
@@ -87,15 +89,42 @@ export default async function HouseHuntingLocationPage({ params }: PageProps) {
         }}
       />
       <main className="pt-28">
-        <section className="bg-navy text-sand">
-          <div className="mx-auto max-w-7xl px-5 py-16 sm:px-6 lg:px-8 lg:py-20">
+        <section className="relative min-h-[52svh] overflow-hidden bg-navy text-sand sm:min-h-[58svh]">
+          {landmark.imageUrlSecondary ? (
+            <div className="absolute inset-0 grid grid-cols-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={landmark.imageUrl}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={landmark.imageUrlSecondary}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            </div>
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={landmark.imageUrl}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/70 to-navy/35" />
+          <div className="relative mx-auto flex min-h-[52svh] max-w-7xl flex-col justify-end px-5 pb-12 pt-28 sm:min-h-[58svh] sm:px-6 sm:pb-16 lg:px-8">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal">
               House hunting · {loc.name}
             </p>
             <h1 className="mt-3 max-w-3xl font-display text-4xl font-bold tracking-tight sm:text-5xl">
               House hunting in {loc.name}, Nigeria
             </h1>
-            <p className="mt-5 max-w-2xl text-sand/70 text-lg leading-relaxed">
+            <p className="mt-3 text-sm font-medium text-gold">
+              Landmark: {landmark.monuments.join(" · ")}
+            </p>
+            <p className="mt-4 max-w-2xl text-sand/75 text-lg leading-relaxed">
               Search verified homes for rent in {loc.name} on House In Hands —
               clearer listings, direct landlord connections and digital rent
               tools built for Nigeria.
