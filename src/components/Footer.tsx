@@ -18,10 +18,10 @@ export default function Footer() {
               Lagos · Abuja · Nationwide
               <br />
               <a
-                href="mailto:hello@houseinhand.com"
+                href="mailto:hello@houseinhands.com"
                 className="text-teal hover:text-teal-light transition-colors"
               >
-                hello@houseinhand.com
+                hello@houseinhands.com
               </a>
             </p>
           </div>

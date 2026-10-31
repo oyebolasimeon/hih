@@ -23,7 +23,7 @@ export default function PrivacyPage() {
             </p>
             <p>
               A complete privacy notice will ship with MVP. Contact
-              hello@houseinhand.com for privacy requests.
+              hello@houseinhands.com for privacy requests.
             </p>
           </div>
         </div>

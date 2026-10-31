@@ -20,7 +20,7 @@ function defaultFrom(): string {
       ? `House In Hand <${process.env.SMTP_USER}>`
       : process.env.GOOGLE_SMTP_USER
         ? `House In Hand <${process.env.GOOGLE_SMTP_USER}>`
-        : "House In Hand <noreply@houseinhand.com>")
+        : "House In Hand <noreply@houseinhands.com>")
   );
 }
 

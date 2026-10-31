@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = (process.env.AUTH_URL || "https://houseinhand.com").replace(
+  const base = (process.env.AUTH_URL || "https://houseinhands.com").replace(
     /\/$/,
     ""
   );

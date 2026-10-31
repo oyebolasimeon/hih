@@ -43,10 +43,10 @@ export default function Contact() {
           <div className="mt-10 space-y-2 text-sm text-navy/70">
             <p>
               <a
-                href="mailto:hello@houseinhand.com"
+                href="mailto:hello@houseinhands.com"
                 className="text-teal-dark font-semibold hover:underline"
               >
-                hello@houseinhand.com
+                hello@houseinhands.com
               </a>
             </p>
             <p>Lagos · Abuja · Nationwide</p>
