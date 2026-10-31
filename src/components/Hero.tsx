@@ -1,39 +1,60 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useBranding } from "@/components/providers/BrandingProvider";
+
+const HERO_IMAGES = [
+  {
+    src: "/brand/control-campaign.jpg",
+    alt: "House In Hand — more control over your housing experience",
+  },
+  {
+    src: "/brand/renting-stress-campaign.jpg",
+    alt: "House In Hand — easing the stressful parts of renting",
+  },
+] as const;
 
 export default function Hero() {
   const { branding } = useBranding();
   const name = branding.appName || "House In Hand";
   const reduce = useReducedMotion();
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    if (reduce) return;
+    const id = window.setInterval(() => {
+      setActive((i) => (i + 1) % HERO_IMAGES.length);
+    }, 7000);
+    return () => window.clearInterval(id);
+  }, [reduce]);
 
   return (
     <section className="relative min-h-[100svh] overflow-hidden bg-navy">
-      <motion.div
-        className="absolute inset-0"
-        initial={reduce ? false : { scale: 1.08 }}
-        animate={
-          reduce
-            ? { scale: 1 }
-            : { scale: [1.08, 1.02, 1.06], x: [0, -12, 0], y: [0, 8, 0] }
-        }
-        transition={
-          reduce
-            ? { duration: 0 }
-            : { duration: 28, repeat: Infinity, ease: "easeInOut" }
-        }
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/hero-home.jpg"
-          alt=""
-          className="h-full w-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/75 to-navy/35" />
-        <div className="absolute inset-0 bg-gradient-to-r from-navy/90 via-navy/40 to-transparent" />
-      </motion.div>
+      <AnimatePresence mode="sync">
+        {HERO_IMAGES.map((image, i) =>
+          i === active ? (
+            <motion.div
+              key={image.src}
+              className="absolute inset-0"
+              initial={reduce ? false : { opacity: 0, scale: 1.06 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={reduce ? undefined : { opacity: 0 }}
+              transition={{ duration: reduce ? 0 : 1.2, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={image.src}
+                alt=""
+                className="h-full w-full object-cover object-[center_20%] sm:object-center"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/80 to-navy/45" />
+              <div className="absolute inset-0 bg-gradient-to-r from-navy/95 via-navy/55 to-navy/25" />
+            </motion.div>
+          ) : null
+        )}
+      </AnimatePresence>
 
       <div className="relative mx-auto flex min-h-[100svh] max-w-7xl flex-col justify-end px-5 pb-16 pt-28 sm:justify-center sm:px-6 sm:pb-24 lg:px-8">
         <motion.div
@@ -46,7 +67,7 @@ export default function Hero() {
             {name}
           </p>
           <h1 className="mt-4 font-display text-4xl font-semibold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
-            A home you can hold onto
+            Property. In your hands.
           </h1>
           <p className="mt-5 max-w-md text-base leading-relaxed text-sand/80 sm:text-lg">
             Verified housing across Nigeria — find, rent, and manage with clarity
@@ -66,6 +87,20 @@ export default function Hero() {
             </Link>
           </motion.div>
         </motion.div>
+
+        <div className="mt-10 flex gap-2 sm:mt-14" aria-hidden>
+          {HERO_IMAGES.map((image, i) => (
+            <button
+              key={image.src}
+              type="button"
+              onClick={() => setActive(i)}
+              className={`h-1.5 rounded-full transition-all ${
+                i === active ? "w-8 bg-teal" : "w-4 bg-sand/35 hover:bg-sand/55"
+              }`}
+              aria-label={`Show campaign image ${i + 1}`}
+            />
+          ))}
+        </div>
       </div>
     </section>
   );
