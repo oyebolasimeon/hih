@@ -5,6 +5,10 @@ import { motion, useReducedMotion } from "framer-motion";
 
 const panels = [
   {
+    src: "/brand/dreamed-it-campaign.jpg",
+    alt: "House In Hand — You've dreamed it. Now we're building it.",
+  },
+  {
     src: "/brand/control-campaign.jpg",
     alt: "House In Hand — the feeling of having more control over your housing experience",
   },
@@ -34,7 +38,7 @@ export default function BrandCampaign() {
         </motion.div>
       </div>
 
-      <div className="mt-10 grid lg:grid-cols-2">
+      <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3">
         {panels.map((panel, i) => (
           <motion.figure
             key={panel.src}
