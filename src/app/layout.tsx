@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import Script from "next/script";
 import AuthProvider from "@/components/providers/AuthProvider";
@@ -6,6 +6,11 @@ import { BrandingProvider } from "@/components/providers/BrandingProvider";
 import { MutationProvider } from "@/components/providers/MutationProvider";
 import { DEFAULT_BRANDING } from "@/lib/branding-defaults";
 import AnnouncementModal from "@/components/AnnouncementModal";
+import {
+  OrganizationJsonLd,
+  WebsiteJsonLd,
+} from "@/components/seo/JsonLd";
+import { rootMetadata } from "@/lib/seo/metadata";
 import "./globals.css";
 
 const inter = Inter({
@@ -23,11 +28,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "House In Hands | Housing you can trust",
-  description:
-    "Property. In Your Hands. Find it. Rent it. Manage it. Grow it. — a trusted digital ecosystem connecting people, properties, payments, services and property intelligence across Nigeria.",
-  keywords:
-    "House In Hands, HIH, property technology Nigeria, property management, rent payments, verified housing, landlords, tenants",
+  ...rootMetadata(),
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
@@ -35,6 +36,15 @@ export const metadata: Metadata = {
     ],
     apple: "/apple-touch-icon.png",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F4E9D8" },
+    { media: "(prefers-color-scheme: dark)", color: "#0B1F3A" },
+  ],
+  width: "device-width",
+  initialScale: 1,
 };
 
 const themeInitScript = `
@@ -60,7 +70,7 @@ export default function RootLayout({
 }) {
   return (
     <html
-      lang="en"
+      lang="en-NG"
       className={`${inter.variable} ${jetbrainsMono.variable} dark h-full antialiased`}
       data-theme="dark"
       data-scroll-behavior="smooth"
@@ -70,6 +80,8 @@ export default function RootLayout({
         <Script id="hih-theme-init" strategy="beforeInteractive">
           {themeInitScript}
         </Script>
+        <OrganizationJsonLd />
+        <WebsiteJsonLd />
       </head>
       <body
         className="min-h-full flex flex-col bg-background text-foreground"

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
@@ -5,6 +6,23 @@ import EmptyState from "@/components/ui/EmptyState";
 import { connectDB } from "@/lib/db";
 import { Listing } from "@/models/Listing";
 import { serializePublicTeaser } from "@/lib/listing-serialize";
+import { buildPageMetadata } from "@/lib/seo/metadata";
+import { getPriorityLocations } from "@/lib/seo/nigeria-locations";
+
+export const metadata: Metadata = buildPageMetadata({
+  title: "Verified Homes for Rent in Nigeria | House Hunting",
+  description:
+    "Browse verified houses, apartments and hostels for rent across Lagos, Abuja, Ogun, Oyo and all of Nigeria on House In Hands.",
+  path: "/listings",
+  keywords: [
+    "homes for rent Nigeria",
+    "apartments Lagos",
+    "house hunting Abuja",
+    "verified listings Nigeria",
+  ],
+});
+
+export const revalidate = 1800;
 
 function formatPrice(p: { amount: number; currency: string; period: string }) {
   try {
@@ -22,15 +40,23 @@ function typeLabel(type: string) {
   return type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, " ");
 }
 
-export default async function PublicListingsPage() {
+export default async function PublicListingsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ state?: string; q?: string }>;
+}) {
   let listings: ReturnType<typeof serializePublicTeaser>[] = [];
+  const sp = (await searchParams) || {};
+  const stateFilter = (sp.state || "").trim();
 
   try {
     await connectDB();
-    const rows = await Listing.find({
+    const query: Record<string, unknown> = {
       availabilityStatus: "available",
       verificationStatus: "verified",
-    })
+    };
+    if (stateFilter) query["address.state"] = stateFilter;
+    const rows = await Listing.find(query)
       .sort({ featured: -1, publishedAt: -1, createdAt: -1 })
       .limit(60)
       .lean();
@@ -38,6 +64,8 @@ export default async function PublicListingsPage() {
   } catch (err) {
     console.error("Public listings fetch failed:", err);
   }
+
+  const priority = getPriorityLocations();
 
   const featured = listings[0] || null;
 
@@ -60,11 +88,31 @@ export default async function PublicListingsPage() {
               Verified homes
             </p>
             <h1 className="mt-3 max-w-2xl font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl">
-              Homes worth holding
+              {stateFilter
+                ? `Homes for rent in ${stateFilter}`
+                : "House hunting across Nigeria"}
             </h1>
             <p className="mt-4 max-w-lg text-base leading-relaxed text-sand/80 sm:text-lg">
-              Explore every detail as a guest — then apply when you&apos;re ready.
+              Verified listings in Lagos, Abuja and beyond — explore as a guest,
+              then apply when you&apos;re ready.
             </p>
+            <div className="mt-6 flex flex-wrap gap-2">
+              {priority.slice(0, 5).map((loc) => (
+                <Link
+                  key={loc.slug}
+                  href={`/house-hunting/${loc.slug}`}
+                  className="rounded-sm border border-white/25 px-3 py-1.5 text-xs font-semibold text-sand/90 hover:border-teal hover:text-teal"
+                >
+                  {loc.name}
+                </Link>
+              ))}
+              <Link
+                href="/house-hunting"
+                className="rounded-sm border border-white/25 px-3 py-1.5 text-xs font-semibold text-sand/90 hover:border-teal hover:text-teal"
+              >
+                All states
+              </Link>
+            </div>
             {featured ? (
               <Link
                 href={`/listings/${featured.id}`}

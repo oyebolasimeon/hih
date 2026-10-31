@@ -9,6 +9,7 @@ import {
   sanitizeAuditValue,
   writeAudit,
 } from "@/lib/audit";
+import { revalidatePublicSeo } from "@/lib/seo/revalidate-public";
 
 function serialize(doc: {
   _id: unknown;
@@ -138,6 +139,10 @@ export async function PATCH(
     ),
     request,
   });
+
+  if (doc.status === "published") {
+    revalidatePublicSeo({ blogSlug: doc.slug });
+  }
 
   return NextResponse.json({ post: serialize(doc) });
 }

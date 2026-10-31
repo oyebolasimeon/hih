@@ -2,17 +2,21 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { FAQ_SECTIONS } from "@/lib/faq-content";
 import { connectDB } from "@/lib/db";
 import { FaqItem } from "@/models/FaqItem";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "FAQ | House In Hands",
+export const metadata: Metadata = buildPageMetadata({
+  title: "FAQ — House Hunting & Property Platform Nigeria",
   description:
-    "Frequently asked questions about House In Hands — housing, rentals, property management, payments, verification and support.",
-};
+    "Frequently asked questions about House In Hands — house hunting in Nigeria, rentals, property management, payments, verification and support.",
+  path: "/faq",
+  keywords: ["House In Hands FAQ", "house hunting Nigeria FAQ", "rent platform Nigeria"],
+});
 
 export default async function FaqPage() {
   let cmsFaqs: Array<{ id: string; question: string; answer: string }> = [];
@@ -30,9 +34,28 @@ export default async function FaqPage() {
     /* static FAQ still renders */
   }
 
+  const schemaFaqs = [
+    ...FAQ_SECTIONS.flatMap((section) => section.items),
+    ...cmsFaqs.map((f) => ({ q: f.question, a: f.answer })),
+  ].slice(0, 40);
+
   return (
     <div className="site-page">
       <Navbar />
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: schemaFaqs.map((item) => ({
+            "@type": "Question",
+            name: item.q,
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: item.a,
+            },
+          })),
+        }}
+      />
       <main className="pt-28">
         <section className="bg-navy text-sand">
           <div className="mx-auto max-w-7xl px-5 py-16 sm:px-6 lg:px-8 lg:py-24">

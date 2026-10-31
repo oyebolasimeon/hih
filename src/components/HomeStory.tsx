@@ -69,8 +69,8 @@ export default function HomeStory() {
             <Link href="/listings" className="site-btn site-btn-navy">
               Browse listings
             </Link>
-            <Link href="/about" className="site-btn site-btn-outline">
-              Why House In Hands
+            <Link href="/house-hunting" className="site-btn site-btn-outline">
+              House hunting by state
             </Link>
           </div>
         </motion.div>

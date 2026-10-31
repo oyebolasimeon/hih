@@ -3,11 +3,19 @@ import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
-export const metadata: Metadata = {
-  title: "Why House In Hands | Housing you can trust",
+import { buildPageMetadata } from "@/lib/seo/metadata";
+
+export const metadata: Metadata = buildPageMetadata({
+  title: "Why House In Hands — Housing you can trust in Nigeria",
   description:
-    "A property technology company rebuilding property around direct relationships, verification, transparency, digital management and connected services.",
-};
+    "House In Hands is Nigeria’s property technology platform for trusted house hunting, verified landlords, digital tenancy and property management across Lagos, Abuja and every state.",
+  path: "/about",
+  keywords: [
+    "why House In Hands",
+    "property technology Nigeria",
+    "trusted house hunting Nigeria",
+  ],
+});
 
 const lifecycle = [
   {

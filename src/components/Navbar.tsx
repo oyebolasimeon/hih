@@ -7,6 +7,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import BrandMark from "@/components/BrandMark";
 
 const navLinks = [
+  { href: "/house-hunting", label: "House hunting" },
   { href: "/how-it-works", label: "How it works" },
   { href: "/property-management", label: "For landlords" },
   { href: "/listings", label: "Listings" },

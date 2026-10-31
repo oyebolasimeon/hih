@@ -9,6 +9,7 @@ import { User } from "@/models/User";
 import { serializeListing } from "@/lib/listing-serialize";
 import { actorFromUser, writeAudit } from "@/lib/audit";
 import { notifyUser } from "@/lib/profile-context";
+import { revalidatePublicSeo } from "@/lib/seo/revalidate-public";
 
 export async function GET(req: Request) {
   const { response } = await assertAdmin("listings:read");
@@ -127,6 +128,14 @@ export async function PATCH(req: Request) {
     request: req,
     metadata: { notes: parsed.data.notes || "" },
   });
+
+  if (approved) {
+    revalidatePublicSeo({
+      listingId: String(listing._id),
+      state: listing.address?.state,
+      city: listing.address?.city,
+    });
+  }
 
   return NextResponse.json({
     listing: serializeListing(listing.toObject()),

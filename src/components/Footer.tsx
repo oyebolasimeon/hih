@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import BrandMark from "@/components/BrandMark";
+import SocialLinks from "@/components/seo/SocialLinks";
 
 export default function Footer() {
   return (
@@ -36,6 +37,12 @@ export default function Footer() {
                 +234 701 507 9484
               </a>
             </p>
+            <div className="mt-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sand/40">
+                Follow us
+              </p>
+              <SocialLinks invert className="mt-3" />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 md:col-span-7">
@@ -45,6 +52,7 @@ export default function Footer() {
               </h4>
               <ul className="mt-4 space-y-2.5">
                 {[
+                  { label: "House hunting", href: "/house-hunting" },
                   { label: "How it works", href: "/how-it-works" },
                   {
                     label: "Property management",
@@ -53,6 +61,7 @@ export default function Footer() {
                   { label: "Listings", href: "/listings" },
                   { label: "Pricing", href: "/pricing" },
                   { label: "Stories", href: "/blog" },
+                  { label: "RSS feed", href: "/feed.xml" },
                 ].map((l) => (
                   <li key={l.href}>
                     <Link

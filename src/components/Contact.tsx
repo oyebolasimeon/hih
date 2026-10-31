@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import SocialLinks from "@/components/seo/SocialLinks";
 
 export default function Contact() {
   const [status, setStatus] = useState<"idle" | "sending" | "ok" | "err">("idle");
@@ -67,6 +68,12 @@ export default function Contact() {
                 +234 701 507 9484
               </a>
             </p>
+            <div className="pt-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">
+                Social
+              </p>
+              <SocialLinks className="mt-3" />
+            </div>
           </div>
         </div>
 

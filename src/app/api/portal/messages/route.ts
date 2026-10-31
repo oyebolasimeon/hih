@@ -4,6 +4,8 @@ import mongoose from "mongoose";
 import { assertUser } from "@/lib/api-auth";
 import { connectDB } from "@/lib/db";
 import { notifyUser } from "@/lib/profile-context";
+import { publishMessageEvent } from "@/lib/realtime/message-bus";
+import { sendWebPushToUser } from "@/lib/push";
 import { Conversation } from "@/models/Conversation";
 import { Message } from "@/models/Message";
 import { User } from "@/models/User";
@@ -204,20 +206,49 @@ export async function POST(req: Request) {
   conversation!.lastPreview = preview;
   await conversation!.save();
 
-  await notifyUser({
-    userId: parsed.data.toUserId,
-    type: "message.received",
-    title: "New message",
-    body: preview,
-    link: "/portal/messages",
-    meta: {
-      conversationId: String(conversation!._id),
-      messageId: String(message._id),
-    },
-    email: recipient.email
-      ? { to: recipient.email, subject: "New message on House In Hand" }
-      : undefined,
-  });
+  const liveMessage = {
+    id: String(message._id),
+    conversationId: String(message.conversationId),
+    fromUserId: String(message.fromUserId),
+    toUserId: String(message.toUserId),
+    listingId: message.listingId ? String(message.listingId) : null,
+    body: message.body,
+    read: message.read,
+    createdAt: (message.createdAt as Date).toISOString(),
+  };
+
+  const liveEvent = {
+    type: "message" as const,
+    conversationId: liveMessage.conversationId,
+    message: liveMessage,
+    preview,
+  };
+
+  await Promise.all([
+    publishMessageEvent(parsed.data.toUserId, liveEvent),
+    publishMessageEvent(user.id, liveEvent),
+    notifyUser({
+      userId: parsed.data.toUserId,
+      type: "message.received",
+      title: "New message",
+      body: preview,
+      link: `/portal/messages?c=${liveMessage.conversationId}`,
+      meta: {
+        conversationId: liveMessage.conversationId,
+        messageId: liveMessage.id,
+      },
+      email: recipient.email
+        ? { to: recipient.email, subject: "New message on House In Hands" }
+        : undefined,
+    }),
+    sendWebPushToUser({
+      userId: parsed.data.toUserId,
+      title: "New message",
+      body: preview,
+      link: `/portal/messages?c=${liveMessage.conversationId}`,
+      tag: `msg-${liveMessage.conversationId}`,
+    }),
+  ]);
 
   return NextResponse.json(
     {
@@ -231,16 +262,7 @@ export async function POST(req: Request) {
           },
         }
       ),
-      message: {
-        id: String(message._id),
-        conversationId: String(message.conversationId),
-        fromUserId: String(message.fromUserId),
-        toUserId: String(message.toUserId),
-        listingId: message.listingId ? String(message.listingId) : null,
-        body: message.body,
-        read: message.read,
-        createdAt: message.createdAt,
-      },
+      message: liveMessage,
     },
     { status: 201 }
   );

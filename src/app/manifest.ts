@@ -1,0 +1,19 @@
+import type { MetadataRoute } from "next";
+import { SITE_NAME, SITE_TAGLINE } from "@/lib/seo/site";
+
+export default function manifest(): MetadataRoute.Manifest {
+  return {
+    name: SITE_NAME,
+    short_name: "HIH",
+    description: SITE_TAGLINE,
+    start_url: "/",
+    display: "standalone",
+    background_color: "#0B1F3A",
+    theme_color: "#00A6A6",
+    icons: [
+      { src: "/favicon.png", sizes: "32x32", type: "image/png" },
+      { src: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+      { src: "/logo.png", sizes: "512x512", type: "image/png", purpose: "any" },
+    ],
+  };
+}

@@ -1,7 +1,21 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ClosingCta from "@/components/ClosingCta";
+import { buildPageMetadata } from "@/lib/seo/metadata";
+
+export const metadata: Metadata = buildPageMetadata({
+  title: "How House Hunting Works in Nigeria",
+  description:
+    "See how House In Hands makes house hunting clearer in Lagos, Abuja and across Nigeria — discover, verify, connect, agree and manage property digitally.",
+  path: "/how-it-works",
+  keywords: [
+    "how house hunting works Nigeria",
+    "rent without agent Nigeria",
+    "digital tenancy Nigeria",
+  ],
+});
 
 const journey = [
   {

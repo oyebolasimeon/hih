@@ -12,11 +12,19 @@ import {
   PM_SERVICE_LEVELS,
 } from "@/lib/property-management-model";
 
-export const metadata: Metadata = {
-  title: "Property Management Model | House In Hands",
+import { buildPageMetadata } from "@/lib/seo/metadata";
+
+export const metadata: Metadata = buildPageMetadata({
+  title: "Property Management Nigeria — Estates, Rent & Operations",
   description:
-    "Complete property management from one platform — properties, tenants, rent, maintenance, occupancy, documents, services and performance.",
-};
+    "Complete property management across Nigeria from one platform — properties, tenants, rent, maintenance, occupancy, documents, services and performance on House In Hands.",
+  path: "/property-management",
+  keywords: [
+    "property management Nigeria",
+    "estate management Lagos",
+    "property manager Abuja",
+  ],
+});
 
 export default function PropertyManagementPage() {
   return (

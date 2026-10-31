@@ -1,9 +1,18 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import EmptyState from "@/components/ui/EmptyState";
 import { connectDB } from "@/lib/db";
 import { BlogPost } from "@/models/BlogPost";
+import { buildPageMetadata } from "@/lib/seo/metadata";
+
+export const metadata: Metadata = buildPageMetadata({
+  title: "Housing Stories & Property Insights Nigeria",
+  description:
+    "Guides and stories on house hunting, renting and property management in Lagos, Abuja and across Nigeria — from House In Hands.",
+  path: "/blog",
+});
 
 export const dynamic = "force-dynamic";
 

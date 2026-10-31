@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import ListingMap from "@/components/ListingMap";
+import ListingMediaGallery from "@/components/ListingMediaGallery";
 
 export type PublicListing = {
   id: string;
@@ -59,16 +60,19 @@ export default function PublicListingDetail({
   listing: PublicListing;
 }) {
   const reduce = useReducedMotion();
-  const [activeImage, setActiveImage] = useState(0);
 
   const images = useMemo(
     () => listing.images.filter((img) => img.url),
     [listing.images]
   );
 
-  const activeMedia = images[activeImage];
-  const mainUrl = activeMedia?.url;
-  const mainIsVideo = activeMedia ? isVideoMedia(activeMedia) : false;
+  const coverUrl = useMemo(() => {
+    const primary =
+      images.find((i) => i.isPrimary && !isVideoMedia(i)) ||
+      images.find((i) => !isVideoMedia(i)) ||
+      images[0];
+    return primary?.url || "";
+  }, [images]);
 
   const locationLine = [
     listing.address.street,
@@ -96,31 +100,18 @@ export default function PublicListingDetail({
 
   return (
     <div className="pb-28 lg:pb-0">
-      <section className="relative min-h-[72svh] overflow-hidden bg-navy">
-        {mainUrl ? (
-          mainIsVideo ? (
-            <video
-              key={mainUrl}
-              src={mainUrl}
-              className="absolute inset-0 h-full w-full object-cover"
-              controls={false}
-              autoPlay
-              muted
-              loop
-              playsInline
-            />
-          ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={mainUrl}
-              alt={listing.title}
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-          )
+      <section className="relative min-h-[52svh] overflow-hidden bg-navy sm:min-h-[58svh]">
+        {coverUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={coverUrl}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+          />
         ) : null}
-        <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/55 to-navy/25" />
+        <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/60 to-navy/30" />
 
-        <div className="relative mx-auto flex min-h-[72svh] max-w-7xl flex-col justify-between px-5 pb-10 pt-28 sm:px-6 lg:px-8">
+        <div className="relative mx-auto flex min-h-[52svh] max-w-7xl flex-col justify-between px-5 pb-10 pt-28 sm:min-h-[58svh] sm:px-6 lg:px-8">
           <Link
             href="/listings"
             className="inline-flex w-fit items-center gap-2 text-sm font-medium text-sand/80 transition hover:text-teal"
@@ -155,44 +146,23 @@ export default function PublicListingDetail({
         </div>
       </section>
 
-      {images.length > 1 ? (
-        <div className="bg-navy">
-          <div className="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-5 py-4 sm:px-6 lg:px-8">
-            {images.map((img, i) => {
-              const video = isVideoMedia(img);
-              return (
-                <button
-                  key={`${img.url}-${i}`}
-                  type="button"
-                  onClick={() => setActiveImage(i)}
-                  className={`relative h-16 w-24 shrink-0 overflow-hidden border transition sm:h-20 sm:w-28 ${
-                    activeImage === i
-                      ? "border-teal opacity-100"
-                      : "border-transparent opacity-60 hover:opacity-90"
-                  }`}
-                >
-                  {video ? (
-                    <video
-                      src={img.url}
-                      className="h-full w-full object-cover"
-                      muted
-                      playsInline
-                      preload="metadata"
-                    />
-                  ) : (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={img.url} alt="" className="h-full w-full object-cover" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
-
       <section className="site-section site-ambient bg-sand">
         <div className="relative mx-auto grid max-w-7xl gap-12 px-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-16 lg:px-8">
           <div className="space-y-12">
+            <div>
+              <p className="site-kicker">Photos & videos</p>
+              <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-navy">
+                Tour this home
+              </h2>
+              <div className="mt-6">
+                <ListingMediaGallery
+                  title={listing.title}
+                  media={images}
+                  variant="public"
+                />
+              </div>
+            </div>
+
             {facts.length ? (
               <div>
                 <p className="site-kicker">At a glance</p>
