@@ -6,7 +6,7 @@ import { useBranding } from "@/components/providers/BrandingProvider";
 
 export default function Hero() {
   const { branding } = useBranding();
-  const name = branding.appName || "House In Hand";
+  const name = branding.appName || "House In Hands";
   const reduce = useReducedMotion();
 
   return (
@@ -45,12 +45,15 @@ export default function Hero() {
           <p className="font-display text-3xl font-semibold tracking-tight text-sand sm:text-4xl lg:text-5xl">
             {name}
           </p>
+          <p className="mt-2 text-sm font-semibold uppercase tracking-[0.14em] text-teal">
+            Housing you can trust
+          </p>
           <h1 className="mt-4 font-display text-4xl font-semibold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
-            A home you can hold onto
+            Property. In Your Hands.
           </h1>
           <p className="mt-5 max-w-md text-base leading-relaxed text-sand/80 sm:text-lg">
-            Verified housing across Nigeria — find, rent, and manage with clarity
-            from the first viewing to rent day.
+            Find it. Rent it. Manage it. Grow it. — one trusted digital ecosystem
+            for people, properties, payments and property intelligence.
           </p>
           <motion.div
             className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center"

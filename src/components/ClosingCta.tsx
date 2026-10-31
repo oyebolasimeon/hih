@@ -42,11 +42,11 @@ export default function ClosingCta() {
         transition={{ duration: 0.7 }}
       >
         <p className="font-display text-3xl font-semibold tracking-tight text-white sm:text-4xl lg:text-5xl max-w-2xl">
-          Ready to put your next home in hand?
+          Property. In Your Hands.
         </p>
         <p className="mt-4 max-w-lg text-white/85 text-base sm:text-lg">
-          Join tenants and property owners already moving their housing cycle
-          onto one trusted platform.
+          Find it. Rent it. Manage it. Grow it. — join the trusted digital
+          ecosystem for Nigeria&apos;s property market.
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <Link

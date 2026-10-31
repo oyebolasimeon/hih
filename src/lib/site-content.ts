@@ -17,11 +17,13 @@ export type AuthBackgroundContent = {
 };
 
 export const DEFAULT_INVESTOR_MODAL = {
-  title: "Welcome to House In Hand",
+  title: "Welcome to House In Hands",
   ctaLabel: "Continue to sign in",
-  body: `House In Hand is the housing platform for Nigeria.
+  body: `House In Hands — Housing you can trust.
 
-Create a Tenant, Student, Landlord, or Estate Manager profile, complete KYC, then search listings or publish properties — with digital agreements and rent tools in one place.
+Property. In Your Hands. Find it. Rent it. Manage it. Grow it.
+
+Create a profile, complete verification, then discover, transact and manage property in one trusted digital ecosystem.
 
 Continue to sign in or create your account.`,
   imageUrl: "",

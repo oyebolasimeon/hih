@@ -6,18 +6,23 @@ import { motion, useReducedMotion } from "framer-motion";
 const steps = [
   {
     n: "01",
-    title: "Create your place in the platform",
-    body: "One account. Profiles for students, tenants, landlords, and estate managers.",
+    title: "Discover",
+    body: "Find or list property through a digital marketplace.",
   },
   {
     n: "02",
-    title: "Verify once, trust every deal",
-    body: "KYC-backed identity so both sides know who they are renting with.",
+    title: "Verify & connect",
+    body: "Verify participants, review property information, then talk directly.",
   },
   {
     n: "03",
-    title: "Search, agree, and pay in flow",
-    body: "Listings, digital agreements, and rent tools stay in one timeline.",
+    title: "Agree & pay",
+    body: "Organize applications, digital agreements, and property payments.",
+  },
+  {
+    n: "04",
+    title: "Manage & grow",
+    body: "Run operations, track performance, and use property intelligence.",
   },
 ];
 
@@ -36,15 +41,15 @@ export default function HowItWorksHome() {
         >
           <p className="site-kicker">How it works</p>
           <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-navy sm:text-4xl lg:text-5xl">
-            Housing, end to end — without the scramble
+            One connected property journey
           </h2>
           <p className="mt-4 text-muted text-base sm:text-lg leading-relaxed">
-            Built for Nigeria’s rental reality: trust first, then paperwork and
-            payments that actually finish.
+            Discover, verify, connect, agree, pay, manage, understand and grow —
+            without unnecessary friction or dependence on traditional middlemen.
           </p>
         </motion.div>
 
-        <ol className="mt-14 grid gap-10 md:grid-cols-3 md:gap-8">
+        <ol className="mt-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
           {steps.map((step, i) => (
             <motion.li
               key={step.n}

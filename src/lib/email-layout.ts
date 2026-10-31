@@ -25,7 +25,7 @@ export function emailBaseVars(extra: TemplateVars = {}): TemplateVars {
     portalUrl: `${appUrl}/portal`,
     adminUrl: `${appUrl}/admin`,
     year: new Date().getFullYear(),
-    supportEmail: "hello@houseinhands.com",
+    supportEmail: "houseinhandsmail@gmail.com",
     ...extra,
   };
 }
@@ -62,7 +62,7 @@ export function wrapEmailHtml(innerBody: string): string {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>House In Hand</title>
+  <title>House In Hands</title>
 </head>
 <body style="margin:0;padding:0;background:#E8D9C0;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#E8D9C0;padding:32px 16px;">
@@ -77,7 +77,7 @@ export function wrapEmailHtml(innerBody: string): string {
                     <img src="{{logoUrl}}" width="44" height="44" alt="House In Hand" style="display:block;border:0;border-radius:8px;width:44px;height:44px;object-fit:contain;" />
                   </td>
                   <td style="vertical-align:middle;font-family:Georgia,'Times New Roman',serif;font-weight:600;color:#F4E9D8;font-size:18px;letter-spacing:-0.02em;">
-                    House In Hand
+                    House In Hands
                   </td>
                 </tr>
               </table>
@@ -90,14 +90,14 @@ export function wrapEmailHtml(innerBody: string): string {
           </tr>
           <tr>
             <td style="padding:20px 24px;border-top:1px solid #E0D4C2;background:#FAF6EF;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#5A6A7D;">
-              <div style="font-weight:600;color:#0B1F3A;font-size:13px;margin-bottom:6px;">House In Hand</div>
-              <div>Verified housing across Nigeria — find, rent, and manage with clarity.</div>
+              <div style="font-weight:600;color:#0B1F3A;font-size:13px;margin-bottom:6px;">House In Hands</div>
+              <div>Housing you can trust — Property. In Your Hands.</div>
               <div style="margin-top:10px;">
                 <a href="{{portalUrl}}" style="color:#008585;text-decoration:none;">Open portal</a>
                 <span style="color:#C4B8A8;"> · </span>
                 <a href="mailto:{{supportEmail}}" style="color:#008585;text-decoration:none;">{{supportEmail}}</a>
               </div>
-              <div style="margin-top:12px;color:#8A9AAD;font-size:11px;">© {{year}} House In Hand. All rights reserved.</div>
+              <div style="margin-top:12px;color:#8A9AAD;font-size:11px;">© {{year}} House In Hands. All rights reserved.</div>
             </td>
           </tr>
         </table>
@@ -143,7 +143,7 @@ export function notificationEmailBody(input: {
   return `
 <p style="margin:0 0 16px;">${greeting}</p>
 <p style="margin:0 0 24px;">${escapeHtml(input.body)}</p>
-${fullLink ? emailButton(fullLink, input.linkLabel || "Open in House In Hand") : ""}
+${fullLink ? emailButton(fullLink, input.linkLabel || "Open in House In Hands") : ""}
 `.trim();
 }
 

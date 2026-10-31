@@ -23,7 +23,7 @@ export default function TermsPage() {
             </p>
             <p>
               Full commercial terms will be published with MVP launch. For
-              questions, contact hello@houseinhands.com.
+              questions, contact houseinhandsmail@gmail.com.
             </p>
           </div>
         </div>

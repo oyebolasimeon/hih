@@ -55,14 +55,15 @@ export default function HomeStory() {
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.8, delay: 0.1 }}
         >
-          <p className="site-kicker">Why House In Hand</p>
+          <p className="site-kicker">Our Story</p>
           <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-navy sm:text-4xl lg:text-5xl">
-            Stability you can feel — and prove
+            Finding a home should not feel like a battle
           </h2>
           <p className="mt-5 text-base leading-relaxed text-muted sm:text-lg">
-            Deep navy trust for money and identity. Teal speed for a proptech
-            workflow. Warm sand for the human side of home. Every listing and
-            profile is verified so agreements start from solid ground.
+            Tenants face opaque fees and unreliable listings. Landlords wrestle
+            with fragmented payments, maintenance and occupancy. House In Hands
+            answers with trust, transparency, ownership and practical digital
+            tools — people, properties, payments and intelligence in one place.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link href="/listings" className="site-btn site-btn-navy">

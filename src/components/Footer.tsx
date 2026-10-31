@@ -11,17 +11,29 @@ export default function Footer() {
           <div className="md:col-span-5">
             <BrandMark invert href="/" showLabel />
             <p className="mt-5 max-w-sm text-sm leading-relaxed text-sand/60">
-              Property rental and housing management for Nigeria — search, list,
-              apply, sign, and pay rent with trust at the centre.
+              Housing you can trust. Property technology that connects people,
+              properties, payments, services and intelligence in one ecosystem.
             </p>
-            <p className="mt-6 text-sm text-sand/45">
-              Lagos · Abuja · Nationwide
-              <br />
+            <p className="mt-6 space-y-1 text-sm text-sand/45">
               <a
-                href="mailto:hello@houseinhands.com"
-                className="text-teal hover:text-teal-light transition-colors"
+                href="mailto:houseinhandsmail@gmail.com"
+                className="block text-teal hover:text-teal-light transition-colors"
               >
-                hello@houseinhands.com
+                houseinhandsmail@gmail.com
+              </a>
+              <a
+                href="https://www.houseinhands.com"
+                className="block text-teal hover:text-teal-light transition-colors"
+                target="_blank"
+                rel="noreferrer"
+              >
+                www.houseinhands.com
+              </a>
+              <a
+                href="tel:+2347015079484"
+                className="block text-teal hover:text-teal-light transition-colors"
+              >
+                +234 701 507 9484
               </a>
             </p>
           </div>
@@ -98,7 +110,7 @@ export default function Footer() {
 
         <div className="mt-16 flex flex-col gap-3 border-t border-white/10 pt-8 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-sand/40">
-            © {new Date().getFullYear()} House In Hand. All rights reserved.
+            © {new Date().getFullYear()} House In Hands. All rights reserved.
           </p>
           <p className="text-xs text-sand/35">
             Navy · Teal · Sand — trust, proptech, home.

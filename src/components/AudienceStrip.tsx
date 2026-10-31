@@ -5,23 +5,23 @@ import { motion, useReducedMotion } from "framer-motion";
 
 const audiences = [
   {
-    title: "Students",
-    body: "Hostels and rooms near campus, with clear terms.",
-    href: "/register",
-  },
-  {
     title: "Tenants",
-    body: "Search, apply, sign, and pay rent without chasing anyone.",
+    body: "Search verified homes, understand pricing, apply directly and manage your rental journey.",
     href: "/register",
   },
   {
     title: "Landlords",
-    body: "List, verify applicants, and track rent in one console.",
+    body: "List properties, manage tenants, collect rent, coordinate maintenance and monitor assets remotely.",
     href: "/register",
   },
   {
-    title: "Estate managers",
-    body: "Portfolio control across units, leases, and people.",
+    title: "Property managers",
+    body: "Manage portfolios, occupancy, leases, maintenance, collections and records from one workspace.",
+    href: "/register",
+  },
+  {
+    title: "Developers & investors",
+    body: "Showcase inventory, reach customers and use property intelligence for better decisions.",
     href: "/register",
   },
 ];
@@ -41,10 +41,10 @@ export default function AudienceStrip() {
         >
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal inline-flex items-center gap-2">
             <span className="site-live-dot" aria-hidden />
-            Built for every side of the lease
+            Our broader ecosystem
           </p>
           <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-sand sm:text-4xl">
-            One platform. Four ways in.
+            Built for every side of property
           </h2>
         </motion.div>
 
@@ -71,7 +71,7 @@ export default function AudienceStrip() {
                 href={a.href}
                 className="mt-6 inline-flex text-sm font-semibold text-teal hover:text-teal-light transition-colors"
               >
-                Start as {a.title.toLowerCase().replace(/s$/, "")} →
+                Get started →
               </Link>
             </motion.div>
           ))}

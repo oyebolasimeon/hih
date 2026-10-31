@@ -15,11 +15,11 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "House In Hand | Housing you can trust",
+  title: "House In Hands | Housing you can trust",
   description:
-    "Find, rent, and manage homes across Nigeria — verified listings, digital agreements, and rent tools for tenants, landlords, students, and estate managers.",
+    "Property. In Your Hands. Find it. Rent it. Manage it. Grow it. — a trusted digital ecosystem connecting people, properties, payments, services and property intelligence across Nigeria.",
   keywords:
-    "House In Hand, property rental Nigeria, student hostels, landlords, estate management, rent payments, verified housing",
+    "House In Hands, HIH, property technology Nigeria, property management, rent payments, verified housing, landlords, tenants",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },

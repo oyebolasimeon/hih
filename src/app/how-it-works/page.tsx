@@ -3,41 +3,84 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ClosingCta from "@/components/ClosingCta";
 
-const pillars = [
+const journey = [
   {
-    title: "Students",
-    steps: [
-      "Create a Student profile",
-      "Complete KYC + student ID review",
-      "Search hostels and term-friendly homes",
-      "Apply, sign, and settle rent",
-    ],
+    n: "01",
+    title: "Discover",
+    body: "Find or list property through a digital marketplace.",
   },
+  {
+    n: "02",
+    title: "Verify",
+    body: "Verify users and review relevant property information before participation.",
+  },
+  {
+    n: "03",
+    title: "Connect",
+    body: "Enable direct communication between the parties involved.",
+  },
+  {
+    n: "04",
+    title: "Agree",
+    body: "Organize applications, terms and digital agreements.",
+  },
+  {
+    n: "05",
+    title: "Pay",
+    body: "Facilitate rent and relevant property payments through the platform and appropriate regulated partners.",
+  },
+  {
+    n: "06",
+    title: "Manage",
+    body: "Manage tenants, maintenance, occupancy, documents and property operations.",
+  },
+  {
+    n: "07",
+    title: "Understand",
+    body: "Track income, expenses, occupancy and portfolio performance.",
+  },
+  {
+    n: "08",
+    title: "Grow",
+    body: "Use property intelligence and services to make better operating and investment decisions.",
+  },
+];
+
+const pillars = [
   {
     title: "Tenants",
     steps: [
-      "Verify your identity",
-      "Filter by city, price, and type",
-      "Apply with a clear timeline",
-      "Sign digitally and pay on schedule",
+      "Search verified homes",
+      "Understand pricing and apply directly",
+      "Keep records of your rental journey",
+      "Pay rent and manage your tenancy",
     ],
   },
   {
     title: "Landlords",
     steps: [
-      "List with photos and terms",
-      "Get verified before going live",
-      "Review applicants with KYC context",
-      "Collect rent and track occupancy",
+      "List and verify properties",
+      "Connect with applicants directly",
+      "Collect rent and store documents",
+      "Coordinate maintenance remotely",
     ],
   },
   {
-    title: "Estate managers",
+    title: "Property managers",
     steps: [
-      "Onboard the portfolio",
-      "Assign units and lease cycles",
-      "Message residents at scale",
-      "Read analytics on collection & vacancy",
+      "Centralise the portfolio workspace",
+      "Track occupancy and lease cycles",
+      "Manage collections and reminders",
+      "Assign maintenance and keep history",
+    ],
+  },
+  {
+    title: "Developers & investors",
+    steps: [
+      "Showcase developments and inventory",
+      "Reach prospective customers",
+      "Gain market visibility",
+      "Use property intelligence over time",
     ],
   },
 ];
@@ -53,39 +96,63 @@ export default function HowItWorksPage() {
               How it works
             </p>
             <h1 className="mt-4 max-w-3xl font-display text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
-              From first search to an active lease
+              One connected property journey
             </h1>
             <p className="mt-5 max-w-xl text-sand/70 text-lg leading-relaxed">
-              Every role follows a short, verified path — so housing moves
-              forward without chaos.
+              From discovery to portfolio growth — House In Hands connects the
+              full lifecycle without unnecessary friction.
             </p>
           </div>
         </section>
 
-        <section className="site-section">
-          <div className="mx-auto grid max-w-7xl gap-12 px-5 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8">
-            {pillars.map((p) => (
-              <div key={p.title} className="border-t border-navy/15 pt-8">
-                <h2 className="font-display text-2xl font-semibold text-navy sm:text-3xl">
-                  {p.title}
-                </h2>
-                <ol className="mt-6 space-y-4">
-                  {p.steps.map((step, i) => (
-                    <li key={step} className="flex gap-4 text-muted">
-                      <span className="font-mono text-sm text-teal">
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-                      <span className="text-base text-navy/80">{step}</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            ))}
+        <section className="site-section bg-sand">
+          <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+            <ol className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+              {journey.map((step) => (
+                <li key={step.n} className="border-t border-navy/15 pt-6">
+                  <span className="font-mono text-sm text-teal">{step.n}</span>
+                  <h2 className="mt-3 font-display text-xl font-semibold text-navy sm:text-2xl">
+                    {step.title}
+                  </h2>
+                  <p className="mt-3 text-sm leading-relaxed text-muted">
+                    {step.body}
+                  </p>
+                </li>
+              ))}
+            </ol>
           </div>
-          <div className="mx-auto mt-14 max-w-7xl px-5 sm:px-6 lg:px-8">
-            <Link href="/register" className="site-btn site-btn-teal">
-              Create your account
-            </Link>
+        </section>
+
+        <section className="site-section bg-surface">
+          <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+            <p className="site-kicker">By role</p>
+            <h2 className="mt-3 max-w-2xl font-display text-3xl font-semibold tracking-tight text-navy sm:text-4xl">
+              Built for every participant
+            </h2>
+            <div className="mt-12 grid gap-12 lg:grid-cols-2 lg:gap-16">
+              {pillars.map((p) => (
+                <div key={p.title} className="border-t border-navy/15 pt-8">
+                  <h3 className="font-display text-2xl font-semibold text-navy">
+                    {p.title}
+                  </h3>
+                  <ol className="mt-6 space-y-4">
+                    {p.steps.map((step, i) => (
+                      <li key={step} className="flex gap-4 text-muted">
+                        <span className="font-mono text-sm text-teal">
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                        <span className="text-base text-navy/80">{step}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              ))}
+            </div>
+            <div className="mt-14">
+              <Link href="/register" className="site-btn site-btn-teal">
+                Create your account
+              </Link>
+            </div>
           </div>
         </section>
 

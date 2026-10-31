@@ -26,7 +26,7 @@ export default function BrandMark({
     lg: { mark: "h-11 w-11", text: "text-lg" },
   }[size];
 
-  const name = branding.appName || "House In Hand";
+  const name = branding.appName || "House In Hands";
   const logoSrc = branding.logoUrl?.trim() || "/logo.png";
 
   const mark = (

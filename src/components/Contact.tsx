@@ -37,19 +37,36 @@ export default function Contact() {
             We&apos;re here for the hard part of housing
           </h1>
           <p className="mt-5 text-muted leading-relaxed text-lg max-w-md">
-            Questions about listings, verification, or partnerships — write us.
-            We respond on business days.
+            Questions about listings, verification, partnerships or the platform
+            — write us. We respond on business days.
           </p>
           <div className="mt-10 space-y-2 text-sm text-navy/70">
             <p>
               <a
-                href="mailto:hello@houseinhands.com"
+                href="mailto:houseinhandsmail@gmail.com"
                 className="text-teal-dark font-semibold hover:underline"
               >
-                hello@houseinhands.com
+                houseinhandsmail@gmail.com
               </a>
             </p>
-            <p>Lagos · Abuja · Nationwide</p>
+            <p>
+              <a
+                href="https://www.houseinhands.com"
+                className="text-teal-dark font-semibold hover:underline"
+                target="_blank"
+                rel="noreferrer"
+              >
+                www.houseinhands.com
+              </a>
+            </p>
+            <p>
+              <a
+                href="tel:+2347015079484"
+                className="text-teal-dark font-semibold hover:underline"
+              >
+                +234 701 507 9484
+              </a>
+            </p>
           </div>
         </div>
 

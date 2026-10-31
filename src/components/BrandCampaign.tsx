@@ -49,9 +49,9 @@ export default function BrandCampaign() {
           transition={{ duration: 0.7 }}
           className="max-w-2xl"
         >
-          <p className="site-kicker text-teal">Property. In your hands.</p>
+          <p className="site-kicker text-teal">Property. In Your Hands.</p>
           <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-sand sm:text-4xl">
-            Housing that feels clearer from the first look
+            Find it. Rent it. Manage it. Grow it.
           </h2>
         </motion.div>
       </div>
@@ -108,8 +108,8 @@ export default function BrandCampaign() {
 
       <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-12 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
         <p className="max-w-xl text-sm leading-relaxed text-sand/75 sm:text-base">
-          Verified listings, digital agreements, and rent tools — so finding and
-          keeping a home feels less like a scramble.
+          A property operating platform connecting discovery, verification,
+          agreements, payments, management and property intelligence.
         </p>
         <div className="flex flex-wrap gap-3">
           <Link href="/listings" className="site-btn site-btn-teal">

@@ -28,7 +28,7 @@ export const DEFAULT_BRANDING = {
   tertiaryColor: "#F4E9D8",
   fontUi: "Manrope" as BrandFontOption,
   fontDisplay: "Fraunces" as BrandFontOption,
-  appName: "House In Hand",
+  appName: "House In Hands",
 };
 
 export type BrandingSettings = typeof DEFAULT_BRANDING;
