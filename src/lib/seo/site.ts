@@ -6,12 +6,42 @@ export const SITE_TAGLINE = "Housing you can trust";
 export const SITE_MASTER_LINE = "Property. In Your Hands.";
 export const SITE_DOMAIN = "houseinhands.com";
 
+const PRODUCTION_SITE_URL = "https://www.houseinhands.com";
+
+function normalizeSiteUrl(raw: string) {
+  return raw.trim().replace(/\/$/, "");
+}
+
+function isPreviewHost(url: string) {
+  try {
+    const host = new URL(url).hostname;
+    return (
+      host.endsWith(".vercel.app") ||
+      host === "localhost" ||
+      host === "127.0.0.1"
+    );
+  } catch {
+    return true;
+  }
+}
+
+/** Public canonical origin for SEO. Never prefer preview/local hosts in production. */
 export function getSiteUrl() {
-  return (
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    process.env.AUTH_URL ||
-    "https://www.houseinhands.com"
-  ).replace(/\/$/, "");
+  const configured = [
+    process.env.NEXT_PUBLIC_SITE_URL,
+    process.env.AUTH_URL,
+  ]
+    .filter(Boolean)
+    .map((v) => normalizeSiteUrl(String(v)));
+
+  const preferred = configured.find((url) => url && !isPreviewHost(url));
+  if (preferred) return preferred;
+
+  if (process.env.NODE_ENV === "production") {
+    return PRODUCTION_SITE_URL;
+  }
+
+  return configured[0] || PRODUCTION_SITE_URL;
 }
 
 export const SITE_CONTACT = {
