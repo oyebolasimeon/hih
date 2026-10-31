@@ -4,14 +4,23 @@ import {
   type TemplateVars,
 } from "@/lib/email-templates";
 
+function appBaseUrl() {
+  return (process.env.AUTH_URL || "http://localhost:3000").replace(/\/$/, "");
+}
+
+function absoluteAssetUrl(pathOrUrl: string, appUrl: string) {
+  const value = (pathOrUrl || "").trim();
+  if (!value) return `${appUrl}/logo-email.png`;
+  if (/^https?:\/\//i.test(value)) return value;
+  return `${appUrl}${value.startsWith("/") ? value : `/${value}`}`;
+}
+
+/** Sync defaults — emails prefer the white-backed mark for dark headers. */
 export function emailBaseVars(extra: TemplateVars = {}): TemplateVars {
-  const appUrl = (process.env.AUTH_URL || "http://localhost:3000").replace(
-    /\/$/,
-    ""
-  );
+  const appUrl = appBaseUrl();
   return {
     appUrl,
-    logoUrl: `${appUrl}/logo.png`,
+    logoUrl: `${appUrl}/logo-email.png`,
     loginUrl: `${appUrl}/login`,
     portalUrl: `${appUrl}/portal`,
     adminUrl: `${appUrl}/admin`,
@@ -19,6 +28,30 @@ export function emailBaseVars(extra: TemplateVars = {}): TemplateVars {
     supportEmail: "hello@houseinhands.com",
     ...extra,
   };
+}
+
+/** Prefer admin branding logo when set; otherwise email-optimized default. */
+export async function resolveEmailBaseVars(
+  extra: TemplateVars = {}
+): Promise<TemplateVars> {
+  const appUrl = appBaseUrl();
+  let logoUrl = `${appUrl}/logo-email.png`;
+  try {
+    const { getBranding } = await import("@/lib/branding");
+    const branding = await getBranding();
+    if (branding.logoUrl?.trim()) {
+      // Custom uploads are usually transparent — use as-is.
+      // Built-in default `/logo.png` → use email-optimized sibling.
+      const raw = branding.logoUrl.trim();
+      logoUrl =
+        raw === "/logo.png" || raw.endsWith("/logo.png")
+          ? `${appUrl}/logo-email.png`
+          : absoluteAssetUrl(raw, appUrl);
+    }
+  } catch {
+    /* keep default */
+  }
+  return emailBaseVars({ ...extra, logoUrl });
 }
 
 /** Branded shell applied to all outgoing HTML emails unless marked full-layout. */
@@ -37,11 +70,11 @@ export function wrapEmailHtml(innerBody: string): string {
       <td align="center">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border:1px solid #D4C4AE;border-radius:8px;overflow:hidden;box-shadow:0 8px 32px rgba(11,31,58,0.08);">
           <tr>
-            <td style="background:#0B1F3A;padding:20px 24px;border-bottom:3px solid #008585;">
+            <td style="background:#0B1F3A;padding:22px 24px;border-bottom:3px solid #008585;">
               <table role="presentation" cellspacing="0" cellpadding="0" width="100%">
                 <tr>
-                  <td style="vertical-align:middle;width:36px;padding-right:12px;">
-                    <img src="{{logoUrl}}" width="32" height="32" alt="House In Hand" style="display:block;border:0;border-radius:4px;width:32px;height:32px;object-fit:contain;background:#ffffff;padding:2px;" />
+                  <td style="vertical-align:middle;width:48px;padding-right:14px;">
+                    <img src="{{logoUrl}}" width="44" height="44" alt="House In Hand" style="display:block;border:0;border-radius:8px;width:44px;height:44px;object-fit:contain;" />
                   </td>
                   <td style="vertical-align:middle;font-family:Georgia,'Times New Roman',serif;font-weight:600;color:#F4E9D8;font-size:18px;letter-spacing:-0.02em;">
                     House In Hand
@@ -97,10 +130,7 @@ export function notificationEmailBody(input: {
   link?: string;
   linkLabel?: string;
 }): string {
-  const appUrl = (process.env.AUTH_URL || "http://localhost:3000").replace(
-    /\/$/,
-    ""
-  );
+  const appUrl = appBaseUrl();
   const greeting = input.name
     ? `Hi ${escapeHtml(input.name)},`
     : "Hi,";
@@ -117,11 +147,11 @@ ${fullLink ? emailButton(fullLink, input.linkLabel || "Open in House In Hand") :
 `.trim();
 }
 
-export function buildBrandedEmail(
+export async function buildBrandedEmail(
   innerBody: string,
   vars: TemplateVars = {}
-): string {
-  const merged = emailBaseVars(vars);
+): Promise<string> {
+  const merged = await resolveEmailBaseVars(vars);
   const renderedInner = renderTemplateString(innerBody, merged);
   return renderTemplateString(wrapEmailHtml(renderedInner), merged);
 }
@@ -130,12 +160,13 @@ export function isFullLayoutEmail(html: string): boolean {
   return /<!--\s*hih:full\s*-->/i.test(html) || /<html[\s>]/i.test(html);
 }
 
-export function resolveBrandedEmailHtml(
+export async function resolveBrandedEmailHtml(
   innerBody: string,
   vars: TemplateVars = {}
-): string {
+): Promise<string> {
   if (isFullLayoutEmail(innerBody)) {
-    return renderTemplateString(innerBody, emailBaseVars(vars));
+    const merged = await resolveEmailBaseVars(vars);
+    return renderTemplateString(innerBody, merged);
   }
   return buildBrandedEmail(innerBody, vars);
 }

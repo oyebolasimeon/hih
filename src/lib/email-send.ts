@@ -8,7 +8,7 @@ import {
   renderTemplateString,
 } from "@/lib/email-templates";
 import {
-  emailBaseVars,
+  resolveEmailBaseVars,
   resolveBrandedEmailHtml,
 } from "@/lib/email-layout";
 import { sendMail } from "@/lib/smtp";
@@ -61,10 +61,10 @@ export async function resolveEmailTemplate(
     }
   }
 
-  const merged = emailBaseVars(vars);
+  const merged = await resolveEmailBaseVars(vars);
   const renderedSubject = renderTemplateString(subject, merged);
   const renderedInner = renderTemplateString(htmlBody, merged);
-  const html = resolveBrandedEmailHtml(renderedInner, merged);
+  const html = await resolveBrandedEmailHtml(renderedInner, merged);
   const text = htmlToPlainText(html);
 
   return { subject: renderedSubject, html, text, templateId, source };

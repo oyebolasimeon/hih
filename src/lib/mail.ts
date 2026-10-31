@@ -11,7 +11,7 @@ export async function sendBrandedMail(options: {
   htmlBody: string;
   text?: string;
 }) {
-  const html = buildBrandedEmail(options.htmlBody);
+  const html = await buildBrandedEmail(options.htmlBody);
   await deliverMail({
     to: options.to,
     subject: options.subject,

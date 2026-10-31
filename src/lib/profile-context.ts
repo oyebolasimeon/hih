@@ -98,7 +98,7 @@ export async function notifyUser(input: {
         name: user?.name || undefined,
         link: input.link,
       });
-      const html = buildBrandedEmail(inner, {
+      const html = await buildBrandedEmail(inner, {
         name: user?.name || "",
         email: user?.email || input.email.to,
       });

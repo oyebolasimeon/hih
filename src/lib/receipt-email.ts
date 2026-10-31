@@ -40,7 +40,7 @@ export async function sendPaymentReceiptEmail(paymentId: string, userId: string)
 
   const pdf = await generateReceiptPdf(fullReceiptToPdfInput(receipt));
   const filename = `${receipt.receiptNumber || receipt.paymentId}.pdf`;
-  const html = buildBrandedEmail(receiptEmailHtml(receipt));
+  const html = await buildBrandedEmail(receiptEmailHtml(receipt));
 
   await sendMail({
     to: receipt.payer.email,
@@ -68,7 +68,7 @@ export async function sendAgreementDocumentEmail(input: {
   pdf: Buffer;
   filename: string;
 }) {
-  const html = buildBrandedEmail(input.bodyHtml);
+  const html = await buildBrandedEmail(input.bodyHtml);
   await sendMail({
     to: input.to,
     subject: input.subject,

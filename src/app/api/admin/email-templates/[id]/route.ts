@@ -240,14 +240,14 @@ export async function POST(
   const { renderTemplateString, htmlToPlainText } = await import(
     "@/lib/email-templates"
   );
-  const { emailBaseVars, resolveBrandedEmailHtml } = await import(
+  const { resolveEmailBaseVars, resolveBrandedEmailHtml } = await import(
     "@/lib/email-layout"
   );
   const appUrl = (process.env.AUTH_URL || "http://localhost:3000").replace(
     /\/$/,
     ""
   );
-  const vars = emailBaseVars({
+  const vars = await resolveEmailBaseVars({
     name: user.name || "Investor",
     email: user.email,
     resetUrl: `${appUrl}/reset-password?token=preview-token`,
@@ -257,7 +257,7 @@ export async function POST(
 
   const subject = renderTemplateString(doc.subject, vars);
   const innerHtml = renderTemplateString(doc.html, vars);
-  const html = resolveBrandedEmailHtml(innerHtml, vars);
+  const html = await resolveBrandedEmailHtml(innerHtml, vars);
   const text = htmlToPlainText(html);
 
   if (parsed.data.send) {

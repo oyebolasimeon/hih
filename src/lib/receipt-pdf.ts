@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import PDFDocument from "pdfkit";
 
 export type ReceiptLine = {
@@ -51,6 +53,40 @@ const COLORS = {
   white: "#FFFFFF",
   tealLight: "#E6F4F4",
 };
+
+function brandLogoPath() {
+  const emailLogo = path.join(process.cwd(), "public", "logo-email.png");
+  if (fs.existsSync(emailLogo)) return emailLogo;
+  const logo = path.join(process.cwd(), "public", "logo.png");
+  return fs.existsSync(logo) ? logo : null;
+}
+
+function drawBrandHeader(
+  doc: PDFKit.PDFDocument,
+  subtitle: string,
+  headerHeight = 96
+) {
+  doc.rect(0, 0, doc.page.width, headerHeight).fill(COLORS.navy);
+  doc.rect(0, headerHeight, doc.page.width, 4).fill(COLORS.teal);
+
+  const logoPath = brandLogoPath();
+  const textX = logoPath ? PAGE.left + 52 : PAGE.left;
+  if (logoPath) {
+    try {
+      doc.image(logoPath, PAGE.left, 26, { width: 40, height: 40 });
+    } catch {
+      /* text-only fallback */
+    }
+  }
+  doc
+    .fillColor("#F4E9D8")
+    .fontSize(22)
+    .text("House In Hand", textX, 28, { lineBreak: false });
+  doc
+    .fontSize(10)
+    .fillColor("#CFE7E7")
+    .text(subtitle, textX, 56, { lineBreak: false });
+}
 
 function formatMoney(amount: number, currency = "NGN") {
   try {
@@ -112,14 +148,7 @@ export async function generateReceiptPdf(
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
-    // Header
-    doc.rect(0, 0, doc.page.width, 96).fill(COLORS.navy);
-    doc.rect(0, 96, doc.page.width, 4).fill(COLORS.teal);
-    doc.fillColor("#F4E9D8").fontSize(24).text("House In Hand", PAGE.left, 32);
-    doc
-      .fontSize(10)
-      .fillColor("#CFE7E7")
-      .text("Official payment receipt", PAGE.left, 62);
+    drawBrandHeader(doc, "Official payment receipt");
 
     doc
       .fillColor(COLORS.white)
@@ -377,11 +406,9 @@ export async function generateAgreementPdf(input: {
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
-    doc.rect(0, 0, doc.page.width, 72).fill("#0B1F3A");
-    doc.fillColor("#F4E9D8").fontSize(20).text("House In Hand", 48, 24);
-    doc.fontSize(10).fillColor("#CFE7E7").text("Tenancy agreement", 48, 50);
+    drawBrandHeader(doc, "Tenancy agreement", 80);
 
-    doc.fillColor("#0B1F3A").fontSize(16).text(input.title, 48, 92);
+    doc.fillColor("#0B1F3A").fontSize(16).text(input.title, 48, 100);
     doc
       .fontSize(10)
       .fillColor("#5A6A7D")

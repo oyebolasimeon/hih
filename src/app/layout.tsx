@@ -21,8 +21,11 @@ export const metadata: Metadata = {
   keywords:
     "House In Hand, property rental Nigeria, student hostels, landlords, estate management, rent payments, verified housing",
   icons: {
-    icon: [{ url: "/favicon.png", type: "image/png" }],
-    apple: "/favicon.png",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.png", type: "image/png", sizes: "32x32" },
+    ],
+    apple: "/apple-touch-icon.png",
   },
 };
 
