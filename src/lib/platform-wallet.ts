@@ -113,13 +113,24 @@ export async function settleAgreementFeePayment(
   if (payment.purpose !== "agreement_fee") {
     return payment;
   }
-  if (payment.platformProfileId || payment.landlordWalletTxId) {
-    return payment;
-  }
 
   const lease = payment.leaseId
     ? await Lease.findById(payment.leaseId)
     : null;
+
+  // Idempotent: if wallet credit already ran, still ensure the lease is unlocked for signing.
+  if (payment.platformProfileId || payment.landlordWalletTxId) {
+    if (lease && !lease.agreementFeePaidAt) {
+      await Lease.findByIdAndUpdate(lease._id, {
+        $set: {
+          agreementFeePaidAt: payment.paidAt || new Date(),
+          agreementFeePaymentId: payment._id,
+        },
+      });
+    }
+    return payment;
+  }
+
   if (!lease) return payment;
 
   const agreementAmount =

@@ -5,6 +5,7 @@ import { assertUser } from "@/lib/api-auth";
 import { connectDB } from "@/lib/db";
 import { actorFromUser, writeAudit } from "@/lib/audit";
 import { notifyUser } from "@/lib/profile-context";
+import { ensureAgreementFeeMarkedPaid } from "@/lib/agreement-fee";
 import { finalizeSignedAgreement } from "@/lib/agreement-document";
 import { Lease } from "@/models/Lease";
 import { Listing } from "@/models/Listing";
@@ -37,7 +38,7 @@ export async function POST(req: Request, ctx: RouteCtx) {
   }
 
   await connectDB();
-  const lease = await Lease.findById(id);
+  let lease = await Lease.findById(id);
   if (!lease) {
     return NextResponse.json({ error: "Agreement not found." }, { status: 404 });
   }
@@ -45,6 +46,24 @@ export async function POST(req: Request, ctx: RouteCtx) {
     return NextResponse.json(
       { error: "This agreement is not awaiting signatures." },
       { status: 409 }
+    );
+  }
+
+  // Heal missed paid flags so signing unlocks right after a successful fee payment.
+  lease = (await ensureAgreementFeeMarkedPaid(lease._id)) || lease;
+
+  const feeRequired = (lease.agreementFeeAmount || 0) > 0;
+  if (!feeRequired && !lease.agreementFeePaidAt) {
+    lease.agreementFeePaidAt = new Date();
+  }
+  if (feeRequired && !lease.agreementFeePaidAt) {
+    return NextResponse.json(
+      {
+        error:
+          "The agreement fee must be paid before either party can sign. After payment, tenant and landlord can each sign independently.",
+        code: "AGREEMENT_FEE_REQUIRED",
+      },
+      { status: 402 }
     );
   }
 
@@ -66,19 +85,6 @@ export async function POST(req: Request, ctx: RouteCtx) {
         { error: "Tenant has already signed." },
         { status: 409 }
       );
-    }
-    const feeRequired = (lease.agreementFeeAmount || 0) > 0;
-    if (feeRequired && !lease.agreementFeePaidAt) {
-      return NextResponse.json(
-        {
-          error: "Pay the agreement fee before signing as tenant.",
-          code: "AGREEMENT_FEE_REQUIRED",
-        },
-        { status: 402 }
-      );
-    }
-    if (!feeRequired && !lease.agreementFeePaidAt) {
-      lease.agreementFeePaidAt = new Date();
     }
     lease.tenantSignatureName = parsed.data.signatureName;
     lease.tenantSignedAt = new Date();

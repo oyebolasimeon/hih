@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { assertUser } from "@/lib/api-auth";
 import { connectDB } from "@/lib/db";
+import { ensureAgreementFeeMarkedPaid } from "@/lib/agreement-fee";
 import { Lease } from "@/models/Lease";
 import { Listing } from "@/models/Listing";
 import { Profile } from "@/models/Profile";
@@ -21,6 +22,12 @@ function serializeLease(
       : isLandlord
         ? "landlord"
         : null;
+
+  const feeAmount = Number(l.agreementFeeAmount ?? 0);
+  const feePaid = feeAmount <= 0 || Boolean(l.agreementFeePaidAt);
+  const awaitingSignatures = ["draft", "pending_signature"].includes(
+    String(l.status)
+  );
 
   return {
     id: String(l._id),
@@ -44,18 +51,23 @@ function serializeLease(
     legalProvider: l.legalProvider || "hih",
     legalCompanyName: l.legalCompanyName || "",
     agreementFeePercent: l.agreementFeePercent ?? 10,
-    agreementFeeAmount: l.agreementFeeAmount ?? 0,
+    agreementFeeAmount: feeAmount,
     agreementFeePaidAt: l.agreementFeePaidAt || null,
     documentNumber: l.documentNumber || null,
     viewerRole,
+    feePaid,
+    canPayAgreementFee:
+      isTenant && !feePaid && feeAmount > 0 && awaitingSignatures,
     canSignAsTenant:
       isTenant &&
       !l.tenantSignedAt &&
-      ["draft", "pending_signature"].includes(String(l.status)),
+      feePaid &&
+      awaitingSignatures,
     canSignAsLandlord:
       isLandlord &&
       !l.landlordSignedAt &&
-      ["draft", "pending_signature"].includes(String(l.status)),
+      feePaid &&
+      awaitingSignatures,
     createdAt: l.createdAt,
     updatedAt: l.updatedAt,
     listing: listing
@@ -88,14 +100,27 @@ export async function GET() {
     .limit(100)
     .lean();
 
-  const listingIds = [...new Set(rows.map((r) => String(r.listingId)))];
+  // Heal any successful fee payments that never flipped the lease flag.
+  await Promise.all(
+    rows
+      .filter((r) => (r.agreementFeeAmount || 0) > 0 && !r.agreementFeePaidAt)
+      .map((r) => ensureAgreementFeeMarkedPaid(r._id))
+  );
+
+  const refreshed = await Lease.find({
+    _id: { $in: rows.map((r) => r._id) },
+  })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  const listingIds = [...new Set(refreshed.map((r) => String(r.listingId)))];
   const listings = await Listing.find({ _id: { $in: listingIds } })
     .select("title address")
     .lean();
   const listingMap = new Map(listings.map((l) => [String(l._id), l]));
 
   return NextResponse.json({
-    agreements: rows.map((l) =>
+    agreements: refreshed.map((l) =>
       serializeLease(
         l as unknown as Record<string, unknown>,
         listingMap.get(String(l.listingId)) as unknown as Record<

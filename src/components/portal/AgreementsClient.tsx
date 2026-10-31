@@ -27,6 +27,8 @@ type Agreement = {
   documentUrl: string | null;
   documentNumber: string | null;
   viewerRole: "tenant" | "landlord" | "both" | null;
+  feePaid?: boolean;
+  canPayAgreementFee?: boolean;
   canSignAsTenant: boolean;
   canSignAsLandlord: boolean;
   listing: { id: string; title: string; city?: string; state?: string } | null;
@@ -78,7 +80,9 @@ export default function AgreementsClient() {
           setError(data.error || "Could not verify agreement fee.");
           return;
         }
-        setMessage("Agreement fee paid. You can now sign as tenant.");
+        setMessage(
+          "Agreement fee paid. Tenant and landlord can each sign independently now."
+        );
         await load();
       })();
     }
@@ -94,6 +98,13 @@ export default function AgreementsClient() {
     const data = await res.json();
     setPayingFeeId("");
     if (!res.ok) {
+      if (data.alreadyPaid || data.code === "AGREEMENT_FEE_ALREADY_PAID") {
+        setMessage(
+          "Agreement fee is already paid. You can sign independently now."
+        );
+        await load();
+        return;
+      }
       setError(data.error || "Could not start agreement fee payment.");
       return;
     }
@@ -131,8 +142,8 @@ export default function AgreementsClient() {
       data.agreement?.status === "active"
         ? "Both parties signed — lease is active. Signed PDF emailed to both parties."
         : role === "landlord"
-          ? "Your signature is recorded. Waiting for the tenant to pay the fee (if required) and sign."
-          : "Your signature is recorded. Waiting for the landlord to sign."
+          ? "Your signature is recorded. Waiting for the tenant to sign (they can sign independently)."
+          : "Your signature is recorded. Waiting for the landlord to sign (they can sign independently)."
     );
     await load();
   }
@@ -161,7 +172,9 @@ export default function AgreementsClient() {
             const isLandlordViewer =
               a.viewerRole === "landlord" || a.viewerRole === "both";
             const feeRequired = (a.agreementFeeAmount || 0) > 0;
-            const feePaid = Boolean(a.agreementFeePaidAt) || !feeRequired;
+            const feePaid =
+              a.feePaid ?? (Boolean(a.agreementFeePaidAt) || !feeRequired);
+            const canPay = a.canPayAgreementFee ?? (isTenantViewer && !feePaid);
             const awaitingSignatures =
               a.status === "draft" || a.status === "pending_signature";
 
@@ -197,7 +210,7 @@ export default function AgreementsClient() {
 
                 {isTenantViewer ? (
                   <div className="rounded-lg border border-border/60 bg-surface/40 p-3 text-sm space-y-2">
-                    <p className="font-medium">Agreement fee (tenant pays first)</p>
+                    <p className="font-medium">Agreement / legal fee</p>
                     <p className="text-muted text-xs">
                       {a.agreementFeePercent}% of rent ={" "}
                       {formatMoney(a.agreementFeeAmount, a.currency)}
@@ -208,10 +221,10 @@ export default function AgreementsClient() {
                     {feePaid ? (
                       <p className="text-brand-dark text-xs font-medium">
                         {a.agreementFeePaidAt
-                          ? `Paid on ${new Date(a.agreementFeePaidAt).toLocaleString()}`
-                          : "No fee due for this agreement."}
+                          ? `Paid on ${new Date(a.agreementFeePaidAt).toLocaleString()} — signing unlocked for both parties`
+                          : "No fee due — both parties can sign independently."}
                       </p>
-                    ) : (
+                    ) : canPay ? (
                       <button
                         type="button"
                         onClick={() => void payFee(a.id)}
@@ -222,17 +235,21 @@ export default function AgreementsClient() {
                           ? "Redirecting…"
                           : `Pay ${formatMoney(a.agreementFeeAmount, a.currency)}`}
                       </button>
+                    ) : (
+                      <p className="text-xs text-muted">
+                        Fee payment is not available for this agreement.
+                      </p>
                     )}
                   </div>
                 ) : (
                   <div className="rounded-lg border border-border/60 bg-surface/40 p-3 text-sm space-y-1">
-                    <p className="font-medium">Agreement fee</p>
+                    <p className="font-medium">Agreement / legal fee</p>
                     <p className="text-xs text-muted">
                       {formatMoney(a.agreementFeeAmount, a.currency)} (
                       {a.agreementFeePercent}% of rent)
                       {feePaid
-                        ? " — paid by tenant"
-                        : " — waiting for tenant payment"}
+                        ? " — paid. You and the tenant can each sign independently."
+                        : " — waiting for tenant payment before either party can sign"}
                     </p>
                   </div>
                 )}
@@ -245,13 +262,15 @@ export default function AgreementsClient() {
 
                 {awaitingSignatures ? (
                   <p className="text-xs text-muted">
-                    {!a.tenantSignedAt && !a.landlordSignedAt
-                      ? "Either party can sign once the agreement fee is settled. Both signatures are required to activate the lease."
-                      : a.tenantSignedAt && !a.landlordSignedAt
-                        ? "Tenant has signed. Waiting for landlord signature."
-                        : !a.tenantSignedAt && a.landlordSignedAt
-                          ? "Landlord has signed. Waiting for tenant to pay the fee (if required) and sign."
-                          : null}
+                    {!feePaid
+                      ? "Pay the agreement fee first. After that, tenant and landlord can each sign on their own — no waiting on the other party to go first."
+                      : !a.tenantSignedAt && !a.landlordSignedAt
+                        ? "Fee settled. Either party can sign now; both signatures activate the lease."
+                        : a.tenantSignedAt && !a.landlordSignedAt
+                          ? "Tenant has signed. Waiting for landlord signature."
+                          : !a.tenantSignedAt && a.landlordSignedAt
+                            ? "Landlord has signed. Waiting for tenant signature."
+                            : null}
                   </p>
                 ) : null}
 
@@ -268,15 +287,15 @@ export default function AgreementsClient() {
                         onSubmit={(e) => void sign(e, a.id, "tenant")}
                         className="space-y-2"
                       >
-                        {!feePaid ? (
-                          <p className="text-xs text-muted">
-                            Pay the agreement fee before signing.
-                          </p>
-                        ) : a.landlordSignedAt ? (
+                        {a.landlordSignedAt ? (
                           <p className="text-xs text-brand-dark">
                             Landlord already signed — add your signature to activate.
                           </p>
-                        ) : null}
+                        ) : (
+                          <p className="text-xs text-muted">
+                            You can sign now without waiting for the landlord.
+                          </p>
+                        )}
                         <input
                           className="app-input w-full text-sm"
                           placeholder="Full name"
@@ -287,11 +306,10 @@ export default function AgreementsClient() {
                               [`${a.id}-tenant`]: e.target.value,
                             })
                           }
-                          disabled={!feePaid}
                         />
                         <button
                           type="submit"
-                          disabled={busyKey === `${a.id}-tenant` || !feePaid}
+                          disabled={busyKey === `${a.id}-tenant`}
                           className="app-btn app-btn-primary text-xs disabled:opacity-50"
                         >
                           {busyKey === `${a.id}-tenant`
@@ -301,9 +319,13 @@ export default function AgreementsClient() {
                       </form>
                     ) : (
                       <p className="text-xs text-muted">
-                        {isLandlordViewer && !isTenantViewer
-                          ? "Waiting for tenant signature."
-                          : "Tenant signature pending."}
+                        {!feePaid && isTenantViewer
+                          ? "Pay the agreement fee to unlock your signature."
+                          : isLandlordViewer && !isTenantViewer
+                            ? feePaid
+                              ? "Waiting for tenant signature."
+                              : "Waiting for tenant to pay the fee, then they can sign."
+                            : "Tenant signature pending."}
                       </p>
                     )}
                   </div>
@@ -325,7 +347,7 @@ export default function AgreementsClient() {
                           </p>
                         ) : (
                           <p className="text-xs text-muted">
-                            You can sign before or after the tenant.
+                            You can sign now without waiting for the tenant.
                           </p>
                         )}
                         <input
@@ -351,9 +373,13 @@ export default function AgreementsClient() {
                       </form>
                     ) : (
                       <p className="text-xs text-muted">
-                        {isTenantViewer && !isLandlordViewer
-                          ? "Waiting for landlord signature."
-                          : "Landlord signature pending."}
+                        {!feePaid && isLandlordViewer
+                          ? "Waiting for the tenant to pay the agreement fee before you can sign."
+                          : isTenantViewer && !isLandlordViewer
+                            ? feePaid
+                              ? "Waiting for landlord signature."
+                              : "Landlord can sign after the fee is paid."
+                            : "Landlord signature pending."}
                       </p>
                     )}
                   </div>

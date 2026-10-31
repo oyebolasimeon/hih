@@ -122,7 +122,7 @@ export async function PATCH(req: Request, ctx: RouteCtx) {
       legalProvider === "hih"
         ? "Legal handling: House In Hand will prepare and manage the tenancy documents."
         : `Legal handling: ${listing.legalSettings?.companyName || "Landlord-appointed legal firm"}.`,
-      `Agreement fee (${agreementFeePercent}%): ${listing.price.currency} ${agreementFeeAmount.toLocaleString()} — payable by tenant before signing.`,
+      `Agreement fee (${agreementFeePercent}%): ${listing.price.currency} ${agreementFeeAmount.toLocaleString()} — payable by tenant once. After payment, tenant and landlord may each sign independently.`,
       "",
       "Both parties agree to the House In Hand platform terms and applicable Nigerian tenancy laws.",
       "Signatures below confirm acceptance of these terms.",

@@ -91,7 +91,7 @@ export async function markPaymentSuccessful(
       type: isAgreement ? "agreement.fee_paid" : "payment.successful",
       title: isAgreement ? "Agreement fee paid" : "Payment successful",
       body: isAgreement
-        ? `Your agreement fee of ${payment.currency} ${payment.amount.toLocaleString()} was received. You can now sign the agreement.`
+        ? `Your agreement fee of ${payment.currency} ${payment.amount.toLocaleString()} was received. You and the landlord can each sign the agreement independently now.`
         : `Your payment of ${payment.currency} ${payment.amount.toLocaleString()} was successful.`,
       link: payment.receiptUrl || "/portal/payments",
       meta: {

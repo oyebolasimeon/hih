@@ -4,6 +4,7 @@ import { assertUser } from "@/lib/api-auth";
 import { connectDB } from "@/lib/db";
 import { actorFromUser, writeAudit } from "@/lib/audit";
 import {
+  AgreementFeeAlreadyPaidError,
   initializeAgreementFeePayment,
   resolveAgreementFeeEmail,
 } from "@/lib/agreement-fee";
@@ -60,6 +61,16 @@ export async function POST(req: Request, ctx: RouteCtx) {
       mock: "mock" in result.init ? result.init.mock : false,
     });
   } catch (err) {
+    if (err instanceof AgreementFeeAlreadyPaidError) {
+      return NextResponse.json(
+        {
+          error: err.message,
+          code: err.code,
+          alreadyPaid: true,
+        },
+        { status: 409 }
+      );
+    }
     return NextResponse.json(
       {
         error:
