@@ -1,10 +1,61 @@
 import nodemailer, { type Transporter } from "nodemailer";
+import { Resend } from "resend";
 
 type SmtpCandidate = {
   label: string;
   transport: () => Transporter;
   from?: string;
 };
+
+function resendApiKey() {
+  return (process.env.RESEND_API_KEY || "").trim();
+}
+
+function resendFrom() {
+  return (
+    process.env.RESEND_FROM ||
+    process.env.SMTP_FROM ||
+    process.env.GOOGLE_SMTP_FROM ||
+    "House In Hands <noreply@houseinhands.com>"
+  );
+}
+
+async function sendViaResend(options: {
+  to: string;
+  subject: string;
+  html: string;
+  text?: string;
+  attachments?: Array<{
+    filename: string;
+    content: Buffer;
+    contentType?: string;
+  }>;
+}) {
+  const apiKey = resendApiKey();
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY is not set.");
+  }
+
+  const resend = new Resend(apiKey);
+  const { data, error } = await resend.emails.send({
+    from: resendFrom(),
+    to: options.to,
+    subject: options.subject,
+    html: options.html,
+    text: options.text,
+    attachments: options.attachments?.map((file) => ({
+      filename: file.filename,
+      content: file.content,
+      contentType: file.contentType,
+    })),
+  });
+
+  if (error) {
+    throw new Error(error.message || "Resend send failed.");
+  }
+
+  return data;
+}
 
 function envFlag(name: string, defaultTrue = true): boolean {
   const v = process.env[name];
@@ -241,6 +292,10 @@ export async function verifySmtp(): Promise<{
   endpoint?: string;
   error?: string;
 }> {
+  if (resendApiKey()) {
+    return { ok: true, endpoint: "resend:api" };
+  }
+
   const candidates = buildCandidates();
   let lastError = "No SMTP candidates configured";
 
@@ -272,10 +327,28 @@ export async function sendMail(options: {
     contentType?: string;
   }>;
 }) {
+  // Prefer Resend when configured (no Gmail app password needed).
+  if (resendApiKey()) {
+    try {
+      await withTimeout(
+        sendViaResend(options),
+        20_000,
+        "Resend send"
+      );
+      return;
+    } catch (err) {
+      console.warn(
+        "Resend send failed; falling back to SMTP:",
+        err instanceof Error ? err.message : err
+      );
+      // Fall through to SMTP candidates
+    }
+  }
+
   const candidates = buildCandidates();
   if (!candidates.length) {
     throw new Error(
-      "Email is not configured. Set SMTP_* or GOOGLE_SMTP_USER/PASSWORD."
+      "Email is not configured. Set RESEND_API_KEY, or SMTP_*/GOOGLE_SMTP_* credentials."
     );
   }
 
@@ -321,5 +394,6 @@ export async function sendMail(options: {
 }
 
 export function smtpTransportMode(): string {
+  if (resendApiKey()) return "resend";
   return (process.env.SMTP_TRANSPORT || "smtp").toLowerCase();
 }
