@@ -27,7 +27,7 @@ const links: NavLink[] = [
   { href: "/admin/fraud", label: "Fraud reports", permission: "fraud:read" },
   { href: "/admin/withdrawals", label: "Withdrawals", permission: "users:read" },
   { href: "/admin/content", label: "Website & brand", permission: "content:read" },
-  { href: "/admin/emails", label: "Email templates", permission: "content:read" },
+  { href: "/admin/emails", label: "Emails & signature", permission: "content:read" },
   { href: "/admin/outreach", label: "Outreach emails", permission: "content:read" },
   { href: "/admin/audit", label: "Audit log", permission: "audit:read" },
   { href: "/admin/team", label: "Team & RBAC", permission: "admins:manage" },

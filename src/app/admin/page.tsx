@@ -29,6 +29,13 @@ const cards = [
     permission: "content:read" as const,
   },
   {
+    href: "/admin/emails",
+    title: "Emails & signature",
+    description:
+      "System email templates and downloadable House In Hands email signature images.",
+    permission: "content:read" as const,
+  },
+  {
     href: "/admin/fraud",
     title: "Fraud reports",
     description: "Triage safety and fraud reports from the community.",
