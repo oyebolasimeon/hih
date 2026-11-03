@@ -17,10 +17,10 @@ export default function Footer() {
             </p>
             <p className="mt-6 space-y-1 text-sm text-sand/45">
               <a
-                href="mailto:houseinhandsmail@gmail.com"
+                href="mailto:noreply@houseinhands.com"
                 className="block text-teal hover:text-teal-light transition-colors"
               >
-                houseinhandsmail@gmail.com
+                noreply@houseinhands.com
               </a>
               <a
                 href="https://www.houseinhands.com"

@@ -577,10 +577,10 @@ export default function AboutPage() {
             </div>
             <p className="mt-10 text-sm text-sand/50">
               <a
-                href="mailto:houseinhandsmail@gmail.com"
+                href="mailto:noreply@houseinhands.com"
                 className="text-teal hover:text-teal-light transition-colors"
               >
-                houseinhandsmail@gmail.com
+                noreply@houseinhands.com
               </a>
               {" · "}
               <a

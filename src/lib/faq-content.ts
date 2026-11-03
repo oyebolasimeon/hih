@@ -294,7 +294,7 @@ export const FAQ_SECTIONS: FaqSection[] = [
       },
       {
         q: "How do I report a problem or ask a question?",
-        a: "Email houseinhandsmail@gmail.com or call +234 701 507 9484. For active users, use the in-platform support or dispute channel where available.",
+        a: "Email noreply@houseinhands.com or call +234 701 507 9484. For active users, use the in-platform support or dispute channel where available.",
       },
       {
         q: "Where can I read the full terms and privacy information?",

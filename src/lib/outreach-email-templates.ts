@@ -56,7 +56,7 @@ export const OUTREACH_TEMPLATES: OutreachTemplate[] = [
 <p style="margin:0 0 16px;">Our promise is simple: <em>Property. In Your Hands.</em> — less opaque fees, fewer fragmented chats, more trust.</p>
 ${ctaButton("{{appUrl}}/register", "Create a free account")}
 <p style="margin:16px 0 0;font-size:14px;color:#5A6A7D;">Explore <a href="{{appUrl}}/about" style="color:#008585;">why House In Hands</a>, <a href="{{appUrl}}/pricing" style="color:#008585;">pricing</a> and <a href="{{appUrl}}/house-hunting" style="color:#008585;">house hunting</a> — or reply to this email and we’ll walk you through it.</p>
-<p style="margin:20px 0 0;">Warm regards,<br/>The House In Hands team<br/><a href="mailto:houseinhandsmail@gmail.com" style="color:#008585;">houseinhandsmail@gmail.com</a></p>
+<p style="margin:20px 0 0;">Warm regards,<br/>The House In Hands team<br/><a href="mailto:noreply@houseinhands.com" style="color:#008585;">noreply@houseinhands.com</a></p>
 `.trim(),
   },
   {
@@ -79,9 +79,9 @@ ${ctaButton("{{appUrl}}/register", "Create a free account")}
   <li style="margin-bottom:8px;"><strong>Customer success / support</strong> — help tenants and landlords move from enquiry to signed digital tenancy with clarity.</li>
 </ul>
 <p style="margin:0 0 16px;">If you’re creative, reliable and care about fixing broken property experiences in Nigeria, we’d love to hear how you work — portfolio, channels, rates or availability.</p>
-${ctaButton("mailto:houseinhandsmail@gmail.com?subject=Talent%20enquiry%20-%20House%20In%20Hands", "Reply with your profile")}
+${ctaButton("mailto:noreply@houseinhands.com?subject=Talent%20enquiry%20-%20House%20In%20Hands", "Reply with your profile")}
 <p style="margin:16px 0 0;font-size:14px;color:#5A6A7D;">Learn more at <a href="{{appUrl}}/about" style="color:#008585;">{{appUrl}}/about</a>. Or simply reply to this email.</p>
-<p style="margin:20px 0 0;">Looking forward,<br/>House In Hands Talent &amp; Growth<br/><a href="mailto:houseinhandsmail@gmail.com" style="color:#008585;">houseinhandsmail@gmail.com</a></p>
+<p style="margin:20px 0 0;">Looking forward,<br/>House In Hands Talent &amp; Growth<br/><a href="mailto:noreply@houseinhands.com" style="color:#008585;">noreply@houseinhands.com</a></p>
 `.trim(),
   },
   {
@@ -109,7 +109,7 @@ ${ctaButton("mailto:houseinhandsmail@gmail.com?subject=Talent%20enquiry%20-%20Ho
 <p style="margin:0 0 16px;">Urban housing demand, smartphone adoption and appetite for trusted digital payments create room for a category-defining Nigerian proptech brand — not another classifieds board.</p>
 <p style="margin:0 0 16px;">If this sits in your thesis (proptech, fintech-adjacent infrastructure, African consumer platforms), I’d welcome a short conversation — product walkthrough, traction snapshot and how we think about capital.</p>
 ${ctaButton("{{appUrl}}/about", "View House In Hands")}
-<p style="margin:16px 0 0;font-size:14px;color:#5A6A7D;">Reply to this email or write <a href="mailto:houseinhandsmail@gmail.com" style="color:#008585;">houseinhandsmail@gmail.com</a>. Happy to share a deck and data room materials on request.</p>
+<p style="margin:16px 0 0;font-size:14px;color:#5A6A7D;">Reply to this email or write <a href="mailto:noreply@houseinhands.com" style="color:#008585;">noreply@houseinhands.com</a>. Happy to share a deck and data room materials on request.</p>
 <p style="margin:20px 0 0;">Respectfully,<br/>House In Hands<br/><a href="{{appUrl}}" style="color:#008585;">{{appUrl}}</a></p>
 `.trim(),
   },

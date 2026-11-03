@@ -44,10 +44,10 @@ export default function Contact() {
           <div className="mt-10 space-y-2 text-sm text-navy/70">
             <p>
               <a
-                href="mailto:houseinhandsmail@gmail.com"
+                href="mailto:noreply@houseinhands.com"
                 className="text-teal-dark font-semibold hover:underline"
               >
-                houseinhandsmail@gmail.com
+                noreply@houseinhands.com
               </a>
             </p>
             <p>

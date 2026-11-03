@@ -241,10 +241,10 @@ export default function PrivacyPage() {
                 <li>
                   Requests should be sent to{" "}
                   <a
-                    href="mailto:houseinhandsmail@gmail.com"
+                    href="mailto:noreply@houseinhands.com"
                     className="font-semibold text-teal-dark hover:underline"
                   >
-                    houseinhandsmail@gmail.com
+                    noreply@houseinhands.com
                   </a>
                   . We may need to verify your identity before acting on a
                   request.
@@ -289,10 +289,10 @@ export default function PrivacyPage() {
               <p className="mt-4 text-muted">
                 Questions and privacy requests:{" "}
                 <a
-                  href="mailto:houseinhandsmail@gmail.com"
+                  href="mailto:noreply@houseinhands.com"
                   className="font-semibold text-teal-dark hover:underline"
                 >
-                  houseinhandsmail@gmail.com
+                  noreply@houseinhands.com
                 </a>{" "}
                 |{" "}
                 <a

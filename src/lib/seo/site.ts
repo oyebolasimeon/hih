@@ -45,7 +45,7 @@ export function getSiteUrl() {
 }
 
 export const SITE_CONTACT = {
-  email: "houseinhandsmail@gmail.com",
+  email: "noreply@houseinhands.com",
   phone: "+2347015079484",
   phoneDisplay: "+234 701 507 9484",
   areaServed: "Nigeria",

@@ -167,10 +167,10 @@ export default async function FaqPage() {
             </p>
             <div className="mt-6 flex flex-wrap gap-x-4 gap-y-2 text-sm text-sand/70">
               <a
-                href="mailto:houseinhandsmail@gmail.com"
+                href="mailto:noreply@houseinhands.com"
                 className="text-teal hover:text-teal-light transition-colors"
               >
-                houseinhandsmail@gmail.com
+                noreply@houseinhands.com
               </a>
               <span className="text-sand/30">·</span>
               <a

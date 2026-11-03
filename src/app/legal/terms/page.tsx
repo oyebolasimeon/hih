@@ -324,10 +324,10 @@ export default function TermsPage() {
               <p className="mt-4 text-muted">
                 House In Hands | Lagos, Nigeria |{" "}
                 <a
-                  href="mailto:houseinhandsmail@gmail.com"
+                  href="mailto:noreply@houseinhands.com"
                   className="font-semibold text-teal-dark hover:underline"
                 >
-                  houseinhandsmail@gmail.com
+                  noreply@houseinhands.com
                 </a>{" "}
                 |{" "}
                 <a

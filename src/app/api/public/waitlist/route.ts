@@ -98,7 +98,7 @@ export async function POST(req: Request) {
   const opsTo =
     process.env.WAITLIST_NOTIFY_EMAIL ||
     process.env.CONTACT_TO ||
-    "houseinhandsmail@gmail.com";
+    "noreply@houseinhands.com";
   await sendMail({
     to: opsTo,
     subject: `New waitlist signup · ${email}`,

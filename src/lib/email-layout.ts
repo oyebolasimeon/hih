@@ -25,7 +25,7 @@ export function emailBaseVars(extra: TemplateVars = {}): TemplateVars {
     portalUrl: `${appUrl}/portal`,
     adminUrl: `${appUrl}/admin`,
     year: new Date().getFullYear(),
-    supportEmail: "houseinhandsmail@gmail.com",
+    supportEmail: "noreply@houseinhands.com",
     ...extra,
   };
 }
