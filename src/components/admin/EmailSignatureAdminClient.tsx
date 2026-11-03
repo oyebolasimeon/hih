@@ -132,8 +132,8 @@ export default function EmailSignatureAdminClient() {
         <div>
           <p className="font-medium text-sm">Pitch deck (PDF)</p>
           <p className="text-xs text-muted mt-1">
-            9-slide widescreen deck aligned to the company profile — problem,
-            solution, product, mission and contact.
+            Comprehensive DNICE 2026 / NITDA–NACCIMA Deal Room deck with brand
+            imagery — problem, product, sector fit, readiness and partnership ask.
           </p>
         </div>
         <div className="flex flex-wrap gap-2 shrink-0">
