@@ -11,10 +11,13 @@ type Submission = {
   id: string;
   profileType: string;
   status: string;
+  provider?: string;
   requiresManualReview: boolean;
+  declaredName?: string;
   ninMasked?: string;
   bvnMasked?: string;
   selfieUrl?: string;
+  idDocumentUrl?: string;
   documents: { kind: string; url: string; filename?: string }[];
   checks: {
     type: string;
@@ -22,7 +25,10 @@ type Submission = {
     message?: string;
     confidence?: number;
     faceMatched?: boolean;
+    nameMatched?: boolean;
   }[];
+  aiRecommendation?: string | null;
+  aiConfidence?: number | null;
   failureReason?: string;
   userName: string;
   userEmail: string;
@@ -96,7 +102,7 @@ export default function AdminKycClient() {
               { value: "manual", label: "Needs manual review" },
               { value: "approved", label: "Approved" },
               { value: "rejected", label: "Rejected" },
-              { value: "failed", label: "Failed (Prembly)" },
+              { value: "failed", label: "Failed (clear mismatch)" },
               { value: "all", label: "All" },
             ]}
           />
@@ -121,7 +127,7 @@ export default function AdminKycClient() {
       ) : rows.length === 0 ? (
         <EmptyState
           title="No submissions"
-          description="Nothing in this filter. New Prembly KYC submissions will appear here."
+          description="Nothing in this filter. New identity submissions will appear here for AI-assisted or manual review."
         />
       ) : (
         <ul className="space-y-3">
@@ -137,9 +143,17 @@ export default function AdminKycClient() {
                   </p>
                   <p className="text-xs text-muted mt-1">
                     {new Date(s.createdAt).toLocaleString()}
+                    {s.declaredName ? ` · Declared: ${s.declaredName}` : ""}
                     {s.ninMasked ? ` · NIN ${s.ninMasked}` : ""}
-                    {s.bvnMasked ? ` · BVN ${s.bvnMasked}` : ""}
                   </p>
+                  {s.aiRecommendation ? (
+                    <p className="text-xs text-muted mt-1">
+                      AI: {s.aiRecommendation}
+                      {s.aiConfidence != null
+                        ? ` · ${(s.aiConfidence * 100).toFixed(0)}% confidence`
+                        : ""}
+                    </p>
+                  ) : null}
                 </div>
                 {s.requiresManualReview ? (
                   <span className="text-[11px] uppercase tracking-wider font-semibold text-brand">
@@ -148,33 +162,56 @@ export default function AdminKycClient() {
                 ) : null}
               </div>
 
-              {s.selfieUrl ? (
-                <div className="flex gap-3 items-start">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={s.selfieUrl}
-                    alt="Selfie"
-                    className="h-20 w-20 rounded object-cover border border-border"
-                  />
-                  <ul className="text-xs text-muted space-y-1 flex-1">
-                    {s.checks.map((c, i) => (
-                      <li key={`${c.type}-${i}`}>
-                        <span className="text-foreground font-medium">{c.type}</span>:{" "}
-                        {c.status}
-                        {c.faceMatched != null
-                          ? c.faceMatched
-                            ? " · face match"
-                            : " · face mismatch"
-                          : ""}
-                        {c.confidence != null
-                          ? ` · ${(c.confidence * 100).toFixed(0)}%`
-                          : ""}
-                        {c.message ? ` — ${c.message}` : ""}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
+              <div className="flex flex-wrap gap-3 items-start">
+                {s.selfieUrl ? (
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-muted mb-1">
+                      Selfie
+                    </p>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={s.selfieUrl}
+                      alt="Selfie"
+                      className="h-24 w-24 rounded object-cover border border-border"
+                    />
+                  </div>
+                ) : null}
+                {s.idDocumentUrl ? (
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-muted mb-1">
+                      ID document
+                    </p>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={s.idDocumentUrl}
+                      alt="ID document"
+                      className="h-24 w-36 rounded object-cover border border-border"
+                    />
+                  </div>
+                ) : null}
+                <ul className="text-xs text-muted space-y-1 flex-1 min-w-[200px]">
+                  {s.checks.map((c, i) => (
+                    <li key={`${c.type}-${i}`}>
+                      <span className="text-foreground font-medium">{c.type}</span>:{" "}
+                      {c.status}
+                      {c.faceMatched != null
+                        ? c.faceMatched
+                          ? " · face match"
+                          : " · face mismatch"
+                        : ""}
+                      {c.nameMatched != null
+                        ? c.nameMatched
+                          ? " · name match"
+                          : " · name mismatch"
+                        : ""}
+                      {c.confidence != null
+                        ? ` · ${(c.confidence * 100).toFixed(0)}%`
+                        : ""}
+                      {c.message ? ` — ${c.message}` : ""}
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
               {s.documents?.length ? (
                 <div className="text-xs space-y-1">
@@ -184,7 +221,7 @@ export default function AdminKycClient() {
                       href={d.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-brand-dark underline"
+                      className="text-brand-dark underline mr-3"
                     >
                       {d.kind}
                       {d.filename ? `: ${d.filename}` : ""}

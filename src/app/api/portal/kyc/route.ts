@@ -5,21 +5,22 @@ import { connectDB } from "@/lib/db";
 import { Profile } from "@/models/Profile";
 import { KycSubmission, type IKycCheck } from "@/models/KycSubmission";
 import { requirementsForProfile } from "@/lib/kyc-requirements";
-import {
-  maskId,
-  verifyCacBasic,
-  verifyNinWithFace,
-} from "@/lib/prembly";
+import { verifyIdentityWithAi } from "@/lib/kyc-ai-verify";
+import { maskId } from "@/lib/kyc-id";
 import { actorFromUser, writeAudit } from "@/lib/audit";
 
 const submitSchema = z.object({
   profileId: z.string().min(1),
+  declaredName: z.string().trim().min(2).max(120),
   nin: z
     .string()
     .trim()
     .regex(/^\d{11}$/, "NIN must be 11 digits"),
   selfieUrl: z.string().url(),
   selfiePublicId: z.string().optional(),
+  idDocumentUrl: z.string().url(),
+  idDocumentPublicId: z.string().optional(),
+  idDocumentFilename: z.string().optional(),
   cac: z
     .object({
       rcNumber: z.string().trim().min(2).max(32),
@@ -54,12 +55,17 @@ export async function GET() {
       profileId: String(s.profileId),
       profileType: s.profileType,
       status: s.status,
+      provider: s.provider,
       requiresManualReview: s.requiresManualReview,
+      declaredName: s.declaredName,
       ninMasked: s.ninMasked,
       bvnMasked: s.bvnMasked,
       selfieUrl: s.selfieUrl,
+      idDocumentUrl: s.idDocumentUrl,
       checks: s.checks,
       documents: s.documents,
+      aiRecommendation: s.aiRecommendation,
+      aiConfidence: s.aiConfidence,
       failureReason: s.failureReason,
       reviewerNotes: s.reviewerNotes,
       createdAt: s.createdAt,
@@ -130,90 +136,114 @@ export async function POST(req: Request) {
 
   const checks: IKycCheck[] = [];
   let requiresManualReview = false;
-  let verifiedName = "";
+  let verifiedName = parsed.data.declaredName.trim();
+  let aiRecommendation: "approve" | "manual_review" | "reject" | null = null;
+  let aiConfidence: number | null = null;
 
-  // 1) NIN + face (all)
-  try {
-    const ninResult = await verifyNinWithFace({
-      nin: parsed.data.nin,
-      imageUrlOrBase64: parsed.data.selfieUrl,
-    });
+  // 1) In-house AI: selfie + ID image + declared name (+ NIN recorded masked)
+  const aiResult = await verifyIdentityWithAi({
+    declaredName: parsed.data.declaredName,
+    nin: parsed.data.nin,
+    selfieUrl: parsed.data.selfieUrl,
+    idImageUrl: parsed.data.idDocumentUrl,
+  });
+
+  aiRecommendation = aiResult.recommendation;
+  aiConfidence = aiResult.confidence;
+
+  if (aiResult.recommendation === "approve") {
     checks.push({
       type: "nin_face",
-      status: ninResult.ok ? "passed" : "failed",
-      provider: "prembly",
-      reference: ninResult.reference,
-      message: ninResult.message,
-      confidence: ninResult.confidence,
-      faceMatched: ninResult.faceMatched,
-      identity: ninResult.identity,
-      raw: ninResult.raw,
+      status: "passed",
+      provider: "hih",
+      reference: aiResult.reference,
+      message: aiResult.message,
+      confidence: aiResult.confidence,
+      faceMatched: aiResult.faceMatched,
+      nameMatched: aiResult.nameMatched,
+      identity: aiResult.identity,
+      raw: aiResult.raw,
       checkedAt: new Date(),
     });
-    if (ninResult.identity) {
-      verifiedName = [
-        ninResult.identity.firstName,
-        ninResult.identity.middleName,
-        ninResult.identity.surname,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .trim();
-    }
-  } catch (err) {
+    const idName = String(aiResult.identity.idNameOnDocument || "").trim();
+    if (idName) verifiedName = idName;
+  } else if (aiResult.recommendation === "reject") {
     checks.push({
       type: "nin_face",
       status: "failed",
-      provider: "prembly",
-      message: err instanceof Error ? err.message : "NIN verification error",
+      provider: "hih",
+      reference: aiResult.reference,
+      message: aiResult.message,
+      confidence: aiResult.confidence,
+      faceMatched: aiResult.faceMatched,
+      nameMatched: aiResult.nameMatched,
+      identity: aiResult.identity,
+      raw: aiResult.raw,
       checkedAt: new Date(),
     });
+  } else {
+    // Not confident enough → admin must decide
+    checks.push({
+      type: "nin_face",
+      status: "pending",
+      provider: "hih",
+      reference: aiResult.reference,
+      message: aiResult.message,
+      confidence: aiResult.confidence,
+      faceMatched: aiResult.faceMatched,
+      nameMatched: aiResult.nameMatched,
+      identity: aiResult.identity,
+      raw: aiResult.raw,
+      checkedAt: new Date(),
+    });
+    requiresManualReview = true;
   }
 
-  // 2) CAC (estate manager)
+  const documents: Array<{
+    kind: string;
+    url: string;
+    filename?: string;
+    publicId?: string;
+  }> = [
+    {
+      kind: "government_id",
+      url: parsed.data.idDocumentUrl,
+      filename: parsed.data.idDocumentFilename,
+      publicId: parsed.data.idDocumentPublicId,
+    },
+  ];
+
+  // 2) CAC — collected for admin review (no Prembly/YouVerify call)
   if (parsed.data.cac) {
-    try {
-      const cacResult = await verifyCacBasic({
+    checks.push({
+      type: "cac",
+      status: "pending",
+      provider: "manual",
+      message: "CAC / RC details awaiting admin review",
+      identity: {
         rcNumber: parsed.data.cac.rcNumber,
         companyType: parsed.data.cac.companyType,
-        companyName: parsed.data.cac.companyName,
-      });
-      checks.push({
-        type: "cac",
-        status: cacResult.ok ? "passed" : "failed",
-        provider: "prembly",
-        reference: cacResult.reference,
-        message: cacResult.message,
-        identity: cacResult.identity,
-        raw: cacResult.raw,
-        checkedAt: new Date(),
-      });
-      if (cacResult.ok && profile.estateManagerFields) {
-        profile.estateManagerFields.cacNumber = parsed.data.cac.rcNumber;
-        if (parsed.data.cac.companyName) {
-          profile.estateManagerFields.businessName = parsed.data.cac.companyName;
-        }
-      } else if (cacResult.ok) {
-        profile.estateManagerFields = {
-          businessName: parsed.data.cac.companyName || "",
-          cacNumber: parsed.data.cac.rcNumber,
-          businessAddress: "",
-          authorizedRepName: verifiedName || user.name || "",
-        };
+        companyName: parsed.data.cac.companyName || "",
+      },
+      checkedAt: new Date(),
+    });
+    requiresManualReview = true;
+    if (profile.estateManagerFields) {
+      profile.estateManagerFields.cacNumber = parsed.data.cac.rcNumber;
+      if (parsed.data.cac.companyName) {
+        profile.estateManagerFields.businessName = parsed.data.cac.companyName;
       }
-    } catch (err) {
-      checks.push({
-        type: "cac",
-        status: "failed",
-        provider: "prembly",
-        message: err instanceof Error ? err.message : "CAC verification error",
-        checkedAt: new Date(),
-      });
+    } else {
+      profile.estateManagerFields = {
+        businessName: parsed.data.cac.companyName || "",
+        cacNumber: parsed.data.cac.rcNumber,
+        businessAddress: "",
+        authorizedRepName: verifiedName || user.name || "",
+      };
     }
   }
 
-  // 3) Student ID — always manual
-  const documents = [];
+  // 3) Student ID — always admin
   if (parsed.data.student) {
     documents.push({
       kind: "student_id",
@@ -229,27 +259,18 @@ export async function POST(req: Request) {
       type: "student_id",
       status: "pending",
       provider: "manual",
-      message: "Awaiting Ops / KYC review of student ID",
+      message: "Awaiting admin review of student ID",
       checkedAt: new Date(),
     });
     requiresManualReview = true;
   }
 
-  const requiredPrembly = reqs.filter((r) => r.provider === "prembly" && r.required);
-  const premblyFailed = requiredPrembly.some((r) => {
-    const check = checks.find((c) => c.type === r.type);
-    return !check || check.status !== "passed";
-  });
-
   let status: "pending" | "approved" | "failed" = "pending";
   let failureReason: string | undefined;
 
-  if (premblyFailed) {
+  if (aiResult.recommendation === "reject") {
     status = "failed";
-    failureReason = checks
-      .filter((c) => c.status === "failed")
-      .map((c) => `${c.type}: ${c.message || "failed"}`)
-      .join("; ");
+    failureReason = aiResult.message;
     profile.status = "rejected";
   } else if (requiresManualReview) {
     status = "pending";
@@ -273,14 +294,19 @@ export async function POST(req: Request) {
     userId: user.id,
     profileType: profile.type,
     status,
-    provider: "prembly",
+    provider: "hih",
+    declaredName: parsed.data.declaredName.trim(),
     ninMasked: profile.ninMasked,
     bvnMasked: profile.bvnMasked,
     selfieUrl: parsed.data.selfieUrl,
     selfiePublicId: parsed.data.selfiePublicId,
+    idDocumentUrl: parsed.data.idDocumentUrl,
+    idDocumentPublicId: parsed.data.idDocumentPublicId,
     documents,
     checks,
     requiresManualReview,
+    aiRecommendation,
+    aiConfidence,
     failureReason,
   });
 
@@ -289,7 +315,9 @@ export async function POST(req: Request) {
 
   await writeAudit({
     action: "kyc.submit",
-    summary: `KYC ${status} for ${profile.type} via Prembly`,
+    summary: `KYC ${status} for ${profile.type} via HIH AI${
+      requiresManualReview ? " (manual review)" : ""
+    }`,
     actor: actorFromUser(user),
     entityType: "kyc_submission",
     entityId: String(submission._id),
@@ -297,6 +325,8 @@ export async function POST(req: Request) {
       profileId: String(profile._id),
       profileType: profile.type,
       requiresManualReview,
+      aiRecommendation,
+      aiConfidence,
       checks: checks.map((c) => ({ type: c.type, status: c.status })),
     },
   });
@@ -307,6 +337,8 @@ export async function POST(req: Request) {
         id: String(submission._id),
         status: submission.status,
         requiresManualReview: submission.requiresManualReview,
+        aiRecommendation: submission.aiRecommendation,
+        aiConfidence: submission.aiConfidence,
         checks: submission.checks,
         failureReason: submission.failureReason,
         profileStatus: profile.status,

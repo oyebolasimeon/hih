@@ -6,6 +6,7 @@ import { KycSubmission, type IKycCheck } from "@/models/KycSubmission";
 import { Profile } from "@/models/Profile";
 import { User } from "@/models/User";
 import { actorFromUser, writeAudit } from "@/lib/audit";
+import { notifyUser } from "@/lib/profile-context";
 
 export async function GET(req: Request) {
   const { response } = await assertAdmin("kyc:read");
@@ -40,12 +41,17 @@ export async function GET(req: Request) {
         profileId: String(s.profileId),
         profileType: s.profileType,
         status: s.status,
+        provider: s.provider,
         requiresManualReview: s.requiresManualReview,
+        declaredName: s.declaredName || "",
         ninMasked: s.ninMasked,
         bvnMasked: s.bvnMasked,
         selfieUrl: s.selfieUrl,
+        idDocumentUrl: s.idDocumentUrl,
         documents: s.documents,
         checks: s.checks,
+        aiRecommendation: s.aiRecommendation,
+        aiConfidence: s.aiConfidence,
         failureReason: s.failureReason,
         reviewerNotes: s.reviewerNotes,
         userName: u?.name || "",
@@ -105,17 +111,26 @@ export async function PATCH(req: Request) {
       message: c.message,
       confidence: c.confidence,
       faceMatched: c.faceMatched,
+      nameMatched: c.nameMatched,
       identity: c.identity,
       raw: c.raw,
       checkedAt: c.checkedAt,
     };
-    if (c.type === "student_id" || c.provider === "manual") {
+
+    const needsDecision =
+      c.status === "pending" ||
+      c.provider === "manual" ||
+      c.type === "student_id" ||
+      c.type === "cac" ||
+      c.type === "manual";
+
+    if (needsDecision) {
       return {
         ...plain,
         status: approved ? ("passed" as const) : ("failed" as const),
         message: approved
-          ? "Approved by Ops / KYC reviewer"
-          : parsed.data.notes || "Rejected by Ops / KYC reviewer",
+          ? "Approved by admin KYC review"
+          : parsed.data.notes || "Rejected by admin KYC review",
         checkedAt: new Date(),
       };
     }
@@ -125,12 +140,34 @@ export async function PATCH(req: Request) {
   if (approved) {
     profile.status = "verified";
     profile.verifiedAt = new Date();
+    if (submission.declaredName && !profile.kycVerifiedName) {
+      profile.kycVerifiedName = submission.declaredName;
+    }
   } else {
     profile.status = "rejected";
   }
 
   await submission.save();
   await profile.save();
+
+  const owner = await User.findById(submission.userId).select("email").lean();
+  await notifyUser({
+    userId: String(submission.userId),
+    type: approved ? "kyc.approved" : "kyc.rejected",
+    title: approved ? "Profile verified" : "Verification update",
+    body: approved
+      ? `Your ${submission.profileType.replace("_", " ")} profile has been verified.`
+      : `Your ${submission.profileType.replace("_", " ")} verification was not approved.${
+          parsed.data.notes ? ` Note: ${parsed.data.notes}` : ""
+        }`,
+    link: "/portal/kyc",
+    email: owner?.email
+      ? {
+          to: owner.email,
+          subject: approved ? "Profile verified" : "Verification update",
+        }
+      : undefined,
+  });
 
   await writeAudit({
     action: approved ? "kyc.approve" : "kyc.reject",
@@ -139,6 +176,7 @@ export async function PATCH(req: Request) {
     entityType: "kyc_submission",
     entityId: String(submission._id),
     metadata: { notes: parsed.data.notes || "" },
+    request: req,
   });
 
   return NextResponse.json({

@@ -217,7 +217,7 @@ export async function PATCH(req: Request) {
       profileId: profile._id,
       profileType: profile.type,
       status: "approved",
-      provider: "prembly",
+      provider: "manual",
       documents: [],
       requiresManualReview: false,
       reviewerNotes: notes || "Manually verified by admin (no documents required)",

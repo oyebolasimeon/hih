@@ -4,17 +4,18 @@ import type { KycCheckType } from "@/models/KycSubmission";
 export type KycRequirement = {
   type: KycCheckType;
   label: string;
-  provider: "prembly" | "manual";
+  /** hih = in-house AI + admin fallback; manual = always Ops */
+  provider: "hih" | "manual";
   required: boolean;
 };
 
-/** NIN+face all; CAC estate managers; student ID manual */
+/** NIN/ID + selfie + name for all; CAC details for estate managers; student ID manual */
 export function requirementsForProfile(type: ProfileType): KycRequirement[] {
   const base: KycRequirement[] = [
     {
       type: "nin_face",
-      label: "NIN + selfie",
-      provider: "prembly",
+      label: "Legal name + NIN ID photo + selfie",
+      provider: "hih",
       required: true,
     },
   ];
@@ -22,8 +23,8 @@ export function requirementsForProfile(type: ProfileType): KycRequirement[] {
   if (type === "estate_manager") {
     base.push({
       type: "cac",
-      label: "CAC / RC number",
-      provider: "prembly",
+      label: "CAC / RC details (admin review)",
+      provider: "manual",
       required: true,
     });
   }
@@ -31,7 +32,7 @@ export function requirementsForProfile(type: ProfileType): KycRequirement[] {
   if (type === "student") {
     base.push({
       type: "student_id",
-      label: "Student ID upload (manual review)",
+      label: "Student ID upload (admin review)",
       provider: "manual",
       required: true,
     });

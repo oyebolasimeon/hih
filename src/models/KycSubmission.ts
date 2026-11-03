@@ -17,6 +17,8 @@ export type KycCheckType =
 
 export type KycCheckStatus = "pending" | "passed" | "failed" | "skipped";
 
+export type KycProvider = "hih" | "manual" | "prembly";
+
 export interface IKycDocument {
   kind: string;
   url: string;
@@ -27,11 +29,12 @@ export interface IKycDocument {
 export interface IKycCheck {
   type: KycCheckType;
   status: KycCheckStatus;
-  provider: "prembly" | "manual";
+  provider: KycProvider;
   reference?: string;
   message?: string;
   confidence?: number;
   faceMatched?: boolean;
+  nameMatched?: boolean;
   identity?: Record<string, unknown>;
   raw?: unknown;
   checkedAt?: Date;
@@ -43,16 +46,22 @@ export interface IKycSubmission {
   userId: mongoose.Types.ObjectId;
   profileType: ProfileType;
   status: KycStatus;
-  provider: "prembly";
+  /** hih = in-house AI + admin; prembly kept for legacy rows */
+  provider: KycProvider;
+  declaredName?: string;
   /** Masked only — never store full NIN/BVN */
   ninMasked?: string;
   bvnMasked?: string;
   documents: IKycDocument[];
   selfieUrl?: string;
   selfiePublicId?: string;
+  idDocumentUrl?: string;
+  idDocumentPublicId?: string;
   checks: IKycCheck[];
-  /** True when Prembly auto-checks passed but student ID (or other) needs Ops */
+  /** True when AI is unsure or docs need Ops */
   requiresManualReview: boolean;
+  aiRecommendation?: "approve" | "manual_review" | "reject" | null;
+  aiConfidence?: number | null;
   reviewerNotes?: string;
   reviewedBy?: mongoose.Types.ObjectId;
   reviewedAt?: Date;
@@ -83,11 +92,16 @@ const KycCheckSchema = new Schema<IKycCheck>(
       enum: ["pending", "passed", "failed", "skipped"],
       default: "pending",
     },
-    provider: { type: String, enum: ["prembly", "manual"], default: "prembly" },
+    provider: {
+      type: String,
+      enum: ["hih", "manual", "prembly"],
+      default: "hih",
+    },
     reference: { type: String, trim: true },
     message: { type: String, trim: true },
     confidence: { type: Number },
     faceMatched: { type: Boolean },
+    nameMatched: { type: Boolean },
     identity: { type: Schema.Types.Mixed },
     raw: { type: Schema.Types.Mixed },
     checkedAt: { type: Date },
@@ -120,14 +134,26 @@ const KycSubmissionSchema = new Schema<IKycSubmission>(
       default: "pending",
       index: true,
     },
-    provider: { type: String, enum: ["prembly"], default: "prembly" },
+    provider: {
+      type: String,
+      enum: ["hih", "manual", "prembly"],
+      default: "hih",
+    },
+    declaredName: { type: String, trim: true },
     ninMasked: { type: String, trim: true },
     bvnMasked: { type: String, trim: true },
     documents: { type: [KycDocumentSchema], default: [] },
     selfieUrl: { type: String, trim: true },
     selfiePublicId: { type: String, trim: true },
+    idDocumentUrl: { type: String, trim: true },
+    idDocumentPublicId: { type: String, trim: true },
     checks: { type: [KycCheckSchema], default: [] },
     requiresManualReview: { type: Boolean, default: false },
+    aiRecommendation: {
+      type: String,
+      enum: ["approve", "manual_review", "reject"],
+    },
+    aiConfidence: { type: Number },
     reviewerNotes: { type: String, trim: true },
     reviewedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
     reviewedAt: { type: Date },

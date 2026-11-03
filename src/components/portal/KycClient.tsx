@@ -118,6 +118,7 @@ export default function KycClient() {
   const [loading, setLoading] = useState(true);
   const [profileId, setProfileId] = useState(presetProfileId);
   const [showAllSubmissions, setShowAllSubmissions] = useState(false);
+  const [declaredName, setDeclaredName] = useState("");
   const [nin, setNin] = useState("");
   const [rcNumber, setRcNumber] = useState("");
   const [companyName, setCompanyName] = useState("");
@@ -125,6 +126,7 @@ export default function KycClient() {
   const [institution, setInstitution] = useState("");
   const [studentIdNumber, setStudentIdNumber] = useState("");
   const [selfieFiles, setSelfieFiles] = useState<File[]>([]);
+  const [idDocumentFiles, setIdDocumentFiles] = useState<File[]>([]);
   const [studentIdFiles, setStudentIdFiles] = useState<File[]>([]);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -204,8 +206,16 @@ export default function KycClient() {
       setError("Select a profile first.");
       return;
     }
+    if (declaredName.trim().length < 2) {
+      setError("Enter your legal name as it appears on your ID.");
+      return;
+    }
     if (!selfieFiles[0]) {
       setError("A clear selfie is required for face match.");
+      return;
+    }
+    if (!idDocumentFiles[0]) {
+      setError("Upload a clear photo of your NIN slip or government ID.");
       return;
     }
 
@@ -215,11 +225,16 @@ export default function KycClient() {
 
     try {
       const selfie = await uploadFile(selfieFiles[0], "selfie");
+      const idDoc = await uploadFile(idDocumentFiles[0], "government_id");
       const payload: Record<string, unknown> = {
         profileId: selected.id,
+        declaredName: declaredName.trim(),
         nin: nin.replace(/\D/g, ""),
         selfieUrl: selfie.url,
         selfiePublicId: selfie.publicId,
+        idDocumentUrl: idDoc.url,
+        idDocumentPublicId: idDoc.publicId,
+        idDocumentFilename: idDoc.filename,
       };
 
       if (selected.type === "estate_manager") {
@@ -231,7 +246,7 @@ export default function KycClient() {
       }
       if (selected.type === "student") {
         if (!studentIdFiles[0]) {
-          throw new Error("Upload your student ID for manual review.");
+          throw new Error("Upload your student ID for admin review.");
         }
         const sid = await uploadFile(studentIdFiles[0], "student_id");
         payload.student = {
@@ -256,7 +271,7 @@ export default function KycClient() {
         setMessage("Identity verified. Your profile is now verified.");
       } else if (sub.status === "pending") {
         setMessage(
-          "Identity checks passed. Your submission is awaiting Ops review (e.g. student ID)."
+          "Submitted for review. Our team will confirm your identity shortly."
         );
       } else {
         setMessage(
@@ -264,8 +279,10 @@ export default function KycClient() {
             "Verification failed. You can fix details and try again."
         );
       }
+      setDeclaredName("");
       setNin("");
       setSelfieFiles([]);
+      setIdDocumentFiles([]);
       setStudentIdFiles([]);
       await load();
     } catch (err) {
@@ -283,8 +300,8 @@ export default function KycClient() {
             Identity verification
           </h1>
           <p className="mt-1 text-sm text-muted max-w-2xl">
-            Verify your identity with NIN and a selfie. Estate managers also
-            submit CAC details; student IDs are reviewed by Ops.
+            Submit your legal name, NIN ID photo and selfie. We verify with AI;
+            unclear cases go to admin review.
           </p>
         </div>
         <StatCardsSkeleton count={3} />
@@ -328,8 +345,8 @@ export default function KycClient() {
           Identity verification
         </h1>
         <p className="mt-1 text-sm text-muted max-w-2xl">
-          Verify your identity with NIN and a selfie. Estate managers also
-          submit CAC details; student IDs are reviewed by Ops.
+          Submit your legal name, NIN ID photo and selfie. AI compares them;
+          if confidence is not near-perfect, an admin reviews manually.
         </p>
       </div>
 
@@ -482,13 +499,12 @@ export default function KycClient() {
                     We&apos;re reviewing {selected?.displayName}
                   </h2>
                   <p className="text-sm text-muted mt-2 max-w-lg">
-                    Automated identity checks are complete. Our Ops team may still need to
-                    review documents (e.g. student ID). You&apos;ll be notified
-                    when this profile is approved.
+                    Your documents are with our team for confirmation. You&apos;ll
+                    be notified when this profile is approved.
                   </p>
                   {latestForProfile?.requiresManualReview ? (
                     <p className="mt-3 text-xs text-brand-dark rounded-md border border-brand/20 bg-brand/5 px-3 py-2 inline-block">
-                      Waiting for manual Ops / KYC review
+                      Waiting for admin KYC review
                     </p>
                   ) : null}
                 </div>
@@ -502,7 +518,7 @@ export default function KycClient() {
                     Verify {selected?.displayName}
                   </h2>
                   <p className="text-sm text-muted mt-1">
-                    Secure NIN and face match verification
+                    Name, ID photo and selfie — verified in-house
                   </p>
                 </div>
 
@@ -512,6 +528,19 @@ export default function KycClient() {
                       Previous attempt failed: {latestForProfile.failureReason}
                     </p>
                   ) : null}
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">
+                      Legal name (as on ID)
+                    </label>
+                    <input
+                      className="app-input w-full"
+                      value={declaredName}
+                      onChange={(e) => setDeclaredName(e.target.value)}
+                      placeholder="e.g. Adaobi Chioma Okafor"
+                      required
+                    />
+                  </div>
 
                   <div>
                     <label className="block text-sm font-medium mb-1.5">
@@ -608,11 +637,19 @@ export default function KycClient() {
                   ) : null}
 
                   <ImageFilePicker
-                    label="Selfie for face match"
+                    label="NIN slip / government ID photo"
+                    multiple={false}
+                    value={idDocumentFiles}
+                    onChange={setIdDocumentFiles}
+                    helpText="Clear photo of your NIN slip or national ID showing your face and name."
+                  />
+
+                  <ImageFilePicker
+                    label="Live selfie"
                     multiple={false}
                     value={selfieFiles}
                     onChange={setSelfieFiles}
-                    helpText="Face forward, good lighting. Used for NIN face match."
+                    helpText="Face forward, good lighting — compared to your ID photo."
                   />
 
                   <button
@@ -645,9 +682,9 @@ export default function KycClient() {
                   <div>
                     <p className="text-sm font-medium">{req.label}</p>
                     <p className="text-xs text-muted mt-0.5">
-                      {req.provider === "prembly"
-                        ? "Automated verification"
-                        : "Reviewed by Ops team"}
+                      {req.provider === "hih"
+                        ? "AI check · admin if unsure"
+                        : "Reviewed by admin"}
                     </p>
                   </div>
                 </li>
@@ -655,7 +692,7 @@ export default function KycClient() {
             </ol>
             <div className="rounded-lg border border-border/60 bg-surface/40 p-3 text-xs text-muted space-y-1">
               <p className="font-medium text-foreground">Tips</p>
-              <p>Use the same person in your selfie as on your NIN record.</p>
+              <p>Use the same legal name and face as on your ID.</p>
               <p>Photos should be well lit with no filters or sunglasses.</p>
             </div>
           </aside>
@@ -731,7 +768,7 @@ export default function KycClient() {
                   ) : null}
                   {s.requiresManualReview && s.status === "pending" ? (
                     <p className="text-xs text-brand-dark">
-                      Waiting for Ops / KYC manual review
+                      Waiting for admin KYC review
                     </p>
                   ) : null}
                 </li>

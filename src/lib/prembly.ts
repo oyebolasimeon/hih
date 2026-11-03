@@ -283,8 +283,5 @@ export function sanitizePremblyRaw(payload: unknown): unknown {
   return clone;
 }
 
-export function maskId(value: string) {
-  const digits = value.replace(/\D/g, "");
-  if (digits.length < 4) return "****";
-  return `****${digits.slice(-4)}`;
-}
+/** @deprecated import from `@/lib/kyc-id` */
+export { maskId } from "@/lib/kyc-id";
