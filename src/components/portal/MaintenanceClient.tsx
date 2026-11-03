@@ -164,13 +164,13 @@ export default function MaintenanceClient() {
           <p className="text-xs text-muted">
             {isLandlordLike
               ? "Log facility issues on your properties."
-              : "Request repairs on a home you lease."}
+              : "Request repairs or maintenance on a home you lease — including properties you joined by landlord invite."}
           </p>
           {propertyOptions.length === 0 ? (
             <p className="text-sm text-muted">
               {isLandlordLike
                 ? "Create a listing first."
-                : "You need an active lease to open a service request."}
+                : "Accept a landlord invite or have a linked lease (pending signature or active) to open a service request."}
             </p>
           ) : (
             <>

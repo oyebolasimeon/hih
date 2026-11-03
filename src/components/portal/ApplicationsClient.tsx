@@ -16,6 +16,8 @@ type ApplicationRow = {
   landlordProfileId: string;
   message: string;
   status: string;
+  source?: "marketplace" | "landlord_invite";
+  inviteId?: string | null;
   landlordNotes: string;
   createdAt: string;
   listing: {
@@ -26,6 +28,14 @@ type ApplicationRow = {
     price?: { amount: number; currency: string; period: string };
   } | null;
 };
+
+function sourceLabel(source?: string) {
+  return source === "landlord_invite" ? "Landlord invite" : "Marketplace apply";
+}
+
+function listingPlace(a: ApplicationRow) {
+  return [a.listing?.city, a.listing?.state].filter(Boolean).join(", ");
+}
 
 type ApplyListing = {
   id: string;
@@ -358,12 +368,15 @@ export default function ApplicationsClient() {
                         {a.listing?.title || "Listing"} · {a.status}
                       </p>
                       <p className="text-xs text-muted mt-1">
-                        {[a.listing?.city, a.listing?.state]
+                        {[
+                          sourceLabel(a.source),
+                          listingPlace(a),
+                          a.listing?.price
+                            ? `${a.listing.price.currency} ${a.listing.price.amount.toLocaleString()}/${a.listing.price.period}`
+                            : "",
+                        ]
                           .filter(Boolean)
-                          .join(", ")}
-                        {a.listing?.price
-                          ? ` · ${a.listing.price.currency} ${a.listing.price.amount.toLocaleString()}/${a.listing.price.period}`
-                          : ""}
+                          .join(" · ")}
                       </p>
                     </div>
                     <p className="text-xs text-muted">
@@ -378,7 +391,8 @@ export default function ApplicationsClient() {
                       Notes: {a.landlordNotes}
                     </p>
                   ) : null}
-                  {["submitted", "under_review"].includes(a.status) ? (
+                  {["submitted", "under_review"].includes(a.status) &&
+                  a.source !== "landlord_invite" ? (
                     <div className="space-y-2 border-t border-border pt-3">
                       <input
                         className="app-input w-full text-sm"
@@ -433,9 +447,9 @@ export default function ApplicationsClient() {
                         {a.listing?.title || "Listing"} · {a.status}
                       </p>
                       <p className="text-xs text-muted mt-1">
-                        {[a.listing?.city, a.listing?.state]
+                        {[sourceLabel(a.source), listingPlace(a)]
                           .filter(Boolean)
-                          .join(", ")}
+                          .join(" · ")}
                       </p>
                     </div>
                     <p className="text-xs text-muted">
@@ -449,6 +463,22 @@ export default function ApplicationsClient() {
                     <p className="text-xs text-muted">
                       Landlord notes: {a.landlordNotes}
                     </p>
+                  ) : null}
+                  {a.source === "landlord_invite" ? (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <Link
+                        href="/portal/agreements"
+                        className="text-xs text-brand hover:underline"
+                      >
+                        Open agreement
+                      </Link>
+                      <Link
+                        href="/portal/maintenance"
+                        className="text-xs text-brand hover:underline"
+                      >
+                        Request repair / maintenance
+                      </Link>
+                    </div>
                   ) : null}
                 </li>
               ))}

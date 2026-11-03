@@ -23,6 +23,8 @@ function serializeApp(a: Record<string, unknown>) {
     landlordProfileId: String(a.landlordProfileId),
     message: a.message || "",
     status: a.status,
+    source: (a.source as string) || "marketplace",
+    inviteId: a.inviteId ? String(a.inviteId) : null,
     landlordNotes: a.landlordNotes || "",
     createdAt: a.createdAt,
     updatedAt: a.updatedAt,

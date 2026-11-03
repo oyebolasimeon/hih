@@ -7,6 +7,8 @@ export type ApplicationStatus =
   | "rejected"
   | "withdrawn";
 
+export type ApplicationSource = "marketplace" | "landlord_invite";
+
 export interface IApplication {
   _id: mongoose.Types.ObjectId;
   listingId: mongoose.Types.ObjectId;
@@ -15,6 +17,9 @@ export interface IApplication {
   landlordProfileId: mongoose.Types.ObjectId;
   message?: string;
   status: ApplicationStatus;
+  /** marketplace apply vs landlord invite for existing occupancy */
+  source?: ApplicationSource;
+  inviteId?: mongoose.Types.ObjectId;
   landlordNotes?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -51,6 +56,15 @@ const ApplicationSchema = new Schema<IApplication>(
       type: String,
       enum: ["submitted", "under_review", "approved", "rejected", "withdrawn"],
       default: "submitted",
+    },
+    source: {
+      type: String,
+      enum: ["marketplace", "landlord_invite"],
+      default: "marketplace",
+    },
+    inviteId: {
+      type: Schema.Types.ObjectId,
+      ref: "TenantInvite",
     },
     landlordNotes: { type: String, trim: true },
   },

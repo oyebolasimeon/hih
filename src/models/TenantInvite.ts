@@ -26,6 +26,10 @@ export interface ITenantInvite {
   acceptedUserId?: mongoose.Types.ObjectId;
   acceptedProfileId?: mongoose.Types.ObjectId;
   leaseId?: mongoose.Types.ObjectId;
+  applicationId?: mongoose.Types.ObjectId;
+  /** Tenant confirmed landlord identity + invite terms */
+  legalAcknowledgedAt?: Date;
+  legalAcknowledgementText?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -79,6 +83,9 @@ const TenantInviteSchema = new Schema<ITenantInvite>(
     acceptedUserId: { type: Schema.Types.ObjectId, ref: "User" },
     acceptedProfileId: { type: Schema.Types.ObjectId, ref: "Profile" },
     leaseId: { type: Schema.Types.ObjectId, ref: "Lease" },
+    applicationId: { type: Schema.Types.ObjectId, ref: "Application" },
+    legalAcknowledgedAt: { type: Date },
+    legalAcknowledgementText: { type: String, trim: true },
   },
   { timestamps: true }
 );

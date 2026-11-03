@@ -61,7 +61,8 @@ The product spans marketplace discovery through ongoing property operations, pay
 | TEN-2 | Digital lease drafts, e-sign, agreement fee | P0 — exists |
 | TEN-3 | Occupancy reflected on listing when lease is active | P0 — exists |
 | TEN-4 | **Invite current occupant** by email to join an occupied property | P0 — **this release** |
-| TEN-5 | Accept invite → link tenant profile to lease without prior application | P0 — **this release** |
+| TEN-5 | Accept invite → create approved **application** + lease; link tenant to property | P0 — **this release** |
+| TEN-5a | Invite accept shows **landlord identity** + required **legal acknowledgement** | P0 — **this release** |
 | TEN-6 | Tenant directory per landlord (active / pending / past) | P1 |
 | TEN-7 | Renewal / expiry pipeline | P1 |
 
@@ -82,6 +83,7 @@ The product spans marketplace discovery through ongoing property operations, pay
 | ID | Requirement | Priority |
 |---|---|---|
 | MNT-1 | Tenant/landlord maintenance tickets | P0 — exists |
+| MNT-1a | Invited occupants can raise repair/maintenance once lease is linked (`pending_signature` or `active`) | P0 — **this release** |
 | MNT-2 | Property services + due charges | P0 — exists |
 | MNT-3 | Photo evidence + cost approval workflow | P1 |
 | MNT-4 | Vetted provider network | P2 |
@@ -133,20 +135,24 @@ Many landlords already have tenants in place. They need House In Hands to **mana
 ### 4.2 User stories
 1. As a landlord, I can add a property I already own that is **occupied**, without publishing it to the marketplace.
 2. As a landlord, I can **invite** the current tenant by email with rent and lease dates.
-3. As a tenant, I receive an email, create/sign in to an account, accept the invite, and get a lease to sign.
-4. After both parties sign (and fee rules apply), the occupancy is **active** and rent/docs/maintenance work like any other lease.
+3. As a tenant, I receive an email, create/sign in, **verify the landlord identity**, acknowledge legal invite terms, accept, and get added to the **application + property/lease** records.
+4. As an invited tenant, I can raise **repair / maintenance** service requests on that property once the lease is linked (even before both signatures complete).
+5. After both parties sign (and fee rules apply), the occupancy is **active** and rent/docs work like any other lease.
 
 ### 4.3 Functional rules
 | Rule | Detail |
 |---|---|
 | Marketplace exclusion | `availabilityStatus: occupied` (and invite-pending management listings) stay off public search |
-| No application required | Lease created with `source: landlord_invite`, `applicationId` null |
+| Tenancy records on accept | Creates `Application` (`source: landlord_invite`, `status: approved`) **and** `Lease` (`source: landlord_invite`, linked `applicationId`) |
+| Landlord identity | Accept screen shows landlord display/KYC name, email, phone (if set), verification status |
+| Legal acknowledgement | Tenant must check confirm against fixed text (`TENANT_INVITE_LEGAL_VERSION`); stored on invite (`legalAcknowledgedAt`, `legalAcknowledgementText`) |
 | Landlord gate | Verified landlord / estate_manager profile |
-| Tenant gate | Must accept with a tenant or student profile (create if missing); KYC can be required before full features per existing rules |
+| Tenant gate | Must accept with a tenant or student profile (create if missing); email on invite must match signed-in user |
 | Agreement fee | Same listing legal settings as marketplace leases (HIH or own legal) |
+| Maintenance | Linked lease (`pending_signature` or `active`) grants property access for service requests |
 | Expiry | Invites expire after 14 days; landlord can resend / cancel |
 | One active invite | One pending invite per listing at a time (cancel previous to send new) |
-| Idempotency | Accepting twice does not create duplicate leases |
+| Idempotency | Accepting twice does not create duplicate leases / applications |
 
 ### 4.4 Flows
 
@@ -163,11 +169,11 @@ Many landlords already have tenants in place. They need House In Hands to **mana
 4. Invite status: `pending`
 
 **C. Tenant accepts**
-1. Opens link → login/register if needed
-2. Reviews property + proposed terms
-3. Accept → lease `pending_signature` + tenant linked
-4. Both parties sign in Agreements (existing flow)
-5. Lease `active`; listing remains/sets `occupied`
+1. Opens link → login/register if needed (must use invited email)
+2. Reviews **landlord identity card**, property, proposed terms, and legal acknowledgement
+3. Checks acknowledgement → Accept → approved application + lease `pending_signature`; tenant linked to property
+4. Can open Maintenance for repair/service requests; sign agreement in Agreements
+5. Both parties sign; lease `active`; listing remains/sets `occupied`
 
 ### 4.5 Non-functional
 - Audit every invite create/cancel/accept
@@ -196,5 +202,5 @@ Many landlords already have tenants in place. They need House In Hands to **mana
 |---|---|
 | Marketplace, applications, leases, payments, maintenance | Live |
 | In-house KYC AI + admin | Live |
-| Occupied onboard + tenant invite | Implemented in this release |
+| Occupied onboard + tenant invite (application link, legal ack, maintenance) | Implemented in this release |
 | Developer inventory / market intelligence | Roadmap |
