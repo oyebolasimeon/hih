@@ -22,6 +22,7 @@ const links: NavLink[] = [
   { href: "/admin", label: "Dashboard", permission: "users:read", exact: true },
   { href: "/admin/users", label: "Users", permission: "users:read" },
   { href: "/admin/kyc", label: "KYC review", permission: "kyc:read" },
+  { href: "/admin/exit-notices", label: "Exit / legal", permission: "legal:read" },
   { href: "/admin/listings", label: "Listings", permission: "listings:read" },
   { href: "/admin/fraud", label: "Fraud reports", permission: "fraud:read" },
   { href: "/admin/withdrawals", label: "Withdrawals", permission: "users:read" },

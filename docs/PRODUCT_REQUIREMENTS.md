@@ -65,6 +65,10 @@ The product spans marketplace discovery through ongoing property operations, pay
 | TEN-5a | Invite accept shows **landlord identity** + required **legal acknowledgement** | P0 — **this release** |
 | TEN-6 | Tenant directory per landlord (active / pending / past) | P1 |
 | TEN-7 | Renewal / expiry pipeline | P1 |
+| TEN-8 | **My Home** hub: property, cost, docs, history, conversations, bills, exit | P0 — **this release** |
+| TEN-9 | Tenant can request early exit; landlord can issue exit/vacate notice | P0 — **this release** |
+| TEN-10 | Exit notices: AI screen + human legal/ops review before serve + legal PDF | P0 — **this release** |
+| TEN-11 | Admin/legal decide remaining-rent refund on early exit / unpaid rent | P0 — **this release** |
 
 ### 3.4 Rent and payments
 **Purpose:** Rent, service charges, utilities and tracking.
@@ -85,8 +89,9 @@ The product spans marketplace discovery through ongoing property operations, pay
 | MNT-1 | Tenant/landlord maintenance tickets | P0 — exists |
 | MNT-1a | Invited occupants can raise repair/maintenance once lease is linked (`pending_signature` or `active`) | P0 — **this release** |
 | MNT-2 | Property services + due charges | P0 — exists |
-| MNT-3 | Photo evidence + cost approval workflow | P1 |
+| MNT-3 | Photo evidence + cost approval workflow | P1 — partial via building issues |
 | MNT-4 | Vetted provider network | P2 |
+| MNT-5 | **Building issues** reported by tenants → **AI Property Manager** validates proof, escalates to landlord with recommended actions, tracks until closed | P0 — **this release** |
 
 ### 3.6 Property-as-a-Service
 **Purpose:** Connect stakeholders with operational support.
@@ -189,18 +194,73 @@ Many landlords already have tenants in place. They need House In Hands to **mana
 
 ---
 
-## 5. Success metrics
+## 5. Feature: My Home + exit notices + remaining-rent refunds
+
+### 5.1 Problem
+Tenants need one place to see their occupied home (property, cost, documents, history, conversations, bills) and a clear path to exit. Landlords need to issue exit notices grounded in the tenancy agreement — but notices must not go straight to the tenant: **AI + human legal/ops** must review first, with a legal PDF. When rent is unpaid or prepaid and a quick exit is needed, **admin/legal** decide any remaining-rent refund against the agreement.
+
+### 5.2 User stories
+1. As a tenant, I open **My Home** and see my property, rent cost, agreement/exit PDFs, payment & utility history, linked conversations, and exit status.
+2. As a landlord, I submit an exit / vacate notice citing agreement grounds and a proposed vacate date.
+3. As a tenant, I can request early exit on an active lease.
+4. As HIH AI + legal/ops, I screen and approve/reject notices; only then is the notice **served** to the tenant with a downloadable legal PDF.
+5. As admin/legal, when prepaid/unpaid rent and early exit collide, I approve, adjust, or deny a remaining-rent refund to the tenant wallet based on the agreement.
+
+### 5.3 Functional rules
+| Rule | Detail |
+|---|---|
+| My Home | Tenant/student only; aggregates active & past leases via `/api/portal/home` |
+| Notice gate | Active leases only; one open notice per lease |
+| AI screen | `reviewExitNoticeWithAi` → recommendation stored; **never auto-serves** |
+| Human review | Admin `legal:write` → approve & serve / reject |
+| Tenant visibility | Landlord-issued notices hidden until `served` |
+| Legal PDF | Generated from stored notice terms (`EXIT-*` document) |
+| Lease end | Admin “complete” → lease `terminated`; occupied listing may return to `available` |
+| Remaining rent | Suggested prorata from paid current period; unpaid flags `refundStatus: pending_admin` |
+| Refund money | Admin credits tenant wallet / debits landlord wallet; audited |
+
+### 5.4 Flows
+**My Home** → tenant opens `/portal/home`  
+**Issue / request** → `/portal/exit-notices` → pending_review  
+**Admin** → `/admin/exit-notices` → Approve & serve → tenant notified + PDF  
+**Tenant** → acknowledge served notice  
+**Refund** → admin refund queue → refund / deny  
+**Complete** → terminate lease
+
+---
+
+## 6. Feature: Building issues + AI Property Manager
+
+### 6.1 Flow
+1. Tenant reports issue on a leased property (+ optional proof photos).
+2. **AI Property Manager** reviews text + images → escalate / needs more proof / dismiss.
+3. On escalate: landlord notified with **recommended actions**; linked maintenance ticket created.
+4. Landlord acknowledges, records action taken, updates until resolved.
+5. Tenant or landlord closes the case; timeline + audit retained.
+
+### 6.2 Surfaces
+- Tenant/landlord: `/portal/building-issues`
+- APIs: `/api/portal/building-issues`, upload, `[id]` patch
+- Model: `BuildingIssue`
+
+---
+
+## 7. Success metrics
 - Occupied properties onboarded / month
 - Invite send → accept conversion
 - Time to active lease after invite
 - % occupied leases with successful rent payment within 30 days
+- Exit notice submit → serve conversion; median review time
+- Remaining-rent refunds decided within SLA
 
 ---
 
-## 6. Implementation status (codebase)
+## 8. Implementation status (codebase)
 | Area | Status |
 |---|---|
 | Marketplace, applications, leases, payments, maintenance | Live |
 | In-house KYC AI + admin | Live |
 | Occupied onboard + tenant invite (application link, legal ack, maintenance) | Implemented in this release |
+| My Home hub + exit notices (AI + legal review + refund) | Implemented in this release |
+| Building issues + AI Property Manager (proof → escalate → close) | Implemented in this release |
 | Developer inventory / market intelligence | Roadmap |

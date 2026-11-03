@@ -41,6 +41,11 @@ export const PORTAL_NAV_LINKS: PortalNavLink[] = [
     },
   },
   {
+    href: "/portal/home",
+    label: "My Home",
+    forTypes: ["student", "tenant"],
+  },
+  {
     href: "/portal/agreements",
     label: "Agreements",
     labelByType: {
@@ -54,6 +59,14 @@ export const PORTAL_NAV_LINKS: PortalNavLink[] = [
     labelByType: {
       landlord: "Rent & collections",
       estate_manager: "Rent & collections",
+    },
+  },
+  {
+    href: "/portal/exit-notices",
+    label: "Exit notices",
+    labelByType: {
+      landlord: "Exit / vacate",
+      estate_manager: "Exit / vacate",
     },
   },
   { href: "/portal/messages", label: "Messages" },
@@ -94,6 +107,14 @@ export const PORTAL_NAV_LINKS: PortalNavLink[] = [
   {
     href: "/portal/maintenance",
     label: "Maintenance",
+  },
+  {
+    href: "/portal/building-issues",
+    label: "Building issues",
+    labelByType: {
+      landlord: "AI building issues",
+      estate_manager: "AI building issues",
+    },
   },
   { href: "/portal/complaints", label: "Complaints" },
   {

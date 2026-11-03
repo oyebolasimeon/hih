@@ -475,3 +475,66 @@ export async function generateAgreementPdf(input: {
     doc.end();
   });
 }
+
+export async function generateExitNoticePdf(input: {
+  title: string;
+  documentNumber: string;
+  termsText: string;
+  proposedVacateDate: Date;
+  noticeType: string;
+  legalProvider: "hih" | "own_legal";
+  legalCompanyName?: string | null;
+  reviewedAt?: Date | null;
+  servedAt?: Date | null;
+}): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: "A4", margin: 48 });
+    const chunks: Buffer[] = [];
+    doc.on("data", (chunk) => chunks.push(chunk as Buffer));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+
+    drawBrandHeader(doc, "Exit / vacate notice", 80);
+
+    doc.fillColor("#0B1F3A").fontSize(16).text(input.title, 48, 100);
+    doc
+      .fontSize(10)
+      .fillColor("#5A6A7D")
+      .text(`Document ${input.documentNumber}`, 48, 114);
+
+    doc
+      .fontSize(10)
+      .fillColor("#0B1F3A")
+      .text(`Notice type: ${input.noticeType.replace(/_/g, " ")}`, 48, 136)
+      .text(
+        `Proposed vacate: ${input.proposedVacateDate.toLocaleDateString()}`,
+        48,
+        152
+      )
+      .text(
+        input.legalProvider === "hih"
+          ? "Legal handling: House In Hands"
+          : `Legal handling: ${input.legalCompanyName || "Appointed legal firm"}`,
+        48,
+        168
+      );
+
+    if (input.reviewedAt) {
+      doc
+        .fillColor("#5A6A7D")
+        .text(`Reviewed: ${new Date(input.reviewedAt).toLocaleString()}`, 48, 184);
+    }
+    if (input.servedAt) {
+      doc
+        .fillColor("#5A6A7D")
+        .text(`Served: ${new Date(input.servedAt).toLocaleString()}`, 48, 200);
+    }
+
+    doc.fontSize(11).fillColor("#0B1F3A").text(input.termsText, 48, 220, {
+      width: doc.page.width - 96,
+      lineGap: 4,
+    });
+
+    doc.end();
+  });
+}
