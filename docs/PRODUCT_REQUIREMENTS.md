@@ -102,6 +102,8 @@ The product spans marketplace discovery through ongoing property operations, pay
 | PAS-1 | Optional managed services catalogue | P1 |
 | PAS-2 | IoT / device hooks (experimental) | P2 — shell exists |
 | PAS-3 | SLA packages for Fully Managed clients | P2 |
+| PAS-4 | **Public website AI chat** — answers about House In Hands, verified listings & platform topics | P0 — **this release** |
+| PAS-5 | **Portal AI Assistant** — manage/remind/receipts/forecast/recommend; **not legal advice** | P0 — **this release** |
 
 ### 3.7 Real estate data and intelligence
 **Purpose:** Property information and market insight.
@@ -265,4 +267,5 @@ Tenants need one place to see their occupied home (property, cost, documents, hi
 | My Home hub + exit notices (AI + legal review + refund) | Implemented in this release |
 | Building issues + AI Property Manager (proof → escalate → close) | Implemented in this release |
 | Listing AI review + admin escalate/email (no auto-approve) | Implemented in this release |
+| Public AI chat + Portal AI Assistant (not legal advice) | Implemented in this release |
 | Developer inventory / market intelligence | Roadmap |

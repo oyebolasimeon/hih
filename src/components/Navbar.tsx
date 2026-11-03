@@ -33,11 +33,14 @@ export default function Navbar() {
 
   useEffect(() => {
     setMobileOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [mobileOpen, pathname]);
+  }, [mobileOpen]);
 
   return (
     <header
@@ -48,24 +51,25 @@ export default function Navbar() {
       <div className="mx-auto flex h-[4.5rem] max-w-7xl items-center px-5 sm:px-6 lg:px-8">
         <button
           type="button"
-          className="lg:hidden p-2 text-sand shrink-0"
+          className="relative z-[60] lg:hidden p-2 -ml-2 text-sand shrink-0 rounded-md hover:bg-white/10 transition-colors"
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
           aria-expanded={mobileOpen}
+          aria-controls="site-mobile-nav"
           onClick={() => setMobileOpen((o) => !o)}
         >
-          <span className="flex h-5 w-6 flex-col justify-between">
+          <span className="flex h-5 w-6 flex-col justify-between pointer-events-none">
             <span
-              className={`h-0.5 w-full bg-current transition duration-300 ${
+              className={`block h-0.5 w-full origin-center bg-current transition duration-300 ${
                 mobileOpen ? "translate-y-[9px] rotate-45" : ""
               }`}
             />
             <span
-              className={`h-0.5 w-full bg-current transition duration-300 ${
-                mobileOpen ? "opacity-0" : ""
+              className={`block h-0.5 w-full bg-current transition duration-300 ${
+                mobileOpen ? "opacity-0 scale-x-0" : ""
               }`}
             />
             <span
-              className={`h-0.5 w-full bg-current transition duration-300 ${
+              className={`block h-0.5 w-full origin-center bg-current transition duration-300 ${
                 mobileOpen ? "-translate-y-[9px] -rotate-45" : ""
               }`}
             />
@@ -133,6 +137,7 @@ export default function Navbar() {
               onClick={() => setMobileOpen(false)}
             />
             <motion.aside
+              id="site-mobile-nav"
               className="fixed inset-y-0 left-0 z-50 flex w-[min(100%,18rem)] flex-col bg-navy border-r border-white/10 shadow-xl lg:hidden"
               initial={reduce ? false : { x: "-100%" }}
               animate={{ x: 0 }}

@@ -6,6 +6,7 @@ import { BrandingProvider } from "@/components/providers/BrandingProvider";
 import { MutationProvider } from "@/components/providers/MutationProvider";
 import { DEFAULT_BRANDING } from "@/lib/branding-defaults";
 import AnnouncementModal from "@/components/AnnouncementModal";
+import PublicChatWidget from "@/components/chat/PublicChatWidget";
 import {
   OrganizationJsonLd,
   WebsiteJsonLd,
@@ -100,6 +101,7 @@ export default function RootLayout({
             <MutationProvider>
               {children}
               <AnnouncementModal />
+              <PublicChatWidget />
             </MutationProvider>
           </AuthProvider>
         </BrandingProvider>

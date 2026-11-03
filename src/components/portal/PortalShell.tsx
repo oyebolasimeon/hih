@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import BrandMark from "@/components/BrandMark";
 import MobileNavDrawer from "@/components/ui/MobileNavDrawer";
+import PortalAssistantWidget from "@/components/portal/assistant/PortalAssistantWidget";
 import { PageMotion } from "@/components/motion/Motion";
 import {
   PORTAL_NAV_LINKS,
@@ -213,6 +214,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-x-hidden">
           <PageMotion routeKey={pathname}>{children}</PageMotion>
         </main>
+        <PortalAssistantWidget />
       </div>
     </div>
   );

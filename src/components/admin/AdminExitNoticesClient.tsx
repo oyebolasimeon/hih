@@ -139,12 +139,23 @@ export default function AdminExitNoticesClient() {
             <li key={n.id} className="app-card p-4 sm:p-5 space-y-3">
               <div className="flex flex-wrap justify-between gap-2">
                 <div>
-                  <p className="font-medium">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-teal">
+                    {n.status.replace(/_/g, " ")}
+                    {n.aiRecommendation
+                      ? ` · AI ${n.aiRecommendation}`
+                      : ""}
+                  </p>
+                  <p className="font-display text-lg font-semibold mt-0.5">
                     {n.listingTitle || "Property"}
-                    {n.listingCity ? ` · ${n.listingCity}` : ""}
+                    {n.listingCity ? (
+                      <span className="text-sm font-normal text-muted">
+                        {" "}
+                        · {n.listingCity}
+                      </span>
+                    ) : null}
                   </p>
                   <p className="text-xs text-muted mt-1">
-                    {n.noticeType.replace(/_/g, " ")} · {n.status} ·{" "}
+                    {n.noticeType.replace(/_/g, " ")} ·{" "}
                     {n.documentNumber || n.id.slice(-6)}
                   </p>
                   <p className="text-xs text-muted mt-1">

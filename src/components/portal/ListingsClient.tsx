@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/Motion";
 import Select from "@/components/ui/Select";
 import ImageFilePicker from "@/components/ui/ImageFilePicker";
+import DateField from "@/components/ui/DateField";
 import EmptyState from "@/components/ui/EmptyState";
 import { FormSkeleton, StatCardsSkeleton } from "@/components/ui/Skeleton";
 import RequireProfileTypes from "@/components/portal/RequireProfileTypes";
@@ -1180,30 +1181,19 @@ function ListingsManager() {
                   required
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">
-                    Lease start
-                  </label>
-                  <input
-                    type="date"
-                    className="app-input w-full"
-                    value={inviteStart}
-                    onChange={(e) => setInviteStart(e.target.value)}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">
-                    Lease end (optional)
-                  </label>
-                  <input
-                    type="date"
-                    className="app-input w-full"
-                    value={inviteEnd}
-                    onChange={(e) => setInviteEnd(e.target.value)}
-                  />
-                </div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <DateField
+                  label="Lease start"
+                  value={inviteStart}
+                  onChange={setInviteStart}
+                  required
+                />
+                <DateField
+                  label="Lease end (optional)"
+                  value={inviteEnd}
+                  onChange={setInviteEnd}
+                  min={inviteStart || undefined}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1.5">

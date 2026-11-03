@@ -1,10 +1,13 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { format, parseISO, startOfMonth } from "date-fns";
 import EmptyState from "@/components/ui/EmptyState";
 import Select from "@/components/ui/Select";
 import Checkbox from "@/components/ui/Checkbox";
+import DateField from "@/components/ui/DateField";
+import Calendar, { type CalendarEvent } from "@/components/ui/Calendar";
 import { TableSkeleton } from "@/components/ui/Skeleton";
 import { useActiveProfile } from "@/hooks/useActiveProfile";
 
@@ -31,6 +34,10 @@ type NoticeRow = {
   termsText?: string;
 };
 
+function todayIso() {
+  return format(new Date(), "yyyy-MM-dd");
+}
+
 export default function ExitNoticesClient() {
   const { isLandlordLike, isTenantLike, loading: profileLoading } =
     useActiveProfile();
@@ -46,6 +53,7 @@ export default function ExitNoticesClient() {
   const [reason, setReason] = useState("");
   const [vacateDate, setVacateDate] = useState("");
   const [ackOk, setAckOk] = useState(false);
+  const [month, setMonth] = useState(() => startOfMonth(new Date()));
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -82,6 +90,24 @@ export default function ExitNoticesClient() {
     }
   }, [isTenantLike, isLandlordLike]);
 
+  const calendarEvents: CalendarEvent[] = useMemo(
+    () =>
+      notices.map((n) => ({
+        id: n.id,
+        title: n.listing?.title || "Exit",
+        startDate: n.proposedVacateDate,
+        endDate: n.proposedVacateDate,
+        tone:
+          n.status === "served" || n.status === "acknowledged"
+            ? "warn"
+            : n.status === "completed"
+              ? "muted"
+              : "brand",
+        meta: n.status.replace(/_/g, " "),
+      })),
+    [notices]
+  );
+
   async function onCreate(e: FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -104,9 +130,10 @@ export default function ExitNoticesClient() {
       return;
     }
     setReason("");
+    setVacateDate("");
     setMessage(
       isLandlordLike
-        ? "Exit notice submitted. House In Hands AI + legal/ops must approve before it is served to the tenant."
+        ? "Exit notice submitted. AI + legal/ops must approve before it is served to the tenant."
         : "Early exit request submitted for AI + legal/ops review."
     );
     await load();
@@ -131,6 +158,7 @@ export default function ExitNoticesClient() {
       return;
     }
     setMessage("Exit notice acknowledged.");
+    setAckOk(false);
     await load();
   }
 
@@ -169,35 +197,49 @@ export default function ExitNoticesClient() {
       ) : null}
       {message ? <p className="text-sm text-brand-dark">{message}</p> : null}
 
-      {(isLandlordLike || isTenantLike) && leaseOptions.length > 0 ? (
-        <form onSubmit={onCreate} className="app-card p-4 sm:p-5 space-y-4 max-w-xl">
-          <h2 className="font-semibold">
-            {isLandlordLike ? "Issue exit / vacate notice" : "Request early exit"}
-          </h2>
-          <p className="text-xs text-muted">
-            Notices are screened by House In Hands AI and reviewed by legal/ops
-            against your tenancy agreement before a tenant is served. Remaining
-            rent refunds (if any) are decided by admin/legal.
-          </p>
-          <div>
-            <label className="block text-sm font-medium mb-1.5">Lease</label>
+      <div className="grid lg:grid-cols-5 gap-5">
+        {(isLandlordLike || isTenantLike) && leaseOptions.length > 0 ? (
+          <form
+            onSubmit={onCreate}
+            className="lg:col-span-2 app-card p-4 sm:p-5 space-y-4 h-fit"
+          >
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-teal">
+                New request
+              </p>
+              <h2 className="mt-1 font-display text-xl font-semibold">
+                {isLandlordLike
+                  ? "Issue exit / vacate notice"
+                  : "Request early exit"}
+              </h2>
+              <p className="mt-1 text-xs text-muted">
+                Screened by AI and reviewed by legal/ops against your tenancy
+                agreement before a tenant is served.
+              </p>
+            </div>
+
             <Select
+              label="Lease"
               value={leaseId}
               onChange={setLeaseId}
               options={leaseOptions}
               required
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1.5">Type</label>
             <Select
+              label="Notice type"
               value={noticeType}
               onChange={setNoticeType}
               options={
                 isLandlordLike
                   ? [
-                      { value: "landlord_quit", label: "Notice to quit / vacate" },
-                      { value: "mutual", label: "Mutual early termination" },
+                      {
+                        value: "landlord_quit",
+                        label: "Notice to quit / vacate",
+                      },
+                      {
+                        value: "mutual",
+                        label: "Mutual early termination",
+                      },
                       { value: "expiry", label: "End of term / expiry" },
                     ]
                   : [
@@ -205,54 +247,88 @@ export default function ExitNoticesClient() {
                         value: "tenant_early_exit",
                         label: "Tenant early exit request",
                       },
-                      { value: "mutual", label: "Propose mutual termination" },
+                      {
+                        value: "mutual",
+                        label: "Propose mutual termination",
+                      },
                     ]
               }
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1.5">
-              Proposed vacate date
-            </label>
-            <input
-              type="date"
-              className="app-input w-full"
+            <DateField
+              label="Proposed vacate date"
               value={vacateDate}
-              onChange={(e) => setVacateDate(e.target.value)}
+              onChange={setVacateDate}
+              min={todayIso()}
               required
+              helpText="Pick the day you expect the tenancy to end."
             />
+            <div>
+              <label className="block text-sm font-medium mb-1.5">
+                Reason (per agreement)
+              </label>
+              <textarea
+                className="app-input w-full min-h-[110px]"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                required
+                minLength={10}
+                placeholder="Reference the clause or situation in your tenancy agreement…"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={saving || !vacateDate}
+              className="app-btn app-btn-primary text-sm w-full sm:w-auto disabled:opacity-50"
+            >
+              {saving ? "Submitting…" : "Submit for AI + legal review"}
+            </button>
+          </form>
+        ) : (
+          <div className="lg:col-span-2">
+            <EmptyState
+              title="No active lease"
+              description="Exit notices need an active signed lease."
+            >
+              <Link
+                href="/portal/agreements"
+                className="app-btn app-btn-secondary text-sm"
+              >
+                Open agreements
+              </Link>
+            </EmptyState>
           </div>
+        )}
+
+        <div className="lg:col-span-3 space-y-3">
           <div>
-            <label className="block text-sm font-medium mb-1.5">
-              Reason (per agreement)
-            </label>
-            <textarea
-              className="app-input w-full min-h-[100px]"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              required
-              minLength={10}
-              placeholder="Reference the clause or situation in your tenancy agreement…"
-            />
+            <h2 className="font-display text-lg font-semibold">Vacate calendar</h2>
+            <p className="text-xs text-muted">
+              Proposed and served vacate dates on your notices
+            </p>
           </div>
-          <button
-            type="submit"
-            disabled={saving}
-            className="app-btn app-btn-primary text-sm"
-          >
-            {saving ? "Submitting…" : "Submit for AI + legal review"}
-          </button>
-        </form>
-      ) : null}
+          <Calendar
+            month={month}
+            onMonthChange={setMonth}
+            events={calendarEvents}
+            selectedDay={vacateDate ? parseISO(vacateDate) : null}
+            onDayClick={(day) => {
+              const iso = format(day, "yyyy-MM-dd");
+              if (iso >= todayIso()) setVacateDate(iso);
+            }}
+          />
+        </div>
+      </div>
 
       <div>
-        <h2 className="font-semibold mb-3">Your exit notices</h2>
+        <h2 className="font-display text-lg font-semibold mb-3">
+          Your exit notices
+        </h2>
         {notices.length === 0 ? (
           <EmptyState
             title="No exit notices"
             description={
               isTenantLike
-                ? "Served notices and your early-exit requests appear here. Until legal/ops serves a landlord notice, it stays hidden."
+                ? "Served notices and your early-exit requests appear here."
                 : "Submitted notices await AI + human review before they are served."
             }
           >
@@ -267,30 +343,33 @@ export default function ExitNoticesClient() {
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <p className="font-medium">
-                      {n.listing?.title || "Property"} ·{" "}
-                      {n.noticeType.replace(/_/g, " ")}
+                      {n.listing?.title || "Property"}
                     </p>
-                    <p className="text-xs text-muted mt-1">
-                      Status: {n.status.replace(/_/g, " ")}
+                    <p className="text-xs text-muted mt-1 capitalize">
+                      {n.noticeType.replace(/_/g, " ")} ·{" "}
+                      {n.status.replace(/_/g, " ")}
                       {n.documentNumber ? ` · ${n.documentNumber}` : ""}
                       {n.aiRecommendation
                         ? ` · AI: ${n.aiRecommendation}`
                         : ""}
-                      {n.unpaidRentDetected ? " · unpaid rent flagged" : ""}
-                      {n.refundStatus && n.refundStatus !== "none"
-                        ? ` · refund: ${n.refundStatus.replace(/_/g, " ")}`
-                        : ""}
                     </p>
-                    <p className="text-xs text-muted mt-1">
+                    <p className="text-sm mt-2">
                       Vacate{" "}
-                      {new Date(n.proposedVacateDate).toLocaleDateString()}
+                      <span className="font-medium">
+                        {new Date(n.proposedVacateDate).toLocaleDateString()}
+                      </span>
                     </p>
                   </div>
+                  <span className="rounded-full border border-border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted">
+                    {n.refundStatus && n.refundStatus !== "none"
+                      ? `Refund · ${n.refundStatus.replace(/_/g, " ")}`
+                      : n.status.replace(/_/g, " ")}
+                  </span>
                 </div>
                 <p className="text-sm text-muted whitespace-pre-wrap line-clamp-4">
                   {n.reason}
                 </p>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 items-center">
                   {n.documentUrl &&
                   ["served", "acknowledged", "completed"].includes(n.status) ? (
                     <a
@@ -303,11 +382,12 @@ export default function ExitNoticesClient() {
                     </a>
                   ) : null}
                   {n.viewerRole === "tenant" && n.status === "served" ? (
-                    <>
+                    <div className="w-full space-y-3 pt-1">
                       <Checkbox
                         checked={ackOk}
                         onChange={setAckOk}
                         label="I acknowledge this served exit notice"
+                        variant="card"
                       />
                       <button
                         type="button"
@@ -315,9 +395,9 @@ export default function ExitNoticesClient() {
                         onClick={() => void acknowledge(n.id)}
                         className="app-btn app-btn-primary text-xs disabled:opacity-50"
                       >
-                        Acknowledge
+                        Acknowledge receipt
                       </button>
-                    </>
+                    </div>
                   ) : null}
                   {["pending_ai", "pending_review"].includes(n.status) ? (
                     <button
