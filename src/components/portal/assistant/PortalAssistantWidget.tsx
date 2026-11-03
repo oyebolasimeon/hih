@@ -24,6 +24,7 @@ export default function PortalAssistantWidget() {
               "Remind me what to check before exiting a lease",
             ]}
             onClose={() => setOpen(false)}
+            storageKey="hih-portal-ai-lang"
           />
         </div>
       ) : null}

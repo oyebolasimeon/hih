@@ -1,6 +1,11 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
+import Select from "@/components/ui/Select";
+import {
+  AI_CHAT_LANGUAGES,
+  type AiChatLanguage,
+} from "@/lib/chat/languages";
 
 export type ChatTurn = {
   id: string;
@@ -16,7 +21,13 @@ type ChatPanelProps = {
   disclaimer: string;
   emptyHint: string;
   onClose: () => void;
+  storageKey?: string;
 };
+
+const LANG_OPTIONS = AI_CHAT_LANGUAGES.map((l) => ({
+  value: l.value,
+  label: `${l.nativeLabel}`,
+}));
 
 export default function ChatPanel({
   title,
@@ -26,13 +37,29 @@ export default function ChatPanel({
   disclaimer,
   emptyHint,
   onClose,
+  storageKey = "hih-ai-lang",
 }: ChatPanelProps) {
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [language, setLanguage] = useState<AiChatLanguage>("en");
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (
+        saved &&
+        AI_CHAT_LANGUAGES.some((l) => l.value === saved)
+      ) {
+        setLanguage(saved as AiChatLanguage);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [storageKey]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -41,6 +68,18 @@ export default function ChatPanel({
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  function onLanguageChange(value: string) {
+    const next = (AI_CHAT_LANGUAGES.some((l) => l.value === value)
+      ? value
+      : "en") as AiChatLanguage;
+    setLanguage(next);
+    try {
+      localStorage.setItem(storageKey, next);
+    } catch {
+      /* ignore */
+    }
+  }
 
   async function send(text: string) {
     const message = text.trim();
@@ -62,6 +101,7 @@ export default function ChatPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message,
+          language,
           history: history.slice(0, -1).map((t) => ({
             role: t.role,
             content: t.content,
@@ -111,10 +151,26 @@ export default function ChatPanel({
           className="rounded-md p-2 text-muted hover:bg-surface-dark hover:text-foreground"
           aria-label="Close chat"
         >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            className="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
             <path d="M6 6l12 12M18 6L6 18" />
           </svg>
         </button>
+      </div>
+
+      <div className="border-b border-border bg-surface/70 px-4 py-2.5">
+        <Select
+          label="Reply language"
+          value={language}
+          onChange={onLanguageChange}
+          options={LANG_OPTIONS}
+          className="text-sm"
+        />
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
@@ -147,7 +203,10 @@ export default function ChatPanel({
                 turn.role === "user"
                   ? "bg-brand text-[#0c0d0b] rounded-br-md"
                   : "bg-surface border border-border rounded-bl-md"
-              }`}
+              } ${language === "ar" && turn.role === "assistant" ? "text-right" : ""}`}
+              dir={
+                language === "ar" && turn.role === "assistant" ? "rtl" : "auto"
+              }
             >
               {turn.content}
             </div>

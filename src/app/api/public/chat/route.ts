@@ -1,13 +1,28 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { completeChat } from "@/lib/chat/openai-chat";
+import { completeChatWithTools } from "@/lib/chat/openai-chat";
+import {
+  AI_CHAT_LANGUAGE_VALUES,
+  languageInstruction,
+  type AiChatLanguage,
+} from "@/lib/chat/languages";
 import {
   PUBLIC_CHAT_SYSTEM,
   buildPublicChatContext,
 } from "@/lib/chat/public-context";
+import {
+  SEARCH_LISTINGS_TOOL,
+  runPublicChatTool,
+  searchPublicListings,
+} from "@/lib/chat/listing-search-tool";
+
+const langEnum = z.enum(
+  AI_CHAT_LANGUAGE_VALUES as unknown as [AiChatLanguage, ...AiChatLanguage[]]
+);
 
 const bodySchema = z.object({
   message: z.string().trim().min(1).max(2000),
+  language: langEnum.optional().default("en"),
   history: z
     .array(
       z.object({
@@ -20,6 +35,43 @@ const bodySchema = z.object({
     .default([]),
 });
 
+function looksLikeListingQuery(message: string) {
+  return /(listing|rent|apartment|house|hostel|home|property|properties|flat|duplex|self[-\s]?contain|lagos|abuja|ikeja|lekki|available)/i.test(
+    message
+  );
+}
+
+function inferListingArgs(message: string) {
+  const lower = message.toLowerCase();
+  const args: {
+    city?: string;
+    state?: string;
+    listingType?: string;
+    query?: string;
+    limit?: number;
+  } = { limit: 8, query: message };
+
+  if (/\blagos\b/.test(lower)) {
+    args.state = "Lagos";
+    args.city = "Lagos";
+  } else if (/\babuja\b|\bfct\b/.test(lower)) {
+    args.state = "FCT";
+    args.city = "Abuja";
+  } else if (/\bikeja\b/.test(lower)) {
+    args.city = "Ikeja";
+    args.state = "Lagos";
+  } else if (/\blekki\b/.test(lower)) {
+    args.city = "Lekki";
+    args.state = "Lagos";
+  }
+
+  if (/\bhostel\b/.test(lower)) args.listingType = "hostel";
+  else if (/\bapartment\b|\bflat\b/.test(lower)) args.listingType = "apartment";
+  else if (/\bhouse\b|\bduplex\b/.test(lower)) args.listingType = "house";
+
+  return args;
+}
+
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   const parsed = bodySchema.safeParse(body);
@@ -30,15 +82,26 @@ export async function POST(req: Request) {
     );
   }
 
-  const { message, history } = parsed.data;
+  const { message, history, language } = parsed.data;
   const context = await buildPublicChatContext(message);
 
-  const result = await completeChat({
+  // Prefetch listings for property questions so answers never "refuse" empty context
+  let listingPrefetch = "";
+  if (looksLikeListingQuery(message)) {
+    const pre = await searchPublicListings(inferListingArgs(message));
+    listingPrefetch = `\n\nPREFETCHED_LISTINGS (from database tool search_listings):\n${JSON.stringify(pre)}`;
+  }
+
+  const result = await completeChatWithTools({
     messages: [
       { role: "system", content: PUBLIC_CHAT_SYSTEM },
       {
         role: "system",
-        content: `CONTEXT:\n${context || "No extra context available."}`,
+        content: `LANGUAGE:\n${languageInstruction(language)}`,
+      },
+      {
+        role: "system",
+        content: `CONTEXT:\n${context || "No FAQ context."}${listingPrefetch}`,
       },
       ...history.map((h) => ({
         role: h.role as "user" | "assistant",
@@ -46,7 +109,11 @@ export async function POST(req: Request) {
       })),
       { role: "user", content: message },
     ],
-    temperature: 0.35,
+    tools: [SEARCH_LISTINGS_TOOL],
+    runTool: runPublicChatTool,
+    temperature: 0.3,
+    maxTokens: 1200,
+    maxToolRounds: 2,
   });
 
   if (!result.ok) {

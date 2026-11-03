@@ -33,15 +33,16 @@ export default function PublicChatWidget() {
             title="Ask House In Hands"
             subtitle="Properties, platform & how it works"
             endpoint="/api/public/chat"
-            emptyHint="Ask about listings, renting in Nigeria, fees, or how House In Hands works."
+            emptyHint="Ask for real verified listings (e.g. rentals in Lagos), or how House In Hands works."
             disclaimer="AI can be wrong. Not legal advice."
             starterPrompts={[
-              "What is House In Hands?",
-              "How do I find a home in Lagos?",
+              "Listings available for rent in Lagos",
+              "What apartments are live right now?",
+              "How does House In Hands work?",
               "Are listings verified?",
-              "Show me apartment options you know about",
             ]}
             onClose={() => setOpen(false)}
+            storageKey="hih-public-ai-lang"
           />
         </div>
       ) : null}

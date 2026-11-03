@@ -3,13 +3,23 @@ import { z } from "zod";
 import { assertUser } from "@/lib/api-auth";
 import { completeChat } from "@/lib/chat/openai-chat";
 import {
+  AI_CHAT_LANGUAGE_VALUES,
+  languageInstruction,
+  type AiChatLanguage,
+} from "@/lib/chat/languages";
+import {
   PORTAL_ASSISTANT_SYSTEM,
   buildPortalAssistantContext,
   findReceiptHint,
 } from "@/lib/chat/portal-context";
 
+const langEnum = z.enum(
+  AI_CHAT_LANGUAGE_VALUES as unknown as [AiChatLanguage, ...AiChatLanguage[]]
+);
+
 const bodySchema = z.object({
   message: z.string().trim().min(1).max(2000),
+  language: langEnum.optional().default("en"),
   history: z
     .array(
       z.object({
@@ -35,13 +45,17 @@ export async function POST(req: Request) {
     );
   }
 
-  const { message, history } = parsed.data;
+  const { message, history, language } = parsed.data;
   const context = await buildPortalAssistantContext(user.id);
   const receiptHint = findReceiptHint(context, message);
 
   const result = await completeChat({
     messages: [
       { role: "system", content: PORTAL_ASSISTANT_SYSTEM },
+      {
+        role: "system",
+        content: `LANGUAGE:\n${languageInstruction(language)}`,
+      },
       {
         role: "system",
         content: `USER_CONTEXT:\n${context}${
@@ -63,9 +77,18 @@ export async function POST(req: Request) {
   }
 
   let reply = result.text;
+  // Keep disclaimer in English for clarity even when reply language differs,
+  // unless the model already included a local equivalent containing the English phrase.
   if (!/not legal advice/i.test(reply)) {
-    reply +=
-      "\n\n_Note: This is not legal advice. For legal matters, consult a qualified lawyer._";
+    const disclaimers: Record<AiChatLanguage, string> = {
+      en: "\n\n_Note: This is not legal advice. For legal matters, consult a qualified lawyer._",
+      yo: "\n\n_Àkíyèsí: Èyí kì í ṣe ìmọ̀ràn òfin. Fún ọ̀ràn òfin, kàn sí agbẹjọ́rò tó ní ìmọ̀._",
+      ha: "\n\n_Lura: Wannan ba shawarar shari'a ba ne. Domin al'amuran shari'a, tuntubi lauya._",
+      pcm: "\n\n_Note: Dis one no be legal advice. For legal matter, see proper lawyer._",
+      ar: "\n\n_ملاحظة: هذا ليس استشارة قانونية. للمسائل القانونية راجع محامياً مؤهلاً._",
+      ig: "\n\n_Nkwupụta: Nke a abụghị ndụmọdụ iwu. Maka ihe gbasara iwu, gwa onye ọka iwu._",
+    };
+    reply += disclaimers[language] || disclaimers.en;
   }
 
   return NextResponse.json({
