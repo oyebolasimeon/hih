@@ -65,8 +65,8 @@ export default function Hero() {
             <Link href="/register" className="site-btn site-btn-teal">
               Find a home
             </Link>
-            <Link href="/how-it-works" className="site-btn site-btn-ghost">
-              See how it works
+            <Link href="/waitlist" className="site-btn site-btn-ghost">
+              Join the waitlist
             </Link>
           </motion.div>
         </motion.div>
