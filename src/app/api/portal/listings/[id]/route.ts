@@ -6,6 +6,7 @@ import { connectDB } from "@/lib/db";
 import { Listing } from "@/models/Listing";
 import { serializeListing } from "@/lib/listing-serialize";
 import { actorFromUser, writeAudit } from "@/lib/audit";
+import { runListingAiVerification } from "@/lib/listing-verification";
 import {
   requireActiveProfile,
   requireVerifiedProfile,
@@ -199,6 +200,27 @@ export async function PATCH(
       verificationStatus: listing.verificationStatus,
     } },
   });
+
+  const shouldAiReview =
+    listing.availabilityStatus === "available" ||
+    listing.availabilityStatus === "occupied" ||
+    data.images !== undefined ||
+    data.description !== undefined ||
+    data.title !== undefined ||
+    data.address !== undefined;
+
+  if (shouldAiReview) {
+    await runListingAiVerification({
+      listing,
+      actor: actorFromUser(user),
+      trigger:
+        listing.availabilityStatus === "available"
+          ? "publish"
+          : listing.availabilityStatus === "occupied"
+            ? "occupied_onboard"
+            : "update",
+    });
+  }
 
   return NextResponse.json({
     listing: serializeListing(listing.toObject()),

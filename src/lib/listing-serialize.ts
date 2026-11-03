@@ -24,6 +24,12 @@ export type ListingLean = {
   featured?: boolean;
   mapEnabled?: boolean;
   publishedAt?: Date | null;
+  aiRecommendation?: string | null;
+  aiConfidence?: number | null;
+  aiReasons?: string[];
+  aiSummary?: string | null;
+  requiresManualReview?: boolean;
+  aiReviewedAt?: Date | null;
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -62,6 +68,12 @@ export function serializeListing(
     legalSettings: (doc as { legalSettings?: unknown }).legalSettings || {
       provider: "hih",
     },
+    aiRecommendation: doc.aiRecommendation || null,
+    aiConfidence: doc.aiConfidence ?? null,
+    aiReasons: doc.aiReasons || [],
+    aiSummary: doc.aiSummary || null,
+    requiresManualReview: Boolean(doc.requiresManualReview),
+    aiReviewedAt: doc.aiReviewedAt || null,
     createdAt: doc.createdAt || null,
     updatedAt: doc.updatedAt || null,
     ownerVerified: extras?.ownerVerified ?? false,

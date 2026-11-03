@@ -16,8 +16,11 @@ export default async function AdminListingsPage() {
         <h1 className="text-2xl sm:text-3xl font-display font-semibold">
           Listing verification
         </h1>
-        <p className="mt-1 text-sm text-muted">
-          Verify property listings before they appear as trusted in search.
+        <p className="mt-1 text-sm text-muted max-w-2xl">
+          Landlords can upload full property details, but listings are never
+          auto-approved. House In Hands AI reviews each upload; if it is not
+          satisfied the case is escalated here with email alerts. Approve only
+          when you are ready for marketplace visibility.
         </p>
       </div>
       <AdminListingsClient />

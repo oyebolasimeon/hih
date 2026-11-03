@@ -49,6 +49,7 @@ The product spans marketplace discovery through ongoing property operations, pay
 | PM-2 | Status: draft / available / pending / occupied | P0 — exists |
 | PM-3 | DIY software management of portfolio | P0 — exists |
 | PM-4 | Onboard **already owned & occupied** homes for management (no marketplace publish) | P0 — **this release** |
+| PM-4a | Uploaded properties are **not approved immediately** — AI reviews details/media; if not satisfied escalate to admin with **email + in-app** notifications; human admin is final marketplace gate | P0 — **this release** |
 | PM-5 | Assisted / Fully Managed service packages | P1 (commercial + ops process) |
 | PM-6 | Multi-unit / estate hierarchy | P2 |
 
@@ -263,4 +264,5 @@ Tenants need one place to see their occupied home (property, cost, documents, hi
 | Occupied onboard + tenant invite (application link, legal ack, maintenance) | Implemented in this release |
 | My Home hub + exit notices (AI + legal review + refund) | Implemented in this release |
 | Building issues + AI Property Manager (proof → escalate → close) | Implemented in this release |
+| Listing AI review + admin escalate/email (no auto-approve) | Implemented in this release |
 | Developer inventory / market intelligence | Roadmap |

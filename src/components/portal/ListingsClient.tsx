@@ -35,6 +35,9 @@ type ListingRow = {
   sizeSqm: number | null;
   availabilityStatus: string;
   verificationStatus: string;
+  aiRecommendation?: string | null;
+  aiSummary?: string | null;
+  requiresManualReview?: boolean;
   mapEnabled?: boolean;
   legalSettings?: {
     provider?: "hih" | "own_legal";
@@ -388,14 +391,14 @@ function ListingsManager() {
       setMessage(
         editingId
           ? occupiedOnboard
-            ? "Property updated as occupied (management only). Invite your current tenant next."
+            ? "Property updated as occupied. AI is reviewing details; invite your current tenant next."
             : publishNow
-              ? "Listing updated and submitted for verification."
+              ? "Listing updated. AI is reviewing it now — it will not go live until an admin approves."
               : "Listing updated."
           : occupiedOnboard
-            ? "Occupied property saved. Invite the current tenant to manage rent and documents."
+            ? "Occupied property saved. AI is reviewing details; invite the current tenant to manage rent and documents."
             : publishNow
-              ? "Listing submitted for verification."
+              ? "Property submitted. AI is reviewing it — not approved yet. Admins are notified if anything needs a human check."
               : "Draft listing saved."
       );
       resetForm();
@@ -420,7 +423,9 @@ function ListingsManager() {
       setError(data.error || "Could not publish listing.");
       return;
     }
-    setMessage("Listing submitted for verification.");
+    setMessage(
+      "Submitted for AI + admin verification. It will not appear on the marketplace until approved."
+    );
     await load();
   }
 
@@ -1035,6 +1040,7 @@ function ListingsManager() {
                         className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${verificationClass(l.verificationStatus)}`}
                       >
                         {l.verificationStatus}
+                        {l.requiresManualReview ? " · AI→admin" : ""}
                       </span>
                     </div>
                     <div className="absolute bottom-0 left-0 right-0 p-4">

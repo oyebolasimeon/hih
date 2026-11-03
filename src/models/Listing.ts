@@ -74,6 +74,13 @@ export interface IListing {
   mapEnabled: boolean;
   publishedAt?: Date;
   legalSettings?: IListingLegalSettings;
+  /** AI listing review (never auto-publishes; admin remains final gate) */
+  aiRecommendation?: "approve" | "manual_review" | "reject";
+  aiConfidence?: number;
+  aiReasons?: string[];
+  aiSummary?: string;
+  requiresManualReview?: boolean;
+  aiReviewedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -172,6 +179,15 @@ const ListingSchema = new Schema<IListing>(
     mapEnabled: { type: Boolean, default: false },
     publishedAt: { type: Date },
     legalSettings: { type: ListingLegalSettingsSchema },
+    aiRecommendation: {
+      type: String,
+      enum: ["approve", "manual_review", "reject"],
+    },
+    aiConfidence: { type: Number, min: 0, max: 1 },
+    aiReasons: { type: [String], default: [] },
+    aiSummary: { type: String, trim: true, maxlength: 2000 },
+    requiresManualReview: { type: Boolean, default: false, index: true },
+    aiReviewedAt: { type: Date },
   },
   { timestamps: true }
 );

@@ -10,6 +10,7 @@ import {
 import { serializeListing } from "@/lib/listing-serialize";
 import { getPlatformFees } from "@/lib/platform-fees";
 import { actorFromUser, writeAudit } from "@/lib/audit";
+import { runListingAiVerification } from "@/lib/listing-verification";
 
 const imageSchema = z.object({
   url: z.string().url(),
@@ -183,6 +184,23 @@ export async function POST(req: Request) {
       verificationStatus: listing.verificationStatus,
     },
   });
+
+  // AI reviews every uploaded property; marketplace never auto-approves.
+  if (
+    publishing ||
+    availabilityStatus === "occupied" ||
+    images.length > 0
+  ) {
+    await runListingAiVerification({
+      listing,
+      actor: actorFromUser(user),
+      trigger: publishing
+        ? "publish"
+        : availabilityStatus === "occupied"
+          ? "occupied_onboard"
+          : "create",
+    });
+  }
 
   return NextResponse.json(
     { listing: serializeListing(listing.toObject()) },

@@ -20,7 +20,10 @@ export async function GET(req: Request) {
   const status = url.searchParams.get("status") || "pending";
 
   const filter: Record<string, unknown> = {};
-  if (status && status !== "all") {
+  if (status === "ai_flagged") {
+    filter.verificationStatus = "pending";
+    filter.requiresManualReview = true;
+  } else if (status && status !== "all") {
     filter.verificationStatus = status;
   }
 

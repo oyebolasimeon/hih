@@ -17,6 +17,11 @@ type AdminListing = {
   images: { url: string; isPrimary?: boolean }[];
   availabilityStatus: string;
   verificationStatus: string;
+  aiRecommendation?: string | null;
+  aiConfidence?: number | null;
+  aiReasons?: string[];
+  aiSummary?: string | null;
+  requiresManualReview?: boolean;
   ownerName: string;
   ownerEmail: string;
   ownerProfileType: string;
@@ -94,6 +99,7 @@ export default function AdminListingsClient() {
             onChange={setFilter}
             options={[
               { value: "pending", label: "Pending verification" },
+              { value: "ai_flagged", label: "AI flagged / escalate" },
               { value: "verified", label: "Verified" },
               { value: "rejected", label: "Rejected" },
               { value: "unverified", label: "Unverified" },
@@ -157,6 +163,10 @@ export default function AdminListingsClient() {
                     <p className="text-xs text-muted">
                       Availability: {l.availabilityStatus} · Verification:{" "}
                       {l.verificationStatus}
+                      {l.aiRecommendation
+                        ? ` · AI: ${l.aiRecommendation.replace(/_/g, " ")}`
+                        : ""}
+                      {l.requiresManualReview ? " · needs human review" : ""}
                       {l.createdAt
                         ? ` · ${new Date(l.createdAt).toLocaleString()}`
                         : ""}
@@ -164,6 +174,24 @@ export default function AdminListingsClient() {
                     <p className="text-xs text-muted line-clamp-3">
                       {l.description}
                     </p>
+                    {l.aiSummary ? (
+                      <div className="mt-2 rounded border border-border/70 bg-surface/50 p-2 space-y-1">
+                        <p className="text-[10px] uppercase tracking-wider text-teal font-semibold">
+                          AI listing review
+                          {l.aiConfidence != null
+                            ? ` · ${Math.round(l.aiConfidence * 100)}%`
+                            : ""}
+                        </p>
+                        <p className="text-xs">{l.aiSummary}</p>
+                        {l.aiReasons?.length ? (
+                          <ul className="text-[11px] text-muted list-disc pl-4">
+                            {l.aiReasons.map((r, i) => (
+                              <li key={`${l.id}-ai-${i}`}>{r}</li>
+                            ))}
+                          </ul>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
 
