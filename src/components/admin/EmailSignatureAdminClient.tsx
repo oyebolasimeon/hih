@@ -21,6 +21,11 @@ const SIGNATURES = [
   },
 ] as const;
 
+const PITCH_DECK = {
+  path: "/brand/House-In-Hands-Pitch-Deck.pdf",
+  filename: "House-In-Hands-Pitch-Deck.pdf",
+} as const;
+
 function absoluteUrl(path: string) {
   if (typeof window === "undefined") return path;
   return `${window.location.origin}${path}`;
@@ -122,6 +127,33 @@ export default function EmailSignatureAdminClient() {
         Watch words: Housing you can trust · Property. In Your Hands. · Find it.
         Rent it. Manage it. Grow it. · www.houseinhands.com
       </p>
+
+      <div className="rounded-xl border border-border bg-surface/50 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <p className="font-medium text-sm">Pitch deck (PDF)</p>
+          <p className="text-xs text-muted mt-1">
+            9-slide widescreen deck aligned to the company profile — problem,
+            solution, product, mission and contact.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2 shrink-0">
+          <a
+            href={PITCH_DECK.path}
+            download={PITCH_DECK.filename}
+            className="app-btn app-btn-primary text-xs"
+          >
+            Download deck
+          </a>
+          <a
+            href={PITCH_DECK.path}
+            target="_blank"
+            rel="noreferrer"
+            className="app-btn app-btn-secondary text-xs"
+          >
+            Open PDF
+          </a>
+        </div>
+      </div>
     </section>
   );
 }
