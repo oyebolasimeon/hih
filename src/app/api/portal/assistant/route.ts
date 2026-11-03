@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { assertUser } from "@/lib/api-auth";
+import { connectDB } from "@/lib/db";
 import { completeChat } from "@/lib/chat/openai-chat";
 import {
   AI_CHAT_LANGUAGE_VALUES,
@@ -8,10 +9,18 @@ import {
   type AiChatLanguage,
 } from "@/lib/chat/languages";
 import {
+  appendAssistantTurn,
+  ensureAssistantConversation,
+  loadConversationHistory,
+  serializeConversation,
+  serializeMessage,
+} from "@/lib/chat/assistant-history";
+import {
   PORTAL_ASSISTANT_SYSTEM,
   buildPortalAssistantContext,
   findReceiptHint,
 } from "@/lib/chat/portal-context";
+import { AssistantConversation } from "@/models/AssistantConversation";
 
 const langEnum = z.enum(
   AI_CHAT_LANGUAGE_VALUES as unknown as [AiChatLanguage, ...AiChatLanguage[]]
@@ -20,6 +29,7 @@ const langEnum = z.enum(
 const bodySchema = z.object({
   message: z.string().trim().min(1).max(2000),
   language: langEnum.optional().default("en"),
+  conversationId: z.string().trim().min(1).max(64).optional().nullable(),
   history: z
     .array(
       z.object({
@@ -45,7 +55,28 @@ export async function POST(req: Request) {
     );
   }
 
-  const { message, history, language } = parsed.data;
+  const { message, history, language, conversationId } = parsed.data;
+
+  await connectDB();
+  const { conversation, created } = await ensureAssistantConversation({
+    userId: user.id,
+    conversationId,
+    language,
+    firstMessage: message,
+  });
+
+  const storedHistory = await loadConversationHistory(
+    String(conversation._id),
+    16
+  );
+  const chatHistory =
+    storedHistory.length > 0
+      ? storedHistory
+      : history.map((h) => ({
+          role: h.role as "user" | "assistant",
+          content: h.content,
+        }));
+
   const context = await buildPortalAssistantContext(user.id);
   const receiptHint = findReceiptHint(context, message);
 
@@ -62,7 +93,7 @@ export async function POST(req: Request) {
           receiptHint ? `\n\nRECEIPT_HINT:\n${receiptHint}` : ""
         }`,
       },
-      ...history.map((h) => ({
+      ...chatHistory.map((h) => ({
         role: h.role as "user" | "assistant",
         content: h.content,
       })),
@@ -77,8 +108,6 @@ export async function POST(req: Request) {
   }
 
   let reply = result.text;
-  // Keep disclaimer in English for clarity even when reply language differs,
-  // unless the model already included a local equivalent containing the English phrase.
   if (!/not legal advice/i.test(reply)) {
     const disclaimers: Record<AiChatLanguage, string> = {
       en: "\n\n_Note: This is not legal advice. For legal matters, consult a qualified lawyer._",
@@ -91,8 +120,23 @@ export async function POST(req: Request) {
     reply += disclaimers[language] || disclaimers.en;
   }
 
+  const { userMsg, assistantMsg } = await appendAssistantTurn({
+    conversationId: conversation._id,
+    userId: user.id,
+    userContent: message,
+    assistantContent: reply,
+    language,
+  });
+
+  const fresh = await AssistantConversation.findById(conversation._id);
+  const convDoc = fresh || conversation;
+
   return NextResponse.json({
     reply,
+    conversationId: String(conversation._id),
+    conversation: serializeConversation(convDoc),
+    messages: [serializeMessage(userMsg), serializeMessage(assistantMsg)],
+    created,
     disclaimer:
       "House In Hands AI Assistant is not a lawyer and does not provide legal advice.",
   });
