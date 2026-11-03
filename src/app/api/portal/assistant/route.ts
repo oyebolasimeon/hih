@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { assertUser } from "@/lib/api-auth";
 import { connectDB } from "@/lib/db";
-import { completeChat } from "@/lib/chat/openai-chat";
+import { completeChatWithTools } from "@/lib/chat/openai-chat";
 import {
   AI_CHAT_LANGUAGE_VALUES,
   languageInstruction,
@@ -20,6 +20,10 @@ import {
   buildPortalAssistantContext,
   findReceiptHint,
 } from "@/lib/chat/portal-context";
+import {
+  PORTAL_ASSISTANT_TOOLS,
+  runPortalAssistantTool,
+} from "@/lib/chat/portal-message-tool";
 import { AssistantConversation } from "@/models/AssistantConversation";
 
 const langEnum = z.enum(
@@ -80,7 +84,7 @@ export async function POST(req: Request) {
   const context = await buildPortalAssistantContext(user.id);
   const receiptHint = findReceiptHint(context, message);
 
-  const result = await completeChat({
+  const result = await completeChatWithTools({
     messages: [
       { role: "system", content: PORTAL_ASSISTANT_SYSTEM },
       {
@@ -99,8 +103,12 @@ export async function POST(req: Request) {
       })),
       { role: "user", content: message },
     ],
+    tools: PORTAL_ASSISTANT_TOOLS,
+    runTool: (name, argsJson) =>
+      runPortalAssistantTool(user.id, name, argsJson),
     temperature: 0.35,
     maxTokens: 1100,
+    maxToolRounds: 3,
   });
 
   if (!result.ok) {

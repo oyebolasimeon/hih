@@ -3,9 +3,7 @@ import { z } from "zod";
 import mongoose from "mongoose";
 import { assertUser } from "@/lib/api-auth";
 import { connectDB } from "@/lib/db";
-import { notifyUser } from "@/lib/profile-context";
-import { publishMessageEvent } from "@/lib/realtime/message-bus";
-import { sendWebPushToUser } from "@/lib/push";
+import { assertCanMessage, sendPortalMessage } from "@/lib/portal-messages";
 import { Conversation } from "@/models/Conversation";
 import { Message } from "@/models/Message";
 import { User } from "@/models/User";
@@ -124,32 +122,9 @@ export async function POST(req: Request) {
     );
   }
 
-  if (parsed.data.toUserId === user.id) {
-    return NextResponse.json(
-      { error: "You cannot message yourself." },
-      { status: 400 }
-    );
-  }
-  if (!mongoose.Types.ObjectId.isValid(parsed.data.toUserId)) {
-    return NextResponse.json({ error: "Invalid recipient." }, { status: 400 });
-  }
-  if (
-    parsed.data.listingId &&
-    !mongoose.Types.ObjectId.isValid(parsed.data.listingId)
-  ) {
-    return NextResponse.json({ error: "Invalid listing." }, { status: 400 });
-  }
-
   await connectDB();
-  const recipient = await User.findById(parsed.data.toUserId)
-    .select("name email")
-    .lean();
-  if (!recipient) {
-    return NextResponse.json({ error: "Recipient not found." }, { status: 404 });
-  }
 
-  let conversation = null as InstanceType<typeof Conversation> | null;
-
+  // Existing threads: still require the other participant to be an allowlisted contact
   if (parsed.data.conversationId) {
     if (!mongoose.Types.ObjectId.isValid(parsed.data.conversationId)) {
       return NextResponse.json(
@@ -157,112 +132,59 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-    conversation = await Conversation.findOne({
+    const conversation = await Conversation.findOne({
       _id: parsed.data.conversationId,
       participantUserIds: user.id,
-    });
+    }).lean();
     if (!conversation) {
       return NextResponse.json(
         { error: "Conversation not found." },
         { status: 404 }
       );
     }
-  } else {
-    const participants = [user.id, parsed.data.toUserId]
-      .map((id) => new mongoose.Types.ObjectId(id))
-      .sort((a, b) => String(a).localeCompare(String(b)));
-
-    const filter: Record<string, unknown> = {
-      participantUserIds: { $all: participants, $size: 2 },
-    };
-    if (parsed.data.listingId) {
-      filter.listingId = parsed.data.listingId;
-    } else {
-      filter.listingId = { $exists: false };
-    }
-
-    conversation = await Conversation.findOne(filter);
-    if (!conversation) {
-      conversation = await Conversation.create({
-        participantUserIds: participants,
-        listingId: parsed.data.listingId || undefined,
-        lastMessageAt: new Date(),
-        lastPreview: parsed.data.body.slice(0, 280),
-      });
+    const otherId = (conversation.participantUserIds as mongoose.Types.ObjectId[])
+      .map(String)
+      .find((id) => id !== user.id);
+    if (!otherId || otherId !== parsed.data.toUserId) {
+      return NextResponse.json(
+        { error: "Recipient does not match this conversation." },
+        { status: 403 }
+      );
     }
   }
 
-  const preview = parsed.data.body.slice(0, 280);
-  const message = await Message.create({
-    conversationId: conversation!._id,
+  const gate = await assertCanMessage(
+    user.id,
+    parsed.data.toUserId,
+    parsed.data.listingId
+  );
+  if (!gate.ok) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+  if (gate.contact.profileStatus === "suspended") {
+    return NextResponse.json(
+      { error: `Cannot message ${gate.contact.name} — their profile is suspended.` },
+      { status: 403 }
+    );
+  }
+
+  const result = await sendPortalMessage({
     fromUserId: user.id,
     toUserId: parsed.data.toUserId,
-    listingId: conversation!.listingId || parsed.data.listingId || undefined,
+    listingId: parsed.data.listingId || gate.contact.listingId,
     body: parsed.data.body,
-    read: false,
+    conversationId: parsed.data.conversationId,
+    alreadyVerified: true,
   });
 
-  conversation!.lastMessageAt = new Date();
-  conversation!.lastPreview = preview;
-  await conversation!.save();
-
-  const liveMessage = {
-    id: String(message._id),
-    conversationId: String(message.conversationId),
-    fromUserId: String(message.fromUserId),
-    toUserId: String(message.toUserId),
-    listingId: message.listingId ? String(message.listingId) : null,
-    body: message.body,
-    read: message.read,
-    createdAt: (message.createdAt as Date).toISOString(),
-  };
-
-  const liveEvent = {
-    type: "message" as const,
-    conversationId: liveMessage.conversationId,
-    message: liveMessage,
-    preview,
-  };
-
-  await Promise.all([
-    publishMessageEvent(parsed.data.toUserId, liveEvent),
-    publishMessageEvent(user.id, liveEvent),
-    notifyUser({
-      userId: parsed.data.toUserId,
-      type: "message.received",
-      title: "New message",
-      body: preview,
-      link: `/portal/messages?c=${liveMessage.conversationId}`,
-      meta: {
-        conversationId: liveMessage.conversationId,
-        messageId: liveMessage.id,
-      },
-      email: recipient.email
-        ? { to: recipient.email, subject: "New message on House In Hands" }
-        : undefined,
-    }),
-    sendWebPushToUser({
-      userId: parsed.data.toUserId,
-      title: "New message",
-      body: preview,
-      link: `/portal/messages?c=${liveMessage.conversationId}`,
-      tag: `msg-${liveMessage.conversationId}`,
-    }),
-  ]);
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.status });
+  }
 
   return NextResponse.json(
     {
-      conversation: serializeConversation(
-        conversation!.toObject() as unknown as Record<string, unknown>,
-        {
-          otherUser: {
-            id: String(recipient._id),
-            name: recipient.name || "User",
-            email: recipient.email || "",
-          },
-        }
-      ),
-      message: liveMessage,
+      conversation: result.conversation,
+      message: result.message,
     },
     { status: 201 }
   );

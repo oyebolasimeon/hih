@@ -1,3 +1,4 @@
+import { appUrl, APP_PATHS } from "@/lib/app-url";
 import { connectDB } from "@/lib/db";
 import { Listing } from "@/models/Listing";
 
@@ -72,12 +73,6 @@ export const SEARCH_LISTINGS_TOOL = {
     },
   },
 };
-
-const appBase = () =>
-  (process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "https://www.houseinhands.com").replace(
-    /\/$/,
-    ""
-  );
 
 /**
  * Query ONLY verified + available public listings.
@@ -166,7 +161,6 @@ export async function searchPublicListings(
       .lean();
   }
 
-  const base = appBase();
   return {
     count: results.length,
     listings: results.map((l) => ({
@@ -183,7 +177,7 @@ export async function searchPublicListings(
       bathrooms: l.bathrooms ?? null,
       amenities: (l.amenities || []).slice(0, 8),
       summary: (l.description || "").slice(0, 220),
-      url: `${base}/listings/${String(l._id)}`,
+      url: appUrl(APP_PATHS.listing(String(l._id))),
     })),
   };
 }

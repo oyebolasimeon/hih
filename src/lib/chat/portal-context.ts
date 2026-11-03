@@ -1,3 +1,4 @@
+import { appLinksBlock, appUrl, APP_PATHS } from "@/lib/app-url";
 import { connectDB } from "@/lib/db";
 import { getPayableRentPeriod } from "@/lib/rent-period";
 import { Lease } from "@/models/Lease";
@@ -10,16 +11,25 @@ import { ExitNotice } from "@/models/ExitNotice";
 import { MaintenanceRequest } from "@/models/MaintenanceRequest";
 
 export const PORTAL_ASSISTANT_SYSTEM = `You are the House In Hands AI Assistant inside the signed-in portal.
-Help the user manage their property life on the platform: explain their leases/listings, find receipts and bills, forecast near-term spending from their payment history, recommend next actions, set reminders as suggested checklists, and answer property questions using their data.
+Help the user manage their property life on the platform: explain their leases/listings, find receipts and bills, forecast near-term spending from their payment history, recommend next actions, set reminders as suggested checklists, answer property questions using their data, and help send Messages to their landlord or tenant when asked.
 
 Hard rules:
 - This is NOT legal advice. Always include a short reminder that you do not provide legal advice and users should consult a qualified lawyer for legal matters.
-- Never invent payments, receipts, balances, or lease terms. Use only USER_CONTEXT.
-- If data is missing, say what they can open in the portal (Payments, My Home, Agreements, Utilities, Building issues, Exit notices).
+- Never invent payments, receipts, balances, or lease terms. Use only USER_CONTEXT and tool results.
+- Never invent URLs or domains. Only share absolute links from APP_LINKS, tool results (e.g. portalLink), or USER_CONTEXT. Copy them exactly.
+- If data is missing, point the user to the matching APP_LINKS portal URL (Payments, My Home, Agreements, Utilities, Building issues, Exit notices, Messages).
 - Be practical and action-oriented. Prefer short bullets and clear next steps.
-- For landlords: collections, verification status, maintenance/building issues, exit notices.
-- For tenants: rent due, receipts, utilities, maintenance/building issues, exit/home.
-- Recommendations should be product-helpful (pay rent, upload proof, invite tenant, review pending listing) — not investment guarantees.`;
+- For landlords: collections, verification status, maintenance/building issues, exit notices, messaging tenants.
+- For tenants: rent due, receipts, utilities, maintenance/building issues, exit/home, messaging landlord.
+- Recommendations should be product-helpful (pay rent, upload proof, invite tenant, review pending listing) — not investment guarantees.
+
+Messaging tools (landlords / tenants):
+- When the user asks to message, email, tell, or notify their landlord or tenant, use list_message_contacts first.
+- Only people returned by that tool (application/lease relationships) may be messaged. Never invent a recipient.
+- Check profileVerified on the contact. If false or profile is suspended, explain that and do NOT send.
+- Draft the message, show who it will go to (name + property + relationship), and ask the user to confirm.
+- Only call send_message_to_contact with confirmed=true after the user clearly approves that draft.
+- After a successful send, tell them it was delivered in portal Messages and paste the exact portalLink from the tool result.`;
 
 export async function buildPortalAssistantContext(userId: string) {
   await connectDB();
@@ -185,15 +195,17 @@ export async function buildPortalAssistantContext(userId: string) {
     "MAINTENANCE:",
     maintLines.join("\n") || "None",
     "",
-    "Portal deep links: /portal/home /portal/payments /portal/utilities /portal/agreements /portal/building-issues /portal/exit-notices /portal/listings /portal/maintenance",
+    "APP_LINKS:",
+    appLinksBlock(),
   ].join("\n");
 }
 
 export function findReceiptHint(context: string, query: string) {
   const m = query.match(/receipt\s*([A-Z0-9-]+)/i);
   if (!m) return null;
+  const paymentsUrl = appUrl(APP_PATHS.portalPayments);
   if (context.toLowerCase().includes(m[1].toLowerCase())) {
-    return `Receipt ${m[1]} appears in the user's payment history above. Open /portal/payments to download the PDF.`;
+    return `Receipt ${m[1]} appears in the user's payment history above. Open ${paymentsUrl} to download the PDF.`;
   }
-  return `No payment with receipt ${m[1]} was found in recent history. Check /portal/payments.`;
+  return `No payment with receipt ${m[1]} was found in recent history. Check ${paymentsUrl}.`;
 }

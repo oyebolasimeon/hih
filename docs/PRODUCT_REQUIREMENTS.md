@@ -103,7 +103,7 @@ The product spans marketplace discovery through ongoing property operations, pay
 | PAS-2 | IoT / device hooks (experimental) | P2 — shell exists |
 | PAS-3 | SLA packages for Fully Managed clients | P2 |
 | PAS-4 | **Public website AI chat** — answers about House In Hands, verified listings & platform topics; reply language: English, Yoruba, Hausa, Pidgin, Arabic, Igbo | P0 — **this release** |
-| PAS-5 | **Portal AI Assistant** — manage/remind/receipts/forecast/recommend; **not legal advice**; same reply languages as PAS-4; **saved chat history** (resume / new chat / delete) | P0 — **this release** |
+| PAS-5 | **Portal AI Assistant** — manage/remind/receipts/forecast/recommend; **not legal advice**; same reply languages as PAS-4; **saved chat history**; **send Messages to landlord/tenant** after contact + verified-profile check + user confirm | P0 — **this release** |
 | PAS-6 | **Public waitlist** — capture email + phone for official launch notifications | P0 — **this release** |
 
 ### 3.7 Real estate data and intelligence

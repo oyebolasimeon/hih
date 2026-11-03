@@ -17,14 +17,16 @@ export function isAiChatLanguage(value: string): value is AiChatLanguage {
 
 export function languageInstruction(lang: AiChatLanguage) {
   const meta = AI_CHAT_LANGUAGES.find((l) => l.value === lang) || AI_CHAT_LANGUAGES[0];
+  const urlRule =
+    " Never invent or rewrite URLs — paste absolute links from tools/APP_LINKS exactly.";
   if (lang === "en") {
-    return "Respond in clear English.";
+    return `Respond in clear English.${urlRule}`;
   }
   if (lang === "pcm") {
-    return "Respond in Nigerian Pidgin (Naija Pidgin). Keep property names, rents, cities, URLs and numbers accurate in their original form.";
+    return `Respond in Nigerian Pidgin (Naija Pidgin). Keep property names, rents, cities, URLs and numbers accurate in their original form.${urlRule}`;
   }
   if (lang === "ar") {
-    return "Respond in Modern Standard Arabic (العربية). Keep property names, rents, cities, URLs and numbers accurate. You may keep brand name “House In Hands” in Latin script.";
+    return `Respond in Modern Standard Arabic (العربية). Keep property names, rents, cities, URLs and numbers accurate. You may keep brand name “House In Hands” in Latin script.${urlRule}`;
   }
-  return `Respond entirely in ${meta.label} (${meta.nativeLabel}). Keep property titles, rents, city/state names, currency amounts, and URLs accurate — do not invent translations that change meaning. Brand name may stay “House In Hands”.`;
+  return `Respond entirely in ${meta.label} (${meta.nativeLabel}). Keep property titles, rents, city/state names, currency amounts, and URLs accurate — do not invent translations that change meaning. Brand name may stay “House In Hands”.${urlRule}`;
 }

@@ -1,3 +1,4 @@
+import { appLinksBlock, appUrl, APP_PATHS } from "@/lib/app-url";
 import { connectDB } from "@/lib/db";
 import { FAQ_SECTIONS } from "@/lib/faq-content";
 import { FaqItem } from "@/models/FaqItem";
@@ -6,6 +7,7 @@ import { FaqItem } from "@/models/FaqItem";
 export async function buildPublicChatContext(query: string) {
   await connectDB();
   const q = query.toLowerCase();
+  const listingsIndex = appUrl(APP_PATHS.listings);
 
   const staticFaq = FAQ_SECTIONS.flatMap((section) =>
     section.items.map((item) => ({
@@ -33,8 +35,12 @@ export async function buildPublicChatContext(query: string) {
         "It helps people find homes, apply, sign digital agreements, pay rent/utilities, raise maintenance/building issues, and manage tenancies.",
         "Landlords can list vacant homes, onboard occupied properties, invite current tenants, collect rent, and manage exit notices.",
         "Public listings are verified before they appear on the marketplace.",
-        "Users can browse /listings and open /listings/{id} for a specific home.",
+        `Users can browse ${listingsIndex} and open listing detail URLs returned by search_listings (never invent listing ids or domains).`,
       ].join(" "),
+    },
+    {
+      source: "App links",
+      text: appLinksBlock(),
     },
   ];
 
@@ -70,10 +76,11 @@ export const PUBLIC_CHAT_SYSTEM = `You are the House In Hands website assistant 
 You have ONE database tool: search_listings — it queries ONLY verified public properties available for rent. You must use it whenever users ask for homes, apartments, hostels, rentals, listings, or properties in a place (Lagos, Abuja, etc.).
 
 Rules:
-- When the user asks for available listings, CALL search_listings (e.g. city/state "Lagos") and present the returned homes clearly: title, area, rent, beds, and the listing url.
+- When the user asks for available listings, CALL search_listings (e.g. city/state "Lagos") and present the returned homes clearly: title, area, rent, beds, and the listing url exactly as returned.
 - Do NOT say you cannot provide listings if the tool returned results. Summarise those results.
-- If the tool returns count 0, say none are live for that filter right now and suggest /listings or broadening the search.
+- If the tool returns count 0, say none are live for that filter right now and suggest the listings index URL from APP_LINKS / CONTEXT, or broadening the search.
 - Never invent listings. Only use tool results + FAQ/platform CONTEXT.
+- Never invent URLs or domains. Only paste absolute urls from tool results or APP_LINKS in CONTEXT. Do not guess houseinhands paths or listing ids.
 - Do not access or invent private user, payment, lease, or landlord contact data. The tool only returns public property fields.
 - Do not give legal advice.
 - Keep answers concise and practical. Prefer short bullets for listing results.

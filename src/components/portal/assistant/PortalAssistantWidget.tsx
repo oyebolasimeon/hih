@@ -29,9 +29,9 @@ const LANG_OPTIONS = AI_CHAT_LANGUAGES.map((l) => ({
 const STARTERS = [
   "What rent do I owe right now?",
   "Find my latest rent receipt",
+  "Message my landlord about a maintenance issue",
   "Forecast my property spending next month",
   "What should I do on my open building issues?",
-  "Remind me what to check before exiting a lease",
 ];
 
 const STORAGE_KEY = "hih-portal-ai-lang";
@@ -421,9 +421,10 @@ export default function PortalAssistantWidget() {
               {!loadingThread && turns.length === 0 ? (
                 <div className="space-y-3">
                   <p className="text-sm text-muted">
-                    I can help with your leases, bills, receipts, spending
-                    outlook, building issues and next steps — but I don’t give
-                    legal advice. Chats are saved so you can come back anytime.
+                    I can help with leases, bills, receipts, spending outlook,
+                    building issues, and messaging your landlord or tenant
+                    (after verifying their profile) — but I don’t give legal
+                    advice. Chats are saved so you can come back anytime.
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {STARTERS.map((prompt) => (
