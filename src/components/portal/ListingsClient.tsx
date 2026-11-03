@@ -159,10 +159,18 @@ function ListingsManager() {
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<ListingRow["images"]>([]);
   const [publishNow, setPublishNow] = useState(false);
+  const [occupiedOnboard, setOccupiedOnboard] = useState(false);
   const [legalProvider, setLegalProvider] = useState<"hih" | "own_legal">("hih");
   const [legalCompanyName, setLegalCompanyName] = useState("");
   const [agreementFeePercent, setAgreementFeePercent] = useState("");
   const [adminAgreementFeePercent, setAdminAgreementFeePercent] = useState(10);
+  const [inviteFor, setInviteFor] = useState<ListingRow | null>(null);
+  const [inviteName, setInviteName] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteStart, setInviteStart] = useState("");
+  const [inviteEnd, setInviteEnd] = useState("");
+  const [inviteNotes, setInviteNotes] = useState("");
+  const [inviteBusy, setInviteBusy] = useState(false);
 
   const resetForm = useCallback(() => {
     setEditingId(null);
@@ -184,6 +192,7 @@ function ListingsManager() {
     setImageFiles([]);
     setExistingImages([]);
     setPublishNow(false);
+    setOccupiedOnboard(false);
     setLegalProvider("hih");
     setLegalCompanyName("");
     setAgreementFeePercent("");
@@ -348,13 +357,17 @@ function ListingsManager() {
             : {}),
         },
         ...(editingId
-          ? publishNow
-            ? { availabilityStatus: "available" as const }
-            : {}
+          ? occupiedOnboard
+            ? { availabilityStatus: "occupied" as const }
+            : publishNow
+              ? { availabilityStatus: "available" as const }
+              : {}
           : {
-              availabilityStatus: publishNow
-                ? ("available" as const)
-                : ("draft" as const),
+              availabilityStatus: occupiedOnboard
+                ? ("occupied" as const)
+                : publishNow
+                  ? ("available" as const)
+                  : ("draft" as const),
             }),
       };
 
@@ -374,12 +387,16 @@ function ListingsManager() {
       }
       setMessage(
         editingId
-          ? publishNow
-            ? "Listing updated and submitted for verification."
-            : "Listing updated."
-          : publishNow
-            ? "Listing submitted for verification."
-            : "Draft listing saved."
+          ? occupiedOnboard
+            ? "Property updated as occupied (management only). Invite your current tenant next."
+            : publishNow
+              ? "Listing updated and submitted for verification."
+              : "Listing updated."
+          : occupiedOnboard
+            ? "Occupied property saved. Invite the current tenant to manage rent and documents."
+            : publishNow
+              ? "Listing submitted for verification."
+              : "Draft listing saved."
       );
       resetForm();
       await load();
@@ -448,8 +465,8 @@ function ListingsManager() {
           My Properties
         </h1>
         <p className="mt-1 text-sm text-muted max-w-2xl">
-          Central profiles for pricing, status, amenities, media and portfolio
-          overview — list → verify → match.
+          List vacant homes for rent, or onboard already-occupied properties and
+          invite current tenants to manage leases, rent and documents.
         </p>
       </div>
 
@@ -501,20 +518,43 @@ function ListingsManager() {
                 {filter !== "all" ? ` · ${FILTER_TABS.find((t) => t.id === filter)?.label}` : ""}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                if (showCreate && !editingId) {
-                  setShowCreate(false);
-                } else {
-                  resetForm();
-                  setShowCreate(true);
-                }
-              }}
-              className="app-btn app-btn-primary text-sm"
-            >
-              {showCreate && !editingId ? "Cancel" : "New listing"}
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (showCreate && !editingId && occupiedOnboard) {
+                    setShowCreate(false);
+                    setOccupiedOnboard(false);
+                  } else {
+                    resetForm();
+                    setOccupiedOnboard(true);
+                    setPublishNow(false);
+                    setShowCreate(true);
+                  }
+                }}
+                className="app-btn app-btn-secondary text-sm"
+              >
+                {showCreate && !editingId && occupiedOnboard
+                  ? "Cancel"
+                  : "Add occupied property"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (showCreate && !editingId && !occupiedOnboard) {
+                    setShowCreate(false);
+                  } else {
+                    resetForm();
+                    setShowCreate(true);
+                  }
+                }}
+                className="app-btn app-btn-primary text-sm"
+              >
+                {showCreate && !editingId && !occupiedOnboard
+                  ? "Cancel"
+                  : "New listing"}
+              </button>
+            </div>
           </div>
         </Reveal>
 
@@ -545,10 +585,16 @@ function ListingsManager() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <h2 className="font-display text-lg font-semibold">
-                    {editingId ? "Edit listing" : "Create a listing"}
+                    {editingId
+                      ? "Edit listing"
+                      : occupiedOnboard
+                        ? "Onboard occupied property"
+                        : "Create a listing"}
                   </h2>
                   <p className="text-sm text-muted mt-1">
-                    Add photos, pricing, and location. Save as draft or submit for verification.
+                    {occupiedOnboard
+                      ? "For homes you already own with a tenant in place — stays off the marketplace."
+                      : "Add photos, pricing, and location. Save as draft or submit for verification."}
                   </p>
                 </div>
                 {editingId ? (
@@ -878,20 +924,46 @@ function ListingsManager() {
                 <input
                   type="checkbox"
                   className="mt-0.5"
-                  checked={publishNow}
-                  onChange={(e) => setPublishNow(e.target.checked)}
+                  checked={occupiedOnboard}
+                  onChange={(e) => {
+                    setOccupiedOnboard(e.target.checked);
+                    if (e.target.checked) setPublishNow(false);
+                  }}
                 />
                 <span>
                   <span className="font-medium block">
-                    Submit for verification
+                    Already occupied — manage only
                   </span>
                   <span className="text-muted text-xs">
-                    {editingId
-                      ? "Mark as available and send for admin review."
-                      : "Publish now instead of saving as a draft."}
+                    Do not list on the marketplace. Invite your current tenant
+                    after saving.
                   </span>
                 </span>
               </label>
+
+              {!occupiedOnboard ? (
+                <label className="flex items-start gap-3 rounded-lg border border-border/60 p-3 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={publishNow}
+                    onChange={(e) => {
+                      setPublishNow(e.target.checked);
+                      if (e.target.checked) setOccupiedOnboard(false);
+                    }}
+                  />
+                  <span>
+                    <span className="font-medium block">
+                      Submit for verification
+                    </span>
+                    <span className="text-muted text-xs">
+                      {editingId
+                        ? "Mark as available and send for admin review."
+                        : "Publish now instead of saving as a draft."}
+                    </span>
+                  </span>
+                </label>
+              ) : null}
 
               <button
                 type="submit"
@@ -902,7 +974,9 @@ function ListingsManager() {
                   ? "Saving…"
                   : editingId
                     ? "Update listing"
-                    : "Create listing"}
+                    : occupiedOnboard
+                      ? "Save occupied property"
+                      : "Create listing"}
               </button>
             </div>
           </form>
@@ -1017,6 +1091,26 @@ function ListingsManager() {
                           Publish
                         </button>
                       ) : null}
+                      {l.availabilityStatus === "occupied" ||
+                      l.availabilityStatus === "pending" ||
+                      l.availabilityStatus === "draft" ? (
+                        <button
+                          type="button"
+                          className="app-btn app-btn-primary text-xs"
+                          onClick={() => {
+                            setInviteFor(l);
+                            setInviteName("");
+                            setInviteEmail("");
+                            setInviteStart(new Date().toISOString().slice(0, 10));
+                            setInviteEnd("");
+                            setInviteNotes("");
+                            setError("");
+                            setMessage("");
+                          }}
+                        >
+                          Invite tenant
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         className="app-btn app-btn-secondary text-xs text-danger"
@@ -1033,6 +1127,143 @@ function ListingsManager() {
           })}
         </Stagger>
       )}
+
+      {inviteFor ? (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4">
+          <div className="app-card w-full max-w-lg p-5 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="font-display text-lg font-semibold">
+                  Invite current tenant
+                </h3>
+                <p className="text-sm text-muted mt-1">{inviteFor.title}</p>
+              </div>
+              <button
+                type="button"
+                className="text-sm text-muted"
+                onClick={() => setInviteFor(null)}
+              >
+                Close
+              </button>
+            </div>
+            <p className="text-xs text-muted">
+              We’ll email them a link to join House In Hands and sign a digital
+              lease for this occupancy — rent, documents and maintenance in one place.
+            </p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium mb-1.5">
+                  Tenant full name
+                </label>
+                <input
+                  className="app-input w-full"
+                  value={inviteName}
+                  onChange={(e) => setInviteName(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5">
+                  Tenant email
+                </label>
+                <input
+                  type="email"
+                  className="app-input w-full"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">
+                    Lease start
+                  </label>
+                  <input
+                    type="date"
+                    className="app-input w-full"
+                    value={inviteStart}
+                    onChange={(e) => setInviteStart(e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">
+                    Lease end (optional)
+                  </label>
+                  <input
+                    type="date"
+                    className="app-input w-full"
+                    value={inviteEnd}
+                    onChange={(e) => setInviteEnd(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5">
+                  Note (optional)
+                </label>
+                <textarea
+                  className="app-input w-full min-h-[72px]"
+                  value={inviteNotes}
+                  onChange={(e) => setInviteNotes(e.target.value)}
+                  placeholder="Existing occupancy — joining digital management"
+                />
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <button
+                type="button"
+                disabled={inviteBusy}
+                className="app-btn app-btn-primary text-sm"
+                onClick={() => {
+                  void (async () => {
+                    if (!inviteFor) return;
+                    if (inviteName.trim().length < 2 || !inviteEmail.trim()) {
+                      setError("Tenant name and email are required.");
+                      return;
+                    }
+                    setInviteBusy(true);
+                    setError("");
+                    const res = await fetch("/api/portal/tenants/invites", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        listingId: inviteFor.id,
+                        tenantName: inviteName.trim(),
+                        tenantEmail: inviteEmail.trim(),
+                        startDate: inviteStart,
+                        endDate: inviteEnd || null,
+                        notes: inviteNotes.trim() || undefined,
+                      }),
+                    });
+                    const data = await res.json();
+                    setInviteBusy(false);
+                    if (!res.ok) {
+                      setError(data.error || "Could not send invite.");
+                      return;
+                    }
+                    setMessage(
+                      `Invite sent to ${inviteEmail.trim()}. They can accept and sign the agreement.`
+                    );
+                    setInviteFor(null);
+                    await load();
+                  })();
+                }}
+              >
+                {inviteBusy ? "Sending…" : "Send invite"}
+              </button>
+              <button
+                type="button"
+                className="app-btn app-btn-secondary text-sm"
+                onClick={() => setInviteFor(null)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

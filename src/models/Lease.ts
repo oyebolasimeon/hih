@@ -9,6 +9,7 @@ export type LeaseStatus =
 
 export type LeasePaymentPeriod = "monthly" | "yearly" | "term";
 export type LeaseLegalProvider = "hih" | "own_legal";
+export type LeaseSource = "application" | "landlord_invite" | "migration";
 
 export interface ILease {
   _id: mongoose.Types.ObjectId;
@@ -16,6 +17,8 @@ export interface ILease {
   tenantProfileId: mongoose.Types.ObjectId;
   landlordProfileId: mongoose.Types.ObjectId;
   applicationId?: mongoose.Types.ObjectId;
+  /** How the lease was created */
+  source?: LeaseSource;
   status: LeaseStatus;
   startDate: Date;
   endDate?: Date;
@@ -63,6 +66,11 @@ const LeaseSchema = new Schema<ILease>(
     applicationId: {
       type: Schema.Types.ObjectId,
       ref: "Application",
+    },
+    source: {
+      type: String,
+      enum: ["application", "landlord_invite", "migration"],
+      default: "application",
     },
     status: {
       type: String,
